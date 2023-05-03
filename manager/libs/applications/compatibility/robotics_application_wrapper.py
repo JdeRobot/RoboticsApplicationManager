@@ -5,16 +5,16 @@ import time
 
 import psutil
 
-from src.libs.process_utils import stop_process_and_children
-from src.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
-from src.manager.lint.linter import Lint
+from src.manager.libs.process_utils import stop_process_and_children
+from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
+from src.manager.manager.lint.linter import Lint
 from src.manager.docker_thread.docker_thread import DockerThread
 
-from src.libs.applications.compatibility.client import Client
-from src.libs.process_utils import stop_process_and_children
-from src.ram_logging.log_manager import LogManager
-from src.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
-from src.manager.lint.linter import Lint
+from src.manager.libs.applications.compatibility.client import Client
+from src.manager.libs.process_utils import stop_process_and_children
+from src.manager.ram_logging.log_manager import LogManager
+from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
+from src.manager.manager.lint.linter import Lint
 
 import os
 
