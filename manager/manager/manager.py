@@ -11,12 +11,12 @@ from uuid import uuid4
 
 
 
-from src.manager.launcher.launcher_engine import LauncherEngine
-from src.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
-from src.libs.process_utils import get_class_from_file
-from src.comms.consumer_message import ManagerConsumerMessageException
-from src.ram_logging.log_manager import LogManager
-from src.comms.new_consumer import ManagerConsumer
+from src.manager.manager.launcher.launcher_engine import LauncherEngine
+from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
+from src.manager.libs.process_utils import get_class_from_file
+from src.manager.comms.consumer_message import ManagerConsumerMessageException
+from src.manager.ram_logging.log_manager import LogManager
+from src.manager.comms.new_consumer import ManagerConsumer
 
 
 
