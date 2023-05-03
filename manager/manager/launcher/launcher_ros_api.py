@@ -4,7 +4,7 @@ from typing import List, Any
 import roslaunch
 import rospy
 
-from src.manager.launcher.launcher_interface import ILauncher, LauncherException
+from src.manager.manager.launcher.launcher_interface import ILauncher, LauncherException
 
 import logging
 
