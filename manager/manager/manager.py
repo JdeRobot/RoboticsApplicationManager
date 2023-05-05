@@ -161,6 +161,8 @@ class Manager:
         except Exception as e:
             LogManager.logger.exception(f"Exception terminating instance")
             print(traceback.format_exc())
+        python = sys.executable
+        os.execl(python, python, *sys.argv)
 
     def on_enter_connected(self, event):
         LogManager.logger.info("Connect state entered")
