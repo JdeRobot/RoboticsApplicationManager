@@ -8,7 +8,7 @@ import psutil
 from src.manager.libs.process_utils import stop_process_and_children
 from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
 from src.manager.manager.lint.linter import Lint
-from src.manager.docker_thread.docker_thread import DockerThread
+from src.manager.manager.docker_thread.docker_thread import DockerThread
 
 from src.manager.libs.applications.compatibility.client import Client
 from src.manager.libs.process_utils import stop_process_and_children
