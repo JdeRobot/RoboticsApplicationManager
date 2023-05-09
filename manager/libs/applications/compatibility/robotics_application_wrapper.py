@@ -35,9 +35,9 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
         return psProcess
 
     def terminate(self):
-        self.close_console()
         self.running = False
-        stop_process_and_children(self.user_process)
+        if self.user_process != None:
+            stop_process_and_children(self.user_process)
         self.user_process = None
 
     def load_code(self, code: str):
