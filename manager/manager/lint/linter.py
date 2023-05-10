@@ -27,7 +27,7 @@ class Lint:
 
             open("user_code.py", "r")
 
-            command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"            ret = subprocess.run(command, capture_output=True, shell=True)
+            command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
             ret = subprocess.run(command, capture_output=True, shell=True)
             result = ret.stdout.decode()
             result = result + "\n"
