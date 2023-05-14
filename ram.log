@@ -1,0 +1,358 @@
+2023-05-11 08:04:17,546 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7fc92825f160>:7163
+2023-05-11 08:04:17,546 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-11 08:04:17,546 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-11 08:04:42,339 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7fc92825f8e0>, 'address': ('127.0.0.1', 53826)}
+2023-05-11 08:04:42,383 [Thread-2    ] [INFO ] (root)  message received: {"id":"1b83ac14-ef04-475a-9c6c-56af122abc92","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7fc92825f8e0>, 'address': ('127.0.0.1', 53826)}
+2023-05-11 08:04:42,396 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-11 08:04:42,396 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-11 08:04:42,396 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-11 08:04:42,396 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-11 08:04:42,396 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-11 08:04:42,396 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-11 08:04:42,397 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7fc9282ad100>>'
+2023-05-11 08:04:42,405 [Thread-2    ] [INFO ] (root)  message received: {"id":"1c5b20a8-e0a0-4bfc-90d8-3a6e9f6928c8","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":924}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7fc92825f8e0>, 'address': ('127.0.0.1', 53826)}
+2023-05-11 08:04:42,498 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 924}
+2023-05-11 08:04:42,694 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-11 08:04:42,703 [MainThread  ] [ERROR] (root)  No module named 'src.manager.manager.launcher'; 'src.manager.manager' is not a package
+Traceback (most recent call last):
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/ram/src/manager/manager.py", line 222, in start
+    self.process_messsage(message)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/ram/src/manager/manager.py", line 186, in process_messsage
+    self.trigger(message.command, data=message.data or None)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/venv/lib/python3.8/site-packages/transitions/core.py", line 922, in _get_trigger
+    return event.trigger(model, *args, **kwargs)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/venv/lib/python3.8/site-packages/transitions/core.py", line 402, in trigger
+    return self.machine._process(func)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/venv/lib/python3.8/site-packages/transitions/core.py", line 1211, in _process
+    return trigger()
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/venv/lib/python3.8/site-packages/transitions/core.py", line 416, in _trigger
+    self._process(event_data)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/venv/lib/python3.8/site-packages/transitions/core.py", line 439, in _process
+    if trans.execute(event_data):
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/venv/lib/python3.8/site-packages/transitions/core.py", line 273, in execute
+    event_data.machine.callbacks(itertools.chain(event_data.machine.before_state_change, self.before), event_data)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/venv/lib/python3.8/site-packages/transitions/core.py", line 1146, in callbacks
+    self.callback(func, event_data)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/venv/lib/python3.8/site-packages/transitions/core.py", line 1165, in callback
+    func(event_data)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/ram/src/manager/manager.py", line 123, in on_launch
+    self.launcher.run()
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/ram/src/manager/launcher/launcher_engine.py", line 27, in run
+    launcher = self.launch_module(launcher_data)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/ram/src/manager/launcher/launcher_engine.py", line 51, in launch_module
+    launcher_class = get_class(launcher_module)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/ram/src/libs/process_utils.py", line 14, in get_class
+    m = __import__(module)
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/ram/src/manager/launcher/launcher_ros_api.py", line 7, in <module>
+    from src.manager.manager.launcher.launcher_interface import ILauncher, LauncherException
+ModuleNotFoundError: No module named 'src.manager.manager.launcher'; 'src.manager.manager' is not a package
+2023-05-11 08:05:43,696 [Thread-2    ] [INFO ] (root)  message received: {"id":"885f243b-695b-463c-92a9-4ae77ec91c67","command":"disconnect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7fc92825f8e0>, 'address': ('127.0.0.1', 53826)}
+2023-05-11 08:05:43,717 [MainThread  ] [ERROR] (root)  Exception terminating instance
+Traceback (most recent call last):
+  File "/home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/ram/src/manager/manager.py", line 154, in on_disconnect
+    self.application.terminate()
+AttributeError: 'NoneType' object has no attribute 'terminate'
+2023-05-11 08:05:50,572 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f5541951160>:7163
+2023-05-11 08:05:50,572 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-11 08:05:50,572 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-11 08:05:52,474 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f55419518e0>, 'address': ('127.0.0.1', 52374)}
+2023-05-11 08:05:52,550 [Thread-2    ] [INFO ] (root)  message received: {"id":"8fe8775d-5a82-4e68-b3ac-bea9120d645c","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f55419518e0>, 'address': ('127.0.0.1', 52374)}
+2023-05-11 08:05:52,576 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-11 08:05:52,576 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-11 08:05:52,576 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-11 08:05:52,577 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-11 08:05:52,577 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-11 08:05:52,577 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-11 08:05:52,577 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f554199e100>>'
+2023-05-11 08:05:52,602 [Thread-2    ] [INFO ] (root)  message received: {"id":"ae5141dd-d8e1-40a3-84a0-021390c96ffb","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":924}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f55419518e0>, 'address': ('127.0.0.1', 52374)}
+2023-05-11 08:05:52,678 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 924}
+2023-05-11 08:05:52,779 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-11 08:08:11,931 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f9034242160>:7163
+2023-05-11 08:08:11,932 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-11 08:08:11,932 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-11 08:08:14,882 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f90342428e0>, 'address': ('127.0.0.1', 49310)}
+2023-05-11 08:08:15,094 [Thread-2    ] [INFO ] (root)  message received: {"id":"9049a2b2-c7b9-4bd5-b99c-694b41684260","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f90342428e0>, 'address': ('127.0.0.1', 49310)}
+2023-05-11 08:08:15,138 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-11 08:08:15,139 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-11 08:08:15,139 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-11 08:08:15,139 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-11 08:08:15,139 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-11 08:08:15,139 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-11 08:08:15,139 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f903428f100>>'
+2023-05-11 08:08:15,180 [Thread-2    ] [INFO ] (root)  message received: {"id":"19aa24f2-0500-4643-b669-03a562224769","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":924}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f90342428e0>, 'address': ('127.0.0.1', 49310)}
+2023-05-11 08:08:15,240 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 924}
+2023-05-11 08:08:15,538 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-12 07:12:18,204 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f81d086f160>:7163
+2023-05-12 07:12:18,204 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-12 07:12:18,204 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-12 07:12:32,802 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f81d086f8e0>, 'address': ('127.0.0.1', 60764)}
+2023-05-12 07:12:32,914 [Thread-2    ] [INFO ] (root)  message received: {"id":"599e33f4-461c-4c9c-805b-07c8e47e3aca","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f81d086f8e0>, 'address': ('127.0.0.1', 60764)}
+2023-05-12 07:12:32,931 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-12 07:12:32,931 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-12 07:12:32,932 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-12 07:12:32,932 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-12 07:12:32,932 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-12 07:12:32,932 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-12 07:12:32,932 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f81d08bd100>>'
+2023-05-12 07:12:33,019 [Thread-2    ] [INFO ] (root)  message received: {"id":"1070d29b-5dbc-4b2d-b3dc-66bb6ad39f83","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":551.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f81d086f8e0>, 'address': ('127.0.0.1', 60764)}
+2023-05-12 07:12:33,032 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 551.5}
+2023-05-12 07:12:33,216 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-12 07:37:05,394 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f4fd448a5b0>:7163
+2023-05-12 07:37:05,394 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-12 07:37:05,394 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-5.
+2023-05-12 07:37:42,500 [Thread-6    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f4fd448a9d0>, 'address': ('127.0.0.1', 48888)}
+2023-05-12 07:37:42,578 [Thread-6    ] [INFO ] (root)  message received: {"id":"725995d7-372b-46ee-bfb6-d7a8a6f0a5d0","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f4fd448a9d0>, 'address': ('127.0.0.1', 48888)}
+2023-05-12 07:37:42,675 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-12 07:37:42,675 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-12 07:37:42,675 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-12 07:37:42,675 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-12 07:37:42,676 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-12 07:37:42,676 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-12 07:37:42,676 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f4fd44d2160>>'
+2023-05-12 07:37:42,687 [Thread-6    ] [INFO ] (root)  message received: {"id":"dff2fff6-98ce-424e-b0ab-5f3c3e6ce7cc","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":779.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f4fd448a9d0>, 'address': ('127.0.0.1', 48888)}
+2023-05-12 07:37:42,778 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 779.5}
+2023-05-12 07:37:42,893 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-12 19:42:39,184 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f7d489ef1f0>:7163
+2023-05-12 19:42:39,184 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-12 19:42:39,184 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-12 19:45:22,847 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f7d489ef970>, 'address': ('127.0.0.1', 43026)}
+2023-05-12 19:45:22,946 [Thread-2    ] [INFO ] (root)  message received: {"id":"4d4e11ff-b1b3-4f1b-9d9e-f46cd3e80a9a","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f7d489ef970>, 'address': ('127.0.0.1', 43026)}
+2023-05-12 19:45:22,992 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-12 19:45:22,992 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-12 19:45:22,992 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-12 19:45:22,992 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-12 19:45:22,992 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-12 19:45:22,992 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-12 19:45:22,992 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f7d48a3d190>>'
+2023-05-12 19:45:23,060 [Thread-2    ] [INFO ] (root)  message received: {"id":"b70866df-34f6-47b2-bcb0-22548863b633","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":637.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f7d489ef970>, 'address': ('127.0.0.1', 43026)}
+2023-05-12 19:45:23,093 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 637.5}
+2023-05-12 19:45:23,264 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-12 20:10:44,491 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f5b119d5220>:7163
+2023-05-12 20:10:44,491 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-12 20:10:44,491 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-12 20:10:49,033 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f5b119d59a0>, 'address': ('127.0.0.1', 54210)}
+2023-05-12 20:10:49,114 [Thread-2    ] [INFO ] (root)  message received: {"id":"2ba5b5f5-0181-48a7-817b-a27588049864","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f5b119d59a0>, 'address': ('127.0.0.1', 54210)}
+2023-05-12 20:10:49,200 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-12 20:10:49,200 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-12 20:10:49,200 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-12 20:10:49,200 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-12 20:10:49,200 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-12 20:10:49,200 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-12 20:10:49,200 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f5b11a241c0>>'
+2023-05-12 20:10:49,222 [Thread-2    ] [INFO ] (root)  message received: {"id":"651d289e-257c-47e9-b32b-d7fbd5a3bace","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":637.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f5b119d59a0>, 'address': ('127.0.0.1', 54210)}
+2023-05-12 20:10:49,301 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 637.5}
+2023-05-12 20:10:49,400 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-12 20:31:54,544 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f6f4fce51f0>:7163
+2023-05-12 20:31:54,544 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-12 20:31:54,544 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-12 20:31:59,350 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f6f4fce5970>, 'address': ('127.0.0.1', 37202)}
+2023-05-12 20:31:59,431 [Thread-2    ] [INFO ] (root)  message received: {"id":"81e1ea7c-0ea0-46c4-8298-1a13373745d2","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f6f4fce5970>, 'address': ('127.0.0.1', 37202)}
+2023-05-12 20:31:59,453 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-12 20:31:59,454 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-12 20:31:59,454 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-12 20:31:59,454 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-12 20:31:59,454 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-12 20:31:59,454 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-12 20:31:59,454 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f6f4fd33190>>'
+2023-05-12 20:31:59,520 [Thread-2    ] [INFO ] (root)  message received: {"id":"8911ce61-fe35-4a33-ac18-15ca1603e98a","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":612}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f6f4fce5970>, 'address': ('127.0.0.1', 37202)}
+2023-05-12 20:31:59,554 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 612}
+2023-05-12 20:31:59,642 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-12 20:51:20,577 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f04a7c831c0>:7163
+2023-05-12 20:51:20,577 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-12 20:51:20,577 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-12 20:51:25,278 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f04a7c83940>, 'address': ('127.0.0.1', 47094)}
+2023-05-12 20:51:25,407 [Thread-2    ] [INFO ] (root)  message received: {"id":"6cedd557-5d6f-4f00-9ded-20fa02aeb744","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f04a7c83940>, 'address': ('127.0.0.1', 47094)}
+2023-05-12 20:51:25,487 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-12 20:51:25,487 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-12 20:51:25,487 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-12 20:51:25,487 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-12 20:51:25,487 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-12 20:51:25,487 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-12 20:51:25,488 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f04a7cd0160>>'
+2023-05-12 20:51:25,504 [Thread-2    ] [INFO ] (root)  message received: {"id":"028250a2-e6f6-4faa-930f-d6080c8635a7","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":709.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f04a7c83940>, 'address': ('127.0.0.1', 47094)}
+2023-05-12 20:51:25,589 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 709.5}
+2023-05-12 20:51:25,744 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-12 20:57:12,579 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f16a08251c0>:7163
+2023-05-12 20:57:12,579 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-12 20:57:12,579 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-12 20:57:23,440 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f16a0825940>, 'address': ('127.0.0.1', 40274)}
+2023-05-12 20:57:23,618 [Thread-2    ] [INFO ] (root)  message received: {"id":"e9a64d07-f70c-42bb-acab-c7118d0afdac","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f16a0825940>, 'address': ('127.0.0.1', 40274)}
+2023-05-12 20:57:23,701 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-12 20:57:23,701 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-12 20:57:23,701 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-12 20:57:23,701 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-12 20:57:23,701 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-12 20:57:23,701 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-12 20:57:23,702 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f16a0871160>>'
+2023-05-12 20:57:23,758 [Thread-2    ] [INFO ] (root)  message received: {"id":"a5f4acf2-87ec-4545-8d8e-87d352a4c408","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":709.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f16a0825940>, 'address': ('127.0.0.1', 40274)}
+2023-05-12 20:57:23,803 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 709.5}
+2023-05-12 20:57:24,016 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-13 07:22:44,553 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f520d1f8220>:7163
+2023-05-13 07:22:44,554 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-13 07:22:44,554 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-13 07:22:59,894 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f520d1f89a0>, 'address': ('127.0.0.1', 48362)}
+2023-05-13 07:22:59,975 [Thread-2    ] [INFO ] (root)  message received: {"id":"98e9df83-4a1f-49f3-853c-358902b59e49","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f520d1f89a0>, 'address': ('127.0.0.1', 48362)}
+2023-05-13 07:22:59,982 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-13 07:22:59,982 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-13 07:22:59,982 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-13 07:22:59,982 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-13 07:22:59,982 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-13 07:22:59,982 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-13 07:22:59,983 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f520d2441c0>>'
+2023-05-13 07:22:59,990 [Thread-2    ] [INFO ] (root)  message received: {"id":"198e8410-151e-49b0-9134-f38bd4b959ca","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":550.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f520d1f89a0>, 'address': ('127.0.0.1', 48362)}
+2023-05-13 07:23:00,083 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 550.5}
+2023-05-13 07:23:00,253 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-13 07:41:31,317 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f94c9b49190>:7163
+2023-05-13 07:41:31,317 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-13 07:41:31,317 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-13 07:41:39,056 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f94c9b49910>, 'address': ('127.0.0.1', 50182)}
+2023-05-13 07:41:39,122 [Thread-2    ] [INFO ] (root)  message received: {"id":"3bd2f0af-98a6-4c92-ac25-bc6fb34aeea5","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f94c9b49910>, 'address': ('127.0.0.1', 50182)}
+2023-05-13 07:41:39,131 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-13 07:41:39,132 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-13 07:41:39,132 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-13 07:41:39,132 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-13 07:41:39,132 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-13 07:41:39,132 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-13 07:41:39,132 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f94c9b97130>>'
+2023-05-13 07:41:39,163 [Thread-2    ] [INFO ] (root)  message received: {"id":"aa4a7935-1e5a-4df3-9753-5dab0f14431b","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":550.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f94c9b49910>, 'address': ('127.0.0.1', 50182)}
+2023-05-13 07:41:39,233 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 550.5}
+2023-05-13 07:41:39,320 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-13 07:50:16,623 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7fbdc86f2190>:7163
+2023-05-13 07:50:16,623 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-13 07:50:16,623 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-13 07:50:22,487 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7fbdc86f2910>, 'address': ('127.0.0.1', 45648)}
+2023-05-13 07:50:22,590 [Thread-2    ] [INFO ] (root)  message received: {"id":"81c3c005-8b08-4382-9e57-902f60de8426","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7fbdc86f2910>, 'address': ('127.0.0.1', 45648)}
+2023-05-13 07:50:22,634 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-13 07:50:22,634 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-13 07:50:22,634 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-13 07:50:22,634 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-13 07:50:22,634 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-13 07:50:22,634 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-13 07:50:22,635 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7fbdc8740130>>'
+2023-05-13 07:50:22,655 [Thread-2    ] [INFO ] (root)  message received: {"id":"8bfd6a85-8741-47a2-9031-65bb53058a04","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":550.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7fbdc86f2910>, 'address': ('127.0.0.1', 45648)}
+2023-05-13 07:50:22,735 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 550.5}
+2023-05-13 07:50:22,856 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-13 08:10:37,545 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f06811df190>:7163
+2023-05-13 08:10:37,546 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-13 08:10:37,546 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-13 08:10:43,731 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f06811df910>, 'address': ('127.0.0.1', 46574)}
+2023-05-13 08:10:43,832 [Thread-2    ] [INFO ] (root)  message received: {"id":"3af171e7-a94d-43be-8609-d62c16027414","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f06811df910>, 'address': ('127.0.0.1', 46574)}
+2023-05-13 08:10:43,866 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-13 08:10:43,867 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-13 08:10:43,867 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-13 08:10:43,867 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-13 08:10:43,867 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-13 08:10:43,867 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-13 08:10:43,867 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f068122c130>>'
+2023-05-13 08:10:43,902 [Thread-2    ] [INFO ] (root)  message received: {"id":"866f8803-42ef-4406-9512-c558ce664af2","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":550.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f06811df910>, 'address': ('127.0.0.1', 46574)}
+2023-05-13 08:10:43,968 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 550.5}
+2023-05-13 08:10:44,069 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-13 08:10:44,713 [Dummy-3     ] [INFO ] (xmlrpc)  XML-RPC server binding to 0.0.0.0:0
+2023-05-13 08:10:44,713 [Dummy-3     ] [INFO ] (xmlrpc)  Started XML-RPC server [http://david-UNIBOTICS:39529/]
+2023-05-13 08:10:44,713 [Dummy-3     ] [INFO ] (xmlrpc)  xml rpc node: starting XML-RPC server
+2023-05-13 08:10:45,425 [MainThread  ] [INFO ] (root)  Exercise code /home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/exercises/static/exercises/follow_line_react_refactor/web-template/entry_point/../exercise.py 0.0.0.0 launched
+2023-05-13 08:10:46,429 [exercise    ] [INFO ] (root)  Connection with exercise opened
+2023-05-13 08:10:46,429 [exercise    ] [WARNI] (websocket)  websocket connected
+2023-05-13 08:10:46,430 [exercise    ] [INFO ] (root)  Message received from exercise: Starting HAL thread
+2023-05-13 08:10:46,430 [exercise    ] [ERROR] (websocket)  error from callback <bound method Client.on_message of <Client(exercise, started 139665692686080)>>: Expecting value: line 1 column 1 (char 0)
+2023-05-13 08:10:46,430 [exercise    ] [INFO ] (root)  There was an error in exercise client connection.
+2023-05-13 08:10:46,430 [exercise    ] [ERROR] (root)  Expecting value: line 1 column 1 (char 0)
+2023-05-13 08:10:46,430 [exercise    ] [INFO ] (root)  Message received from exercise: #freq{"brain": 20.0, "gui": 10
+2023-05-13 08:10:46,431 [exercise    ] [INFO ] (root)  Message received from exercise: Client connected
+2023-05-13 08:10:46,431 [exercise    ] [ERROR] (websocket)  error from callback <bound method Client.on_message of <Client(exercise, started 139665692686080)>>: Expecting value: line 1 column 1 (char 0)
+2023-05-13 08:10:46,431 [exercise    ] [INFO ] (root)  There was an error in exercise client connection.
+2023-05-13 08:10:46,431 [exercise    ] [ERROR] (root)  Expecting value: line 1 column 1 (char 0)
+2023-05-13 08:10:46,631 [MainThread  ] [INFO ] (root)  Exercise gui /home/dmariaa/Desarrollo/unibotics/RoboticsAcademy/exercises/static/exercises/follow_line_react_refactor/web-template/entry_point/../gui.py 0.0.0.0 default launched
+2023-05-13 08:10:47,634 [gui         ] [INFO ] (root)  Connection with gui opened
+2023-05-13 08:10:47,634 [gui         ] [WARNI] (websocket)  websocket connected
+2023-05-13 08:10:48,635 [exercise    ] [INFO ] (root)  Message received from exercise: #freq{"brain": 20.0, "gui": 10
+2023-05-13 11:38:46,765 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f81ecd07190>:7163
+2023-05-13 11:38:46,766 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-13 11:38:46,766 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-13 11:40:10,531 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f81ecd07910>, 'address': ('127.0.0.1', 42254)}
+2023-05-13 11:40:10,711 [Thread-2    ] [INFO ] (root)  message received: {"id":"b44ed797-831a-47c6-90fc-1a6a710ead5a","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f81ecd07910>, 'address': ('127.0.0.1', 42254)}
+2023-05-13 11:40:10,726 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-13 11:40:10,727 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-13 11:40:10,727 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-13 11:40:10,727 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-13 11:40:10,727 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-13 11:40:10,727 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-13 11:40:10,727 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f81ecd54130>>'
+2023-05-13 11:40:10,852 [Thread-2    ] [INFO ] (root)  message received: {"id":"8e8a9740-e4e2-4cda-8d73-b106e9e948d0","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":603.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f81ecd07910>, 'address': ('127.0.0.1', 42254)}
+2023-05-13 11:40:10,929 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 603.5}
+2023-05-13 11:40:11,082 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-13 11:41:12,086 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f066d9f4190>:7163
+2023-05-13 11:41:12,086 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-13 11:41:12,086 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-13 11:41:24,733 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f066d9f4910>, 'address': ('127.0.0.1', 35266)}
+2023-05-13 11:41:24,905 [Thread-2    ] [INFO ] (root)  message received: {"id":"f16c49a1-2ae8-4676-bed3-d6bfe9491b48","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f066d9f4910>, 'address': ('127.0.0.1', 35266)}
+2023-05-13 11:41:24,920 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-13 11:41:24,920 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-13 11:41:24,921 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-13 11:41:24,921 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-13 11:41:24,921 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-13 11:41:24,921 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-13 11:41:24,921 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f066da41130>>'
+2023-05-13 11:41:24,973 [Thread-2    ] [INFO ] (root)  message received: {"id":"eec7e876-1e0d-4276-97be-b86ad86972cd","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":603.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f066d9f4910>, 'address': ('127.0.0.1', 35266)}
+2023-05-13 11:41:25,022 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 603.5}
+2023-05-13 11:41:25,174 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-13 11:59:48,050 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f009f6c9190>:7163
+2023-05-13 11:59:48,050 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-13 11:59:48,051 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-13 11:59:51,828 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f009f6c9910>, 'address': ('127.0.0.1', 36004)}
+2023-05-13 11:59:51,978 [Thread-2    ] [INFO ] (root)  message received: {"id":"fcab78d4-6086-4ad8-930d-6225b201dd16","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f009f6c9910>, 'address': ('127.0.0.1', 36004)}
+2023-05-13 11:59:52,059 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-13 11:59:52,059 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-13 11:59:52,060 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-13 11:59:52,060 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-13 11:59:52,060 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-13 11:59:52,060 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-13 11:59:52,061 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f009f716130>>'
+2023-05-13 11:59:52,118 [Thread-2    ] [INFO ] (root)  message received: {"id":"7dcfed59-0280-4d84-8976-6504874d3e27","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":603.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f009f6c9910>, 'address': ('127.0.0.1', 36004)}
+2023-05-13 11:59:52,162 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 603.5}
+2023-05-13 11:59:52,324 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-13 12:51:30,113 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f9ba5cb5190>:7163
+2023-05-13 12:51:30,113 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-13 12:51:30,113 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-13 12:51:34,277 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f9ba5cb5910>, 'address': ('127.0.0.1', 36636)}
+2023-05-13 12:51:34,393 [Thread-2    ] [INFO ] (root)  message received: {"id":"7901cb7b-536a-4ca9-b018-2742a315a00a","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f9ba5cb5910>, 'address': ('127.0.0.1', 36636)}
+2023-05-13 12:51:34,422 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-13 12:51:34,422 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-13 12:51:34,423 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-13 12:51:34,423 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-13 12:51:34,423 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-13 12:51:34,423 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-13 12:51:34,423 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f9ba5d01130>>'
+2023-05-13 12:51:34,542 [Thread-2    ] [INFO ] (root)  message received: {"id":"6e0732eb-419c-49cf-b3c2-16255a70d2d0","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":493.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f9ba5cb5910>, 'address': ('127.0.0.1', 36636)}
+2023-05-13 12:51:34,624 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 493.5}
+2023-05-13 12:51:34,772 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-13 13:07:28,826 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7f501f255190>:7163
+2023-05-13 13:07:28,826 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-13 13:07:28,826 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-13 13:07:33,596 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f501f255910>, 'address': ('127.0.0.1', 49436)}
+2023-05-13 13:07:33,765 [Thread-2    ] [INFO ] (root)  message received: {"id":"fef22367-a476-4131-9bce-d0f086ee8545","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f501f255910>, 'address': ('127.0.0.1', 49436)}
+2023-05-13 13:07:33,837 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-13 13:07:33,837 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-13 13:07:33,837 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-13 13:07:33,837 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-13 13:07:33,837 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-13 13:07:33,838 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-13 13:07:33,838 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7f501f2a2130>>'
+2023-05-13 13:07:33,898 [Thread-2    ] [INFO ] (root)  message received: {"id":"78ffe209-e3d7-40fb-9231-bbae4fadac08","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":551.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7f501f255910>, 'address': ('127.0.0.1', 49436)}
+2023-05-13 13:07:33,939 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 551.5}
+2023-05-13 13:07:34,157 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
+2023-05-13 13:09:33,858 [MainThread  ] [INFO ] (root)  Starting RAM consumer in <websocket_server.websocket_server.WebsocketServer object at 0x7fdde8d4a190>:7163
+2023-05-13 13:09:33,858 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Listening on port 7163 for clients..
+2023-05-13 13:09:33,858 [MainThread  ] [INFO ] (websocket_server.websocket_server)  Starting WebsocketServer on thread Thread-1.
+2023-05-13 13:09:39,522 [Thread-2    ] [INFO ] (root)  client connected: {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7fdde8d4a910>, 'address': ('127.0.0.1', 35242)}
+2023-05-13 13:09:39,668 [Thread-2    ] [INFO ] (root)  message received: {"id":"60f899e7-9c96-4871-9b9d-7b35a31c2124","command":"connect"} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7fdde8d4a910>, 'address': ('127.0.0.1', 35242)}
+2023-05-13 13:09:39,669 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_connect'
+2023-05-13 13:09:39,670 [MainThread  ] [INFO ] (transitions.core)  Finished processing state idle exit callbacks.
+2023-05-13 13:09:39,670 [MainThread  ] [INFO ] (root)  Connect state entered
+2023-05-13 13:09:39,670 [MainThread  ] [INFO ] (transitions.core)  Executed callback 'on_enter_connected'
+2023-05-13 13:09:39,670 [MainThread  ] [INFO ] (transitions.core)  Finished processing state connected enter callbacks.
+2023-05-13 13:09:39,670 [MainThread  ] [INFO ] (root)  State changed to connected
+2023-05-13 13:09:39,670 [MainThread  ] [INFO ] (transitions.core)  Executed callback '<bound method Manager.state_change of <__main__.Manager object at 0x7fdde8d97130>>'
+2023-05-13 13:09:39,688 [Thread-2    ] [INFO ] (root)  message received: {"id":"b04bbf54-fc1e-442c-b221-9d739ffd510f","command":"launch","data":{"application":{"type":"python","entry_point":"$EXERCISE_FOLDER/web-template/entry_point/exercise.py","params":{"circuit":"default"}},"launch":{"0":{"type":"module","module":"ros_api","resource_folders":["$EXERCISE_FOLDER/web-template/launch"],"model_folders":["$CUSTOM_ROBOTS_BASE/f1/models"],"plugin_folders":[],"parameters":[],"launch_file":"$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch"}},"exercise_id":"follow_line_react_refactor","height":474,"width":551.5}} from client {'id': 1, 'handler': <websocket_server.websocket_server.WebSocketHandler object at 0x7fdde8d4a910>, 'address': ('127.0.0.1', 35242)}
+2023-05-13 13:09:39,771 [MainThread  ] [INFO ] (root)  Launch transition started, configuration: {'application': {'type': 'python', 'entry_point': '$EXERCISE_FOLDER/web-template/entry_point/exercise.py', 'params': {'circuit': 'default'}}, 'launch': {'0': {'type': 'module', 'module': 'ros_api', 'resource_folders': ['$EXERCISE_FOLDER/web-template/launch'], 'model_folders': ['$CUSTOM_ROBOTS_BASE/f1/models'], 'plugin_folders': [], 'parameters': [], 'launch_file': '$EXERCISE_FOLDER/web-template/launch/simple_line_follower_ros_headless_default.launch'}}, 'exercise_id': 'follow_line_react_refactor', 'height': 474, 'width': 551.5}
+2023-05-13 13:09:39,929 [MainThread  ] [INFO ] (rospy.topics)  topicmanager initialized
