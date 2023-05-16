@@ -27,7 +27,14 @@ class Lint:
 
             open("user_code.py", "r")
 
-            command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
+            command = ""
+            output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
+            output_str = output.decode('utf-8')
+            version = output_str[0]
+            if (version == 2):                
+                command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
+            else:
+                command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
             ret = subprocess.run(command, capture_output=True, shell=True)
             result = ret.stdout.decode()
             result = result + "\n"
