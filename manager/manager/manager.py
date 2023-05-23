@@ -120,6 +120,19 @@ class Manager:
         if launchers_configuration is None:
             raise Exception("Launch configuration missing")
 
+        # check if launch file is sent
+        launch_file = configuration.get('launch_file', None)
+        if (launch_file is not None):                        
+            directory = "workspace/worlds/"
+            file_path = directory + launch_file.get('name', "world.launch")
+            # if folder does not exist, create it
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            # store the file    
+            file = open(file_path, 'w')
+            file.write(launch_file.get('contents', None))
+            file.close()
+
         LogManager.logger.info(
             f"Launch transition started, configuration: {configuration}")
 
