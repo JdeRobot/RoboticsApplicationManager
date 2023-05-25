@@ -27,6 +27,7 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
         time.sleep(5)
         self.start_console()
         self.user_process = None
+        self.entrypoint_path = None
 
     def _create_process(self, cmd):
         #print("creando procesos")
@@ -40,15 +41,11 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
             stop_process_and_children(self.user_process)
         self.user_process = None
 
-    def load_code(self, code: str):
-        self.f = open("user_code.py", "w")
-        self.f.write(code)
-        self.f.close()
-        #self.update_callback("Hello World")
+    def load_code(self, path: str):
+        self.entrypoint_path = path
 
     def run(self):     
-        self.user_process = self._create_process(f"DISPLAY=:2 python {self.f.name}")
-
+        self.user_process = self._create_process(f"DISPLAY=:2 python {self.entrypoint_path}")
         self.running = True
 
     def stop(self):
