@@ -6,6 +6,9 @@ import signal
 import os
 import time
 import traceback
+import zipfile
+import json
+import base64
 from queue import Queue
 from uuid import uuid4
 
@@ -75,6 +78,17 @@ class Manager:
         self.application = None
         self.running = True
 
+        # Creates workspace directories
+        worlds_dir = "/workspace/worlds"
+        code_dir = "/workspace/code"
+        binaries_dir = "/workspace/binaries"
+        if not os.path.isdir(worlds_dir):
+            os.makedirs(worlds_dir)
+        if not os.path.isdir(code_dir):
+            os.makedirs(code_dir)
+        if not os.path.isdir(binaries_dir):
+            os.makedirs(binaries_dir)
+
     def state_change(self, event):
         LogManager.logger.info(f"State changed to {self.state}")
         if self.consumer is not None:
@@ -120,18 +134,20 @@ class Manager:
         if launchers_configuration is None:
             raise Exception("Launch configuration missing")
 
-        # check if launch file is sent
-        launch_file = configuration.get('launch_file', None)
-        if (launch_file is not None):                        
-            directory = "workspace/worlds/"
-            file_path = directory + launch_file.get('name', "world.launch")
-            # if folder does not exist, create it
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            # store the file    
-            file = open(file_path, 'w')
-            file.write(launch_file.get('contents', None))
-            file.close()
+        # check if launch files are sent
+        launch_files = configuration.get('launch_files', None)
+        if (launch_files is not None):
+            try:
+                # Convert base64 to binary
+                binary_content = base64.b64decode(launch_files)
+                # Save the binary content as a file
+                with open('workspace/binaries/user_worlds.zip', 'wb') as file:
+                    file.write(binary_content)
+                # Unzip the file
+                with zipfile.ZipFile('workspace/binaries/user_worlds.zip', 'r') as zip_ref:
+                    zip_ref.extractall('workspace/worlds/')
+            except Exception as e:
+                print("An error occurred while opening zip_path as r:" + str(e))
 
         LogManager.logger.info(
             f"Launch transition started, configuration: {configuration}")
@@ -194,7 +210,31 @@ class Manager:
         self.code_loaded = False
         LogManager.logger.info("Internal transition load_code executed")
         message_data = event.kwargs.get('data', {})
-        self.application.load_code(message_data['code'])
+        
+        # Code is sent raw
+        message_code = message_data.get('code', None)
+        if message_code is not None:
+            self.application.load_code(message_code)
+
+        # Code is sent zipped
+        message_zip = message_data.get('zip', None)
+        if message_zip is not None:            
+            try:
+                # Convert base64 to binary
+                binary_content = base64.b64decode(message_zip)
+                # Save the binary content as a file
+                with open('workspace/binaries/user_app.zip', 'wb') as file:
+                    file.write(binary_content)
+                # Unzip the file
+                with zipfile.ZipFile('workspace/binaries/user_app.zip', 'r') as zip_ref:
+                    zip_ref.extractall('workspace/code/')
+                entrypoint_path = message_data.get('entrypoint', None)
+                if (entrypoint_path is not None):
+                    entrypoint_path = "/workspace/code/" + entrypoint_path
+                    self.application.load_code(entrypoint_path)
+            except Exception as e:
+                file.write("An error occurred while opening zip_path as r:" + str(e))
+        
         self.code_loaded = True
 
     def code_loaded(self, event):
