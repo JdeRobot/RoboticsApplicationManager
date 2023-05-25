@@ -30,7 +30,7 @@ class Lint:
             command = ""
             output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
             output_str = output.decode('utf-8')
-            version = output_str[0]
+            version = int(output_str[0])
             if (version == 2):                
                 command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
             else:
