@@ -21,6 +21,7 @@ class CompatibilityExerciseWrapperTeleopRos2(IRoboticsPythonApplication):
         self.running = False
         self.linter = Lint()
         self.brain_ready_event = threading.Event()
+        
         # TODO: review hardcoded values
         process_ready, self.exercise_server = self._run_exercise_server(f"python3 {exercise_command}",
                                                                         f'{home_dir}/ws_code.log',
@@ -35,6 +36,7 @@ class CompatibilityExerciseWrapperTeleopRos2(IRoboticsPythonApplication):
         else:
             self.exercise_server.kill()
             raise RuntimeError(f"Exercise {exercise_command} could not be run")
+        
 
         process_ready, self.gui_server = self._run_exercise_server(f"python3 {gui_command}", f'{home_dir}/ws_gui.log',
                                                                    'websocket_gui=ready')
@@ -51,6 +53,16 @@ class CompatibilityExerciseWrapperTeleopRos2(IRoboticsPythonApplication):
         # Websocket server for person teleoperator
         process_ready, self.teleop_server = self._run_exercise_server(f"python3 {teleop_command}", f'{home_dir}/ws_teleop.log',
                                                                    'websocket_teleop=ready')
+        
+        if process_ready:
+            LogManager.logger.info(f"Exercise gui {teleop_command} launched")
+            time.sleep(1)
+            self.teleop_connection = Client(
+                'ws://127.0.0.1:7164', 'teleop', self.server_message)
+            self.teleop_connection.start()
+        else:
+            self.teleop_server.kill()
+            raise RuntimeError(f"Exercise GUI {teleop_command} could not be run")
 
         self.running = True
 
@@ -160,6 +172,7 @@ class CompatibilityExerciseWrapperTeleopRos2(IRoboticsPythonApplication):
         self.running = False
         self.exercise_connection.stop()
         self.gui_connection.stop()
+        self.teleop_connection.stop()
 
         stop_process_and_children(self.exercise_server)
         stop_process_and_children(self.gui_server)
