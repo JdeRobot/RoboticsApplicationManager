@@ -6,7 +6,6 @@ import stat
 
 
 class LauncherTeleoperatorRos2(ILauncher):
-    model_plugin_port: str
     running = False
     threads = []
 
@@ -15,11 +14,10 @@ class LauncherTeleoperatorRos2(ILauncher):
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
         
         if (ACCELERATION_ENABLED):
-            teleop_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun /opt/jderobot/utils/model_teleoperator.py 0.0.0.0 {model_plugin_port}"
+            teleop_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun python3 /opt/jderobot/utils/model_teleoperator.py 0.0.0.0"
         else:
-            teleop_cmd = f"/opt/jderobot/utils/model_teleoperator.py 0.0.0.0 {model_plugin_port}"
+            teleop_cmd = f"python3 /opt/jderobot/utils/model_teleoperator.py 0.0.0.0"
 
-        print("\n\n LAUNCHING TELEOPERATOR\n\n")
         teleop_thread = DockerThread(teleop_cmd)
         teleop_thread.start()
         self.threads.append(teleop_thread)
