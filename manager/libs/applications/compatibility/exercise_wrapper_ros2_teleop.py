@@ -62,10 +62,9 @@ class CompatibilityExerciseWrapperTeleopRos2(IRoboticsPythonApplication):
             self.teleop_connection.start()
         else:
             self.teleop_server.kill()
-            raise RuntimeError(f"Exercise GUI {teleop_command} could not be run")
+            raise RuntimeError(f"Exercise Teleop {teleop_command} could not be run")
 
         self.running = True
-
         self.start_send_freq_thread()
 
 
