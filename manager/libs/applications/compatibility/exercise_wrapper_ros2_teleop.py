@@ -54,15 +54,6 @@ class CompatibilityExerciseWrapperTeleopRos2(IRoboticsPythonApplication):
         process_ready, self.teleop_server = self._run_exercise_server(f"python3 {teleop_command}", f'{home_dir}/ws_teleop.log',
                                                                    'websocket_teleop=ready')
         
-        if process_ready:
-            LogManager.logger.info(f"Exercise gui {teleop_command} launched")
-            time.sleep(1)
-            self.teleop_connection = Client(
-                'ws://127.0.0.1:7164', 'teleop', self.server_message)
-            self.teleop_connection.start()
-        else:
-            self.teleop_server.kill()
-            raise RuntimeError(f"Exercise Teleop {teleop_command} could not be run")
 
         self.running = True
         self.start_send_freq_thread()
