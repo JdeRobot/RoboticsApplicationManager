@@ -30,6 +30,8 @@ class LauncherRos2Api(ILauncher):
         self._set_environment()
         launch_file = os.path.expandvars(self.launch_file)
 
+        print("\n\n\nLaunch file: " + str(launch_file))
+
         if (ACCELERATION_ENABLED):
             exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {launch_file}"
         else:
