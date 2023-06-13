@@ -9,7 +9,7 @@ import subprocess
 
 import logging
 
-class LauncherRos2Api(ILauncher):
+class LauncherRos2ApiPhy(ILauncher):
     exercise_id: str
     type: str
     module: str
@@ -19,6 +19,7 @@ class LauncherRos2Api(ILauncher):
     parameters: List[str]
     launch_file: str
     running = False
+    threads = []
 
     def run(self,callback):
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
@@ -27,8 +28,9 @@ class LauncherRos2Api(ILauncher):
         logging.getLogger("roslaunch").setLevel(logging.CRITICAL)
 
         # expand variables in configuration paths
-        self._set_environment()
         launch_file = os.path.expandvars(self.launch_file)
+
+        print("\n\n\nLaunch file: " + str(launch_file))
 
         if (ACCELERATION_ENABLED):
             exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {launch_file}"
@@ -37,6 +39,7 @@ class LauncherRos2Api(ILauncher):
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
+        self.threads.append(exercise_launch_thread)
 
         self.running = True
 
@@ -50,18 +53,10 @@ class LauncherRos2Api(ILauncher):
             return False
 
     def terminate(self):
-        if self.is_running():
-            kill_cmd = 'pkill -9 -f '
-            cmd = kill_cmd + 'gzserver'
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1024, universal_newlines=True)
-            cmd = kill_cmd + 'spawn_model.launch.py'
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1024, universal_newlines=True)
+        for thread in self.threads:
+            thread.terminate()
+            thread.join()
+        self.running = False
 
-    def _set_environment(self):
-        resource_folders = [os.path.expandvars(path) for path in self.resource_folders]
-        model_folders = [os.path.expandvars(path) for path in self.model_folders]
-        plugin_folders = [os.path.expandvars(path) for path in self.plugin_folders]
-
-        os.environ["GAZEBO_RESOURCE_PATH"] = f"{os.environ.get('GAZEBO_RESOURCE_PATH', '')}:{':'.join(resource_folders)}"
-        os.environ["GAZEBO_MODEL_PATH"] = f"{os.environ.get('GAZEBO_MODEL_PATH', '')}:{':'.join(model_folders)}"
-        os.environ["GAZEBO_PLUGIN_PATH"] = f"{os.environ.get('GAZEBO_PLUGIN_PATH', '')}:{':'.join(plugin_folders)}"
+    def died(self):
+        pass
