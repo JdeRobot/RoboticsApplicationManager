@@ -18,10 +18,10 @@ class LauncherRvizRos2(ILauncher):
 
         if ACCELERATION_ENABLED:
             rviz_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port, DRI_PATH)
-            rviz_cmd = f"export DISPLAY=:0; export VGL_DISPLAY={DRI_PATH}; vglrun rviz2"
+            rviz_cmd = f"export DISPLAY={self.display}; export VGL_DISPLAY={DRI_PATH}; vglrun rviz2"
         else:
             rviz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
-            rviz_cmd = f"export DISPLAY=:0; rviz2"
+            rviz_cmd = f"export DISPLAY={self.display}; rviz2"
 
         rviz_thread = DockerThread(rviz_cmd)
         rviz_thread.start()
