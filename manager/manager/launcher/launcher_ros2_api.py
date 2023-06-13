@@ -65,3 +65,4 @@ class LauncherRos2Api(ILauncher):
         os.environ["GAZEBO_RESOURCE_PATH"] = f"{os.environ.get('GAZEBO_RESOURCE_PATH', '')}:{':'.join(resource_folders)}"
         os.environ["GAZEBO_MODEL_PATH"] = f"{os.environ.get('GAZEBO_MODEL_PATH', '')}:{':'.join(model_folders)}"
         os.environ["GAZEBO_PLUGIN_PATH"] = f"{os.environ.get('GAZEBO_PLUGIN_PATH', '')}:{':'.join(plugin_folders)}"
+        os.environ["PHYSICAL_ROBOT_PKG_PATH"] = f"{os.environ.get('PHYSICAL_ROBOT_PKG_PATH', '')}:{':'.join(resource_folders)}"
