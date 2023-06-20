@@ -28,8 +28,6 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
         self.start_console()
         self.user_process = None
         self.entrypoint_path = None
-        self.python_command = "python"
-        self.check_python_version()
 
     def _create_process(self, cmd):
         #print("creando procesos")
@@ -47,7 +45,7 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
         self.entrypoint_path = path
 
     def run(self):     
-        self.user_process = self._create_process(f"DISPLAY=:2 {self.python_command} {self.entrypoint_path}")
+        self.user_process = self._create_process(f"DISPLAY=:2 python3 {self.entrypoint_path}")
         self.running = True
 
     def stop(self):
@@ -97,11 +95,3 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
                     p.resume()
             except psutil.NoSuchProcess:
                 pass
-
-    def check_python_version(self):
-        output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
-        output_str = output.decode('utf-8')
-        if (output_str == 1):
-            self.python_command = "python"
-        else:
-            self.python_command = "python3"

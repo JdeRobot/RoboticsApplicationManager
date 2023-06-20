@@ -11,7 +11,7 @@ import json
 import base64
 from queue import Queue
 from uuid import uuid4
-
+import subprocess
 
 
 from src.manager.manager.launcher.launcher_engine import LauncherEngine
@@ -64,7 +64,8 @@ class Manager:
     ]
 
     def __init__(self, host: str, port: int):
-        self.version = "5.1.0"
+        self.version = "5.1.0"        
+        self.ros_version = self.get_ros_version()
         self.__code_loaded = False
         self.exercise_id = None
         self.machine = Machine(model=self, states=Manager.states, transitions=Manager.transitions,
@@ -288,6 +289,9 @@ class Manager:
                 self.consumer.send_message(ex)
                 LogManager.logger.error(e, exc_info=True)
 
+    def get_ros_version(self):
+        output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
+        return output.decode('utf-8')
 
 if __name__ == "__main__":
     import argparse
