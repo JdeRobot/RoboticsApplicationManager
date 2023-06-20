@@ -6,7 +6,7 @@ import os
 import stat
 
 
-class LauncherRobotDisplayView(ILauncher):
+class LauncherRobotDisplayViewRos2(ILauncher):
     display: str
     internal_port: str
     external_port: str
