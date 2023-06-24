@@ -1,10 +1,10 @@
 import time
 from src.manager.manager.docker_thread.docker_thread import DockerThread
-
+import subprocess
 
 class Vnc_server:
     def start_vnc(self,display, internal_port, external_port):
-        
+
         # Start X server in display
         xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf {display}"
         xserver_thread = DockerThread(xserver_cmd)
@@ -17,7 +17,11 @@ class Vnc_server:
         x11vnc_thread.start()
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
-        novnc_cmd = f"/noVNC/utils/novnc_proxy --listen {external_port} --vnc localhost:{internal_port}"
+        if self.get_ros_version() == '2':
+            novnc_cmd = f"/noVNC/utils/novnc_proxy --listen {external_port} --vnc localhost:{internal_port}"
+        else:
+            novnc_cmd = f"/noVNC/utils/launch.sh --listen {external_port} --vnc localhost:{internal_port}"
+
         novnc_thread = DockerThread(novnc_cmd)
         novnc_thread.start()
 
@@ -29,8 +33,14 @@ class Vnc_server:
         time.sleep(1)
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
-        novnc_cmd = f"/noVNC/utils/novnc_proxy --listen {external_port} --vnc localhost:{internal_port}"
+        if self.get_ros_version() == '2':
+            novnc_cmd = f"/noVNC/utils/novnc_proxy --listen {external_port} --vnc localhost:{internal_port}"
+        else:
+            novnc_cmd = f"/noVNC/utils/launch.sh --listen {external_port} --vnc localhost:{internal_port}"
+
         novnc_thread = DockerThread(novnc_cmd)
         novnc_thread.start()
 
-
+    def get_ros_version(self):
+        output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
+        return output.decode('utf-8').strip()
