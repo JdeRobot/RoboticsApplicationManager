@@ -279,7 +279,7 @@ class Manager:
                     self.process_messsage(message)
             except Exception as e:
                 if message is not None:
-                    if message.command is "#pick":
+                    if message.command == "#pick":
                         print(message)
                         self.application.send_pick(message.data)
                     ex = ManagerConsumerMessageException(
