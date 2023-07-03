@@ -59,8 +59,6 @@ class Manager:
         # Global transitions
         {'trigger': 'disconnect', 'source': '*',
             'dest': 'idle', 'before': 'on_disconnect'},
-        #{'trigger': 'get_state', 'source': '*', 'dest': '='},
-
     ]
 
     def __init__(self, host: str, port: int):
@@ -281,6 +279,9 @@ class Manager:
                     self.process_messsage(message)
             except Exception as e:
                 if message is not None:
+                    if message.command is "#pick":
+                        print(message)
+                        self.application.send_pick(message.data)
                     ex = ManagerConsumerMessageException(
                         id=message.id, message=str(e))
                 else:

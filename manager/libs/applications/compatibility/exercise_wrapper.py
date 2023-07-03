@@ -61,6 +61,10 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             exercise_connection.send(
                 """#freq{"brain": 20, "gui": 10, "rtf": 100}""")
             time.sleep(1)
+    
+    def send_pick(self, data):
+        self.gui_connection.send("#pick" + json.dumps(data))
+        print("#pick" + json.dumps(data))
 
     def start_send_freq_thread(self):
         """Start a thread to send the frequency of the brain and gui to the exercise server"""
