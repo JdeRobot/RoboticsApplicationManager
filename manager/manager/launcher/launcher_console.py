@@ -1,12 +1,12 @@
-"""Launcher for Console"""""
-import time
 from src.manager.manager.launcher.launcher_interface import ILauncher
 from src.manager.manager.docker_thread.docker_thread import DockerThread
-
+from src.manager.manager.vnc.vnc_server import Vnc_server
+import time
+import os
+import stat
 
 
 class LauncherConsole(ILauncher):
-    """Launcher for Console"""
     display: str
     internal_port: str
     external_port: str
@@ -14,30 +14,31 @@ class LauncherConsole(ILauncher):
     threads = []
 
     def run(self, callback):
-        xserver_cmd = f"/usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf {self.display}"
-        xserver_thread = DockerThread(xserver_cmd)
-        xserver_thread.start()
-        self.threads.append(xserver_thread)
-        time.sleep(0.1)
-        # Start VNC server without password, forever running in background
-        x11vnc_cmd = f"x11vnc -display {self.display} -nopw -forever -xkb -bg -rfbport {self.internal_port}"
-        x11vnc_thread = DockerThread(x11vnc_cmd)
-        x11vnc_thread.start()
-        self.threads.append(x11vnc_thread)
+        DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
+        ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
-        # Start noVNC with default port 6080 listening to VNC server on 5900
-        novnc_cmd = f"/noVNC/utils/launch.sh --listen {self.external_port} --vnc localhost:{self.internal_port}"
-        novnc_thread = DockerThread(novnc_cmd)
-        novnc_thread.start()
-        self.threads.append(novnc_thread)
+        console_vnc = Vnc_server()
+        
+        if (ACCELERATION_ENABLED):
+            console_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port,DRI_PATH)
+            # Write display config and start the console
+            console_cmd = f"export VGL_DISPLAY={DRI_PATH}; export DISPLAY={self.display}; vglrun xterm -fullscreen -sb -fa 'Monospace' -fs 10 -bg black -fg white"
+        else:
+            console_vnc.start_vnc(self.display, self.internal_port, self.external_port)
+            # Write display config and start the console
+            console_cmd = f"export DISPLAY={self.display};xterm -geometry 100x10+0+0 -fa 'Monospace' -fs 10 -bg black -fg white"
 
-        # Write display config and start the console
-        console_cmd = "export DISPLAY=:1;xterm -geometry 100x10+0+0 -fa 'Monospace' -fs 10 -bg black -fg white"
         console_thread = DockerThread(console_cmd)
         console_thread.start()
         self.threads.append(console_thread)
 
         self.running = True
+    
+    def check_device(self, device_path):
+        try:
+            return stat.S_ISCHR(os.lstat(device_path)[stat.ST_MODE])
+        except:
+            return False
 
     def is_running(self):
         return self.running
