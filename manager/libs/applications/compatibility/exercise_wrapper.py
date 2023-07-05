@@ -23,6 +23,9 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.running = False
         self.linter = Lint()
         self.brain_ready_event = threading.Event()
+        self.exercise_command = exercise_command
+        self.gui_command = gui_command
+        self.update_callback = update_callback
         # TODO: review hardcoded values
         process_ready, self.exercise_server = self._run_exercise_server(f"python {exercise_command}",
                                                                         f'{home_dir}/ws_code.log',
@@ -127,13 +130,28 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         rosservice.call_service('/gazebo/pause_physics', [])
 
     def restart(self):
-        pass
+        # Terminate current processes
+        self.running= False
+        home_dir = os.path.expanduser('~')
+        stop_process_and_children(self.exercise_server)
+        try:
+            os.remove(f'{home_dir}/ws_code.log')
+        except OSError as error:
+            LogManager.logger.error(f"Error al eliminar el archivo log: {error}")
+            
+        process_ready,self.exercise_server = self._run_exercise_server(f"python {self.exercise_command}",
+                                                                        f'{home_dir}/ws_code.log',
+                                                                        'websocket_code=ready')
+        self.running= True
+
 
     @property
     def is_alive(self):
         return self.running
 
     def load_code(self, code: str):
+        self.restart()
+
         errors = self.linter.evaluate_code(code)
         if errors == "":
             self.brain_ready_event.clear()
