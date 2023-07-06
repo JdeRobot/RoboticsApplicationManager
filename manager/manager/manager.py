@@ -281,9 +281,8 @@ class Manager:
                 if message is not None:
                     if message.command == "#pick":
                         self.application.save_pick(message.data)
-                    else:
-                        ex = ManagerConsumerMessageException(
-                            id=message.id, message=str(e))
+                    ex = ManagerConsumerMessageException(
+                        id=message.id, message=str(e))
                 else:
                     ex = ManagerConsumerMessageException(
                         id=str(uuid4()), message=str(e))
