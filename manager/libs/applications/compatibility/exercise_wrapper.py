@@ -26,6 +26,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.exercise_command = exercise_command
         self.gui_command = gui_command
         self.update_callback = update_callback
+        self.pick = None
         # TODO: review hardcoded values
         process_ready, self.exercise_server = self._run_exercise_server(f"python {exercise_command}",
                                                                         f'{home_dir}/ws_code.log',
@@ -61,10 +62,13 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             exercise_connection.send(
                 """#freq{"brain": 20, "gui": 10, "rtf": 100}""")
             time.sleep(1)
+
+    def save_pick(self, pick):
+        self.pick = pick
     
-    def send_pick(self, data):
-        self.gui_connection.send("#pick" + json.dumps(data))
-        print("#pick" + json.dumps(data))
+    def send_pick(self, pick):
+        self.gui_connection.send("#pick" + json.dumps(pick))
+        print("#pick" + json.dumps(pick))
 
     def start_send_freq_thread(self):
         """Start a thread to send the frequency of the brain and gui to the exercise server"""
@@ -148,6 +152,8 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
                                                                         'websocket_code=ready')
         if process_ready:
             self.start_send_freq_thread()
+            if self.pick:
+                self.send_pick(self.pick)
        
 
 
