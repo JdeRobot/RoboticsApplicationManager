@@ -31,7 +31,7 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
 
     def _create_process(self, cmd):
         #print("creando procesos")
-        process = subprocess.Popen(f"{cmd}", shell=True, stdout = sys.stdout, stderr=subprocess.STDOUT, bufsize=1024, universal_newlines=True)
+        process = subprocess.Popen(f"{cmd}", shell=True, stdout = sys.stdout, stderr=subprocess.STDOUT, bufsize=1024, universal_newlines=True, cwd="/workspace/code")
         psProcess = psutil.Process(pid=process.pid)
         return psProcess
 
