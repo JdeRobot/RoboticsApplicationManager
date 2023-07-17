@@ -28,6 +28,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.update_callback = update_callback
         self.pick = None
         self.exercise_server = None
+        self.gui_server = None
         # TODO: review hardcoded values
 
 
@@ -35,18 +36,10 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             'ws://127.0.0.1:1905', 'exercise', self.server_message)
         self.exercise_connection.start()
 
-
-        process_ready, self.gui_server = self._run_exercise_server(f"python {gui_command}", f'{home_dir}/ws_gui.log',
-                                                                   'websocket_gui=ready')
-        if process_ready:
-            LogManager.logger.info(f"Exercise gui {gui_command} launched")
-            time.sleep(1)
-            self.gui_connection = Client(
+        self.gui_connection = Client(
                 'ws://127.0.0.1:2303', 'gui', self.server_message)
-            self.gui_connection.start()
-        else:
-            self.gui_server.kill()
-            raise RuntimeError(f"Exercise GUI {gui_command} could not be run")
+        self.gui_connection.start()
+      
         
 
 
@@ -137,13 +130,19 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         home_dir = os.path.expanduser('~')
         try:
             stop_process_and_children(self.exercise_server)
+            stop_process_and_children(self.gui_server)
         except Exception as error:
             print(error)
         try:
             os.remove(f'{home_dir}/ws_code.log')
+            os.remove(f'{home_dir}/ws_gui.log')
         except OSError as error:
             LogManager.logger.error(f"Error al eliminar el archivo log: {error}")
-            
+
+        process_ready, self.gui_server = self._run_exercise_server(f"python {self.gui_command}", f'{home_dir}/ws_gui.log',
+                                                                   'websocket_gui=ready')
+        time.sleep(2)
+
         process_ready,self.exercise_server = self._run_exercise_server(f"python {self.exercise_command}",
                                                                         f'{home_dir}/ws_code.log',
                                                                         'websocket_code=ready')
@@ -151,6 +150,8 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             self.start_send_freq_thread()
             if self.pick:
                 self.send_pick(self.pick)
+
+ 
         
 
     @property
