@@ -4,7 +4,7 @@ from src.manager.manager.vnc.vnc_server import Vnc_server
 import time
 import os
 import stat
-from typing import List
+from typing import List, Any
 
 
 class LauncherGazeboView(ILauncher):
@@ -15,7 +15,7 @@ class LauncherGazeboView(ILauncher):
     height: int
     width: int
     running: bool = False
-    threads: List[DockerThread] = []
+    threads: List[Any] = []
 
     def run(self, callback):
         DRI_PATH = os.path.join(

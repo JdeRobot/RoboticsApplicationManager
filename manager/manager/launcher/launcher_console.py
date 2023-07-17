@@ -4,7 +4,7 @@ from src.manager.manager.vnc.vnc_server import Vnc_server
 import time
 import os
 import stat
-from typing import List
+from typing import List, Any
 
 
 class LauncherConsole(ILauncher):
@@ -12,7 +12,7 @@ class LauncherConsole(ILauncher):
     internal_port: str
     external_port: str
     running:bool = False
-    threads: List[DockerThread] = []
+    threads: List[Any] = []
 
     def run(self, callback):
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
