@@ -27,20 +27,14 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.gui_command = gui_command
         self.update_callback = update_callback
         self.pick = None
+        self.exercise_server = None
         # TODO: review hardcoded values
-        process_ready, self.exercise_server = self._run_exercise_server(f"python {exercise_command}",
-                                                                        f'{home_dir}/ws_code.log',
-                                                                        'websocket_code=ready')
-        if process_ready:
-            LogManager.logger.info(
-                f"Exercise code {exercise_command} launched")
-            time.sleep(1)
-            self.exercise_connection = Client(
-                'ws://127.0.0.1:1905', 'exercise', self.server_message)
-            self.exercise_connection.start()
-        else:
-            self.exercise_server.kill()
-            raise RuntimeError(f"Exercise {exercise_command} could not be run")
+
+
+        self.exercise_connection = Client(
+            'ws://127.0.0.1:1905', 'exercise', self.server_message)
+        self.exercise_connection.start()
+
 
         process_ready, self.gui_server = self._run_exercise_server(f"python {gui_command}", f'{home_dir}/ws_gui.log',
                                                                    'websocket_gui=ready')
@@ -141,7 +135,10 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         # Terminate current processes
         self.stop_send_freq_thread()
         home_dir = os.path.expanduser('~')
-        stop_process_and_children(self.exercise_server)
+        try:
+            stop_process_and_children(self.exercise_server)
+        except Exception as error:
+            print(error)
         try:
             os.remove(f'{home_dir}/ws_code.log')
         except OSError as error:
@@ -154,8 +151,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             self.start_send_freq_thread()
             if self.pick:
                 self.send_pick(self.pick)
-       
-
+        
 
     @property
     def is_alive(self):
