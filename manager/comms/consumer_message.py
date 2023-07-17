@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from functools import singledispatchmethod
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -16,7 +16,7 @@ class ManagerConsumerMessage(BaseModel):
     """
     id: str
     command: str
-    data: Any
+    data: Optional[Any] = None
 
     def response(self, response: Any = None) -> ManagerConsumerMessage:
         """
