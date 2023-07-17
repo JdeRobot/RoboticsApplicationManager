@@ -139,7 +139,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             self.exercise_connection = Client(
                 'ws://127.0.0.1:1905', 'exercise', self.server_message)
             self.exercise_connection.start()
-            """ self.start_send_freq_thread() """
+            self.start_send_freq_thread()
             if self.pick:
                 self.send_pick(self.pick)
         
@@ -168,6 +168,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             raise Exception(errors)
 
     def terminate(self):
+        self.stop_send_freq_thread()
         self.running = False
         self.exercise_connection.stop()
         self.gui_connection.stop()
