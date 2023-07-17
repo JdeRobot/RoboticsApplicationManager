@@ -10,8 +10,8 @@ from typing import List, Any
 class LauncherGazeboView(ILauncher):
     exercise_id: str
     display: str
-    internal_port: str
-    external_port: str
+    internal_port: int
+    external_port: int
     height: int
     width: int
     running: bool = False

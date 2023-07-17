@@ -9,8 +9,8 @@ from typing import List, Any
 
 class LauncherConsole(ILauncher):
     display: str
-    internal_port: str
-    external_port: str
+    internal_port: int
+    external_port: int
     running:bool = False
     threads: List[Any] = []
 
