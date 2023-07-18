@@ -4,17 +4,18 @@ from src.manager.manager.vnc.vnc_server import Vnc_server
 import time
 import os
 import stat
+from typing import List, Any
 
 
 class LauncherGazeboView(ILauncher):
     exercise_id: str
     display: str
-    internal_port: str
-    external_port: str
+    internal_port: int
+    external_port: int
     height: int
     width: int
-    running = False
-    threads = []
+    running: bool = False
+    threads: List[Any] = []
 
     def run(self, callback):
         DRI_PATH = os.path.join(

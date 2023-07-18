@@ -10,7 +10,7 @@ class LauncherEngine(BaseModel):
     exercise_id: str
     launch: dict
 
-    module = '.'.join(__name__.split('.')[:-1])
+    module:str = '.'.join(__name__.split('.')[:-1])
     terminated_callback: Any = None
 
     def run(self):
