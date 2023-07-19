@@ -52,7 +52,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         
         self.running = True
 
-        self.start_send_freq_thread()
+        """ self.start_send_freq_thread() """
 
 
     def send_freq(self, exercise_connection, is_alive):
