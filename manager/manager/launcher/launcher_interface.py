@@ -2,6 +2,10 @@ from pydantic import BaseModel
 
 
 class ILauncher(BaseModel):
+
+    class Config:
+        protected_namespaces = ()
+
     def run(self, callback: callable):
         raise NotImplemented("Launcher must implement run method")
 
