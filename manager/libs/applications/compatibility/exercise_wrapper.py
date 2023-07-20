@@ -19,7 +19,6 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
     def __init__(self, exercise_command, gui_command, update_callback):
         super().__init__(update_callback)
 
-        home_dir = os.path.expanduser('~')
         self.running = False
         self.linter = Lint()
         self.brain_ready_event = threading.Event()
@@ -27,41 +26,20 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.gui_command = gui_command
         self.update_callback = update_callback
         self.pick = None
+        self.exercise_server = None
+        self.gui_server = None
+        self.exercise_connection = None
+        self.gui_connection = None
         # TODO: review hardcoded values
-        process_ready, self.exercise_server = self._run_exercise_server(f"python {exercise_command}",
-                                                                        f'{home_dir}/ws_code.log',
-                                                                        'websocket_code=ready')
-        if process_ready:
-            LogManager.logger.info(
-                f"Exercise code {exercise_command} launched")
-            time.sleep(1)
-            self.exercise_connection = Client(
-                'ws://127.0.0.1:1905', 'exercise', self.server_message)
-            self.exercise_connection.start()
-        else:
-            self.exercise_server.kill()
-            raise RuntimeError(f"Exercise {exercise_command} could not be run")
-
-        process_ready, self.gui_server = self._run_exercise_server(f"python {gui_command}", f'{home_dir}/ws_gui.log',
-                                                                   'websocket_gui=ready')
-        if process_ready:
-            LogManager.logger.info(f"Exercise gui {gui_command} launched")
-            time.sleep(1)
-            self.gui_connection = Client(
-                'ws://127.0.0.1:2303', 'gui', self.server_message)
-            self.gui_connection.start()
-        else:
-            self.gui_server.kill()
-            raise RuntimeError(f"Exercise GUI {gui_command} could not be run")
-        
 
 
     def send_freq(self, exercise_connection, is_alive):
         """Send the frequency of the brain and gui to the exercise server"""
         while self.running:
-            exercise_connection.send(
-                """#freq{"brain": 20, "gui": 10, "rtf": 100}""")
-            time.sleep(1)
+            if exercise_connection.client.sock.connected:
+                exercise_connection.send(
+                    """#freq{"brain": 20, "gui": 10, "rtf": 100}""")
+                time.sleep(1)
 
     def save_pick(self, pick):
         self.pick = pick
@@ -139,23 +117,46 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
 
     def restart(self):
         # Terminate current processes
-        self.stop_send_freq_thread()
-        home_dir = os.path.expanduser('~')
-        stop_process_and_children(self.exercise_server)
         try:
+            self.stop_send_freq_thread()
+        except Exception as error:
+            pass
+        try:
+            stop_process_and_children(self.exercise_server)
+            stop_process_and_children(self.gui_server)
+            self.exercise_connection.stop()
+            self.gui_connection.stop()
+        except Exception as error:
+            pass
+            
+        try:
+            home_dir = os.path.expanduser('~')
             os.remove(f'{home_dir}/ws_code.log')
+            os.remove(f'{home_dir}/ws_gui.log')
         except OSError as error:
             LogManager.logger.error(f"Error al eliminar el archivo log: {error}")
             
-        process_ready,self.exercise_server = self._run_exercise_server(f"python {self.exercise_command}",
+
+        process_ready_exercise,self.exercise_server = self._run_exercise_server(f"python {self.exercise_command}",
                                                                         f'{home_dir}/ws_code.log',
                                                                         'websocket_code=ready')
-        if process_ready:
-            self.start_send_freq_thread()
-            if self.pick:
-                self.send_pick(self.pick)
-       
+        if process_ready_exercise:
+            self.exercise_connection = Client(
+                'ws://127.0.0.1:1905', 'exercise', self.server_message)
+            self.exercise_connection.start()
 
+
+        process_ready_gui, self.gui_server = self._run_exercise_server(f"python {self.gui_command}", f'{home_dir}/ws_gui.log',
+                                                                   'websocket_gui=ready')
+        if process_ready_gui:
+            self.gui_connection = Client(
+                'ws://127.0.0.1:2303', 'gui', self.server_message)
+            self.gui_connection.start()
+            if self.pick:
+                time.sleep(2)
+                self.send_pick(self.pick)
+            
+    
 
     @property
     def is_alive(self):
@@ -163,7 +164,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
 
     def load_code(self, code: str):
         self.restart()
-
+        self.start_send_freq_thread()
         errors = self.linter.evaluate_code(code)
         if errors == "":
             self.brain_ready_event.clear()
@@ -173,6 +174,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             raise Exception(errors)
 
     def terminate(self):
+        self.stop_send_freq_thread()
         self.running = False
         self.exercise_connection.stop()
         self.gui_connection.stop()
