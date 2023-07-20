@@ -174,10 +174,34 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             raise Exception(errors)
 
     def terminate(self):
-        self.stop_send_freq_thread()
-        self.running = False
-        self.exercise_connection.stop()
-        self.gui_connection.stop()
+        try:
+            self.stop_send_freq_thread()
+        except Exception as error:
+            LogManager.logger.error(f"Error al detener el hilo de frecuencia: {error}")
 
-        stop_process_and_children(self.exercise_server)
-        stop_process_and_children(self.gui_server)
+        if self.exercise_connection is not None:
+            try:
+                self.exercise_connection.stop()
+            except Exception as error:
+                LogManager.logger.error(f"Error al detener la conexión del ejercicio: {error}")
+
+        if self.gui_connection is not None:
+            try:
+                self.gui_connection.stop()
+            except Exception as error:
+                LogManager.logger.error(f"Error al detener la conexión de la GUI: {error}")
+
+        if self.exercise_server is not None:
+            try:
+                stop_process_and_children(self.exercise_server)
+            except Exception as error:
+                LogManager.logger.error(f"Error al detener el servidor de ejercicio: {error}")
+
+        if self.gui_server is not None:
+            try:
+                stop_process_and_children(self.gui_server)
+            except Exception as error:
+                LogManager.logger.error(f"Error al detener el servidor de la GUI: {error}")
+
+        self.running = False
+
