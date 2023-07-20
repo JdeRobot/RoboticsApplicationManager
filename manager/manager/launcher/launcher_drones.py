@@ -28,6 +28,3 @@ class LauncherDrones(ILauncher):
 
     def died(self):
         pass
-
-    def from_config(self):
-        pass
