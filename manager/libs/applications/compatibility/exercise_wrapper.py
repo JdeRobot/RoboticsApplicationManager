@@ -19,7 +19,6 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
     def __init__(self, exercise_command, gui_command, update_callback):
         super().__init__(update_callback)
 
-        home_dir = os.path.expanduser('~')
         self.running = False
         self.linter = Lint()
         self.brain_ready_event = threading.Event()
@@ -121,20 +120,31 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         try:
             self.stop_send_freq_thread()
         except Exception as error:
-            print(error)
-        home_dir = os.path.expanduser('~')
+            pass
         try:
             stop_process_and_children(self.exercise_server)
             stop_process_and_children(self.gui_server)
             self.exercise_connection.stop()
             self.gui_connection.stop()
         except Exception as error:
-            print('THIS IS THE ERROR', error)
+            pass
+            
         try:
+            home_dir = os.path.expanduser('~')
             os.remove(f'{home_dir}/ws_code.log')
             os.remove(f'{home_dir}/ws_gui.log')
         except OSError as error:
             LogManager.logger.error(f"Error al eliminar el archivo log: {error}")
+            
+
+        process_ready_exercise,self.exercise_server = self._run_exercise_server(f"python {self.exercise_command}",
+                                                                        f'{home_dir}/ws_code.log',
+                                                                        'websocket_code=ready')
+        if process_ready_exercise:
+            self.exercise_connection = Client(
+                'ws://127.0.0.1:1905', 'exercise', self.server_message)
+            self.exercise_connection.start()
+
 
         process_ready_gui, self.gui_server = self._run_exercise_server(f"python {self.gui_command}", f'{home_dir}/ws_gui.log',
                                                                    'websocket_gui=ready')
@@ -146,14 +156,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
                 time.sleep(2)
                 self.send_pick(self.pick)
             
-        process_ready_exercise,self.exercise_server = self._run_exercise_server(f"python {self.exercise_command}",
-                                                                        f'{home_dir}/ws_code.log',
-                                                                        'websocket_code=ready')
-        if process_ready_exercise:
-            self.exercise_connection = Client(
-                'ws://127.0.0.1:1905', 'exercise', self.server_message)
-            self.exercise_connection.start()
-
+    
 
     @property
     def is_alive(self):
