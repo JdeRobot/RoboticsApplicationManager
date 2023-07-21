@@ -9,8 +9,7 @@ from src.manager.ram_logging.log_manager import LogManager
 class LauncherEngine(BaseModel):
     exercise_id: str
     launch: dict
-
-    module = '.'.join(__name__.split('.')[:-1])
+    module:str = '.'.join(__name__.split('.')[:-1])
     terminated_callback: Any = None
 
     def run(self):

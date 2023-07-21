@@ -174,6 +174,7 @@ class Manager:
         """Terminates the application and the launcher \
             and sets the variable __code_loaded to False"""
         try:
+            self.consumer.stop()
             self.application.terminate()
             self.__code_loaded = False
             self.launcher.terminate()
@@ -183,6 +184,7 @@ class Manager:
 
     def on_disconnect(self, event):
         try:
+            self.consumer.stop()
             self.__code_loaded = False
             self.application.terminate()
             self.launcher.terminate()

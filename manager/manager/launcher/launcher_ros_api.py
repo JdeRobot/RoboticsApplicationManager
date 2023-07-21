@@ -1,6 +1,7 @@
 import os
 import time
 from typing import List, Any
+from src.manager.manager.docker_thread.docker_thread import DockerThread
 import roslaunch
 import rospy
 
@@ -28,6 +29,7 @@ class LauncherRosApi(ILauncher):
     plugin_folders: List[str]
     parameters: List[str]
     launch_file: str
+    threads: List[Any] = []
 
     # holder for roslaunch process
     launch: Any = None
@@ -35,6 +37,13 @@ class LauncherRosApi(ILauncher):
 
     def run(self, callback: callable = None):
         logging.getLogger("roslaunch").setLevel(logging.CRITICAL)
+
+        # Start X server in display
+        xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf :0"
+        xserver_thread = DockerThread(xserver_cmd)
+        xserver_thread.start()
+        self.threads.append(xserver_thread)
+        time.sleep(1)
 
         # expand variables in configuration paths
         self._set_environment()
@@ -63,6 +72,9 @@ class LauncherRosApi(ILauncher):
 
     def terminate(self):
         try:
+            for thread in self.threads:
+                thread.terminate()
+                thread.join()
             self.launch.shutdown()
             self.wait_for_shutdown()
         except roslaunch.RLException:
