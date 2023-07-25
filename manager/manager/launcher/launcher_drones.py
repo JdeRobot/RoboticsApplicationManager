@@ -8,7 +8,7 @@ class LauncherDrones(ILauncher):
     type: str
     module: str
     parameters: List[str]
-    script_path: str
+    launch_file: str
     process: Any = None
 
     def run(self, callback: callable = None):
