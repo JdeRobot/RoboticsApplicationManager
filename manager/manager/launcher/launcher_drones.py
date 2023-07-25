@@ -2,6 +2,7 @@ import os
 import subprocess
 from src.manager.manager.launcher.launcher_interface import ILauncher, LauncherException
 from typing import List, Any
+import psutil
 
 class LauncherDrones(ILauncher):
     exercise_id: str
@@ -23,6 +24,9 @@ class LauncherDrones(ILauncher):
 
     def terminate(self):
         if self.process is not None and self.is_running():
+            parent = psutil.Process(self.process.pid)
+            for child in parent.children(recursive=True):  # or parent.children() for recursive=False
+                child.terminate()
             self.process.terminate()
             self.process.wait()
 
