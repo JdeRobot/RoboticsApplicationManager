@@ -167,7 +167,7 @@ class Manager:
                 "The application must be an instance of IRoboticsPythonApplication")
         params['update_callback'] = self.update
         self.application = application_class(**params)
-       """  time.sleep(1)
+        """  time.sleep(1)
         self.application.pause() """
 
     def on_terminate(self, event):

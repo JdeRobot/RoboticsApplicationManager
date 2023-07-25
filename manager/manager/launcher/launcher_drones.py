@@ -12,8 +12,8 @@ class LauncherDrones(ILauncher):
     process: Any = None
 
     def run(self, callback: callable = None):
-        self.script_path = os.path.expandvars(self.script_path)
-        self.process = subprocess.Popen(['python3', self.script_path] + self.parameters)
+        self.launch_file = os.path.expandvars(self.launch_file)
+        self.process = subprocess.Popen(['python3', self.launch_file] + self.parameters)
 
         if self.process.poll() is not None:
             raise LauncherException("Exception launching Python script")
