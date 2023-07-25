@@ -174,7 +174,6 @@ class Manager:
         """Terminates the application and the launcher \
             and sets the variable __code_loaded to False"""
         try:
-            self.consumer.stop()
             self.application.terminate()
             self.__code_loaded = False
             self.launcher.terminate()
