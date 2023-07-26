@@ -22,11 +22,8 @@ class DockerThread(threading.Thread):
 
     def terminate(self):
         """Terminates the thread and the process"""
-        print(self.process)
         if self.process:
-            print('entra')
             try:
                 os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
             except ProcessLookupError as error:
                 print(f"{self.process.pid}: Process already terminated {error}")
-        print('success')
