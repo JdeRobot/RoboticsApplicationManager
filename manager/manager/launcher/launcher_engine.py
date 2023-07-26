@@ -1,7 +1,7 @@
 from typing import Any
 
 from pydantic import BaseModel
-
+import time
 from src.manager.libs.process_utils import get_class, class_from_module
 from src.manager.ram_logging.log_manager import LogManager
 
@@ -25,6 +25,9 @@ class LauncherEngine(BaseModel):
             if launcher_type == "module":
                 launcher = self.launch_module(launcher_data)
                 self.launch[key]['launcher'] = launcher
+
+                while not launcher.is_running():
+                    time.sleep(0.5)
             elif launcher_type == "command":
                 self.launch_command(launcher_data)
             else:

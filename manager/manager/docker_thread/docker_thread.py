@@ -27,4 +27,3 @@ class DockerThread(threading.Thread):
                 os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
             except ProcessLookupError as error:
                 print(f"{self.process.pid}: Process already terminated {error}")
-               
