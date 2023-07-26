@@ -24,10 +24,8 @@ class LauncherDrones(ILauncher):
 
     def terminate(self):
         if self.process is not None and self.is_running():
-            parent = psutil.Process(self.process.pid)
-            for child in parent.children(recursive=True):  # or parent.children() for recursive=False
-                child.terminate()
-            self.process.terminate()
+            # Termina el grupo de procesos del proceso principal
+            os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
             self.process.wait()
 
     def died(self):
