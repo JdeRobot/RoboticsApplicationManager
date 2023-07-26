@@ -45,7 +45,7 @@ class Manager:
         {'trigger': 'launch', 'source': 'connected',
             'dest': 'ready', 'before': 'on_launch'},
         # Transitions for state ready
-        {'trigger': 'terminate', 'source': 'ready',
+        {'trigger': 'terminate', 'source': ['ready', 'running', 'paused'],
             'dest': 'connected', 'before': 'on_terminate'},
         {'trigger': 'load', 'source': [
             'ready', 'running', 'paused'], 'dest': 'ready', 'before': 'load_code'},
