@@ -1,8 +1,10 @@
 import os
 import subprocess
 from src.manager.manager.launcher.launcher_interface import ILauncher, LauncherException
+from src.manager.manager.docker_thread.docker_thread import DockerThread
 from typing import List, Any
 import psutil
+import threading
 
 class LauncherDrones(ILauncher):
     exercise_id: str
@@ -11,22 +13,21 @@ class LauncherDrones(ILauncher):
     parameters: List[str]
     launch_file: str
     process: Any = None
+    thread: Any = None
 
     def run(self, callback: callable = None):
         self.launch_file = os.path.expandvars(self.launch_file)
-        self.process = subprocess.Popen(['python3', self.launch_file] + self.parameters)
 
-        if self.process.poll() is not None:
-            raise LauncherException("Exception launching Python script")
+        # Inicia el proceso en un hilo separado
+        self.thread = DockerThread(f'python3 {self.launch_file}' )
+        self.thread.start()
 
     def is_running(self):
-        return self.process.poll() is None
+        return True
 
     def terminate(self):
-        if self.process is not None and self.is_running():
-            # Termina el grupo de procesos del proceso principal
-            os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
-            self.process.wait()
+        self.thread.terminate()
+        self.thread.join()
 
     def died(self):
         pass
