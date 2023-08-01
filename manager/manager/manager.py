@@ -280,8 +280,8 @@ class Manager:
                     self.process_messsage(message)
             except Exception as e:
                 if message is not None:
-                    if message.command == "#pick":
-                        self.application.save_pick(message.data)
+                    if message.command == "#gui":
+                        self.application.handle_client_gui(message.data)
                     ex = ManagerConsumerMessageException(
                         id=message.id, message=str(e))
                 else:

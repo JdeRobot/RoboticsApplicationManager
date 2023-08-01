@@ -48,6 +48,13 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.gui_connection.send("#pick" + json.dumps(pick))
         print("#pick" + json.dumps(pick))
 
+    def handle_client_gui(self, msg):
+        if msg['msg'] == "#pick":
+            self.pick = msg['data']
+        else:
+            self.gui_connection.send(msg['msg'])
+
+
     def start_send_freq_thread(self):
         """Start a thread to send the frequency of the brain and gui to the exercise server"""
         self.running = True
