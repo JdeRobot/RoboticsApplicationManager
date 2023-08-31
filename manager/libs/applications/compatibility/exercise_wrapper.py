@@ -111,6 +111,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
 
     def run(self):
         rosservice.call_service("/gazebo/unpause_physics", [])
+        self.exercise_connection.send("#play")
 
     def stop(self):
         rosservice.call_service('/gazebo/pause_physics', [])
