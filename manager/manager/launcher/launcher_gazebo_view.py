@@ -27,15 +27,16 @@ class LauncherGazeboView(ILauncher):
         gz_vnc = Vnc_server()
 
         if ACCELERATION_ENABLED:
+            self.display = ":2"
             gz_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port, DRI_PATH)
             # Write display config and start gzclient
             gzclient_cmd = (
-                f"export DISPLAY=:0; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun gzclient --verbose")
+                f"export DISPLAY={self.display}; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun gzclient --verbose")
         else:
             gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config and start gzclient
             gzclient_cmd = (
-                f"export DISPLAY=:0; {gzclient_config_cmds} gzclient --verbose")
+                f"export DISPLAY={self.display}; {gzclient_config_cmds} gzclient --verbose")
 
         # wait for vnc and gazebo servers to load properly
         if (self.exercise_id == "follow_person_newmanager"):
