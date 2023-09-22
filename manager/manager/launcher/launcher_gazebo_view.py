@@ -27,7 +27,6 @@ class LauncherGazeboView(ILauncher):
         gz_vnc = Vnc_server()
 
         if ACCELERATION_ENABLED:
-            self.display = ":2"
             gz_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port, DRI_PATH)
             # Write display config and start gzclient
             gzclient_cmd = (
