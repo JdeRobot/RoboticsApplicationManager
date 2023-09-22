@@ -99,7 +99,7 @@ class Manager:
             self.consumer.send_message({'update': data}, command="update")
 
     def on_connect(self, event):
-        self.consumer.send_message({'radi_version': subprocess.check_output(['bash', '-c', 'echo $IMAGE_TAG']), 'ros_version' : subprocess.check_output(['bash', '-c', 'echo $ROS_DISTRO'])}, command="instrospection")
+        self.consumer.send_message({'radi_version': subprocess.check_output(['bash', '-c', 'echo $IMAGE_TAG']), 'ros_version' : subprocess.check_output(['bash', '-c', 'echo $ROS_DISTRO'])}, command="introspection")
 
     def on_stop(self, event):
         self.application.stop()
