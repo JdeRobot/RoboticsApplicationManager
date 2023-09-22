@@ -5,10 +5,82 @@ import time
 from src.manager.libs.process_utils import get_class, class_from_module
 from src.manager.ram_logging.log_manager import LogManager
 
+visualization = {
+            "none": [],
+            "console": [{"module":"console",
+                    "display":":1",
+                    "external_port":1108,
+                    "internal_port":5901}],
+            "gazebo_gra": [{
+                    "type":"module",
+                    "module":"console",
+                    "display":":1",
+                    "external_port":1108,
+                    "internal_port":5901},
+                    {
+                    "type":"module",
+                    "width":1024,
+                    "height":768,
+                    "module":"gazebo_view",
+                    "display":":2",
+                    "external_port":6080,
+                    "internal_port":5900
+                    },
+                    {
+                    "type":"module",
+                    "width":1024,
+                    "height":768,
+                    "module":"robot_display_view",
+                    "display":":3",
+                    "external_port":2303,
+                    "internal_port":5902
+                    }
+                    ],
+            "gazebo_rae": [{"module":"console",
+                    "display":":1",
+                    "external_port":1108,
+                    "internal_port":5901},
+                    {
+                    "type":"module",
+                    "width":1024,
+                    "height":768,
+                    "module":"gazebo_view",
+                    "display":":2",
+                    "external_port":6080,
+                    "internal_port":5900
+                        }],
+            "physic_gra": [{"module":"console",
+                    "display":":1",
+                    "external_port":1108,
+                    "internal_port":5901},
+                    {
+                    "type":"module",
+                    "width":1024,
+                    "height":768,
+                    "module":"robot_display_view",
+                    "display":":2",
+                    "external_port":2303,
+                    "internal_port":5902
+                    }],
+            "physic_rae": [{"module":"console",
+                    "display":":1",
+                    "external_port":1108,
+                    "internal_port":5901},
+                    {
+                    "type":"module",
+                    "width":1024,
+                    "height":768,
+                    "module":"robot_display_view",
+                    "display":":2",
+                    "external_port":2303,
+                    "internal_port":5902
+                    }]     
+        }
 
 class LauncherEngine(BaseModel):
     exercise_id: str
     launch: dict
+    visualization: str
     module:str = '.'.join(__name__.split('.')[:-1])
     terminated_callback: Any = None
 
@@ -29,9 +101,15 @@ class LauncherEngine(BaseModel):
                 while not launcher.is_running():
                     time.sleep(0.5)
             elif launcher_type == "command":
-                self.launch_command(launcher_data)
+                self.launch_command(launcher_data)            
             else:
                 raise LauncherEngineException(f"Launcher type {launcher_type} not valid")
+        # Launch visualization        
+        for module in visualization[self.visualization]:
+            module["exercise_id"] = self.exercise_id
+            launcher = self.launch_module(module)
+            self.launch[str(module['module'])] = {'launcher': launcher}
+        
 
     def terminate(self):
         keys = sorted(self.launch.keys())
