@@ -61,8 +61,7 @@ class Manager:
             'dest': 'idle', 'before': 'on_disconnect'},
     ]
 
-    def __init__(self, host: str, port: int):
-        self.version = "5.1.0"        
+    def __init__(self, host: str, port: int):       
         self.ros_version = self.get_ros_version()
         self.__code_loaded = False
         self.exercise_id = None
@@ -100,7 +99,7 @@ class Manager:
             self.consumer.send_message({'update': data}, command="update")
 
     def on_connect(self, event):
-        self.consumer.send_message({'version': self.version}, command="version")
+        self.consumer.send_message({'radi_version': subprocess.check_output(['bash', '-c', 'echo $IMAGE_TAG']), 'ros_version' : subprocess.check_output(['bash', '-c', 'echo $ROS_DISTRO'])}, command="introspection")
 
     def on_stop(self, event):
         self.application.stop()
