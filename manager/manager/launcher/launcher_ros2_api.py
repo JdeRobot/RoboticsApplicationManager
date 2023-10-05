@@ -19,12 +19,18 @@ class LauncherRos2Api(ILauncher):
     parameters: List[str]
     launch_file: str
     running = False
+    threads: List[Any] = []
 
     def run(self,callback):
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
         logging.getLogger("roslaunch").setLevel(logging.CRITICAL)
+
+        xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf :0"
+        xserver_thread = DockerThread(xserver_cmd)
+        xserver_thread.start()
+        self.threads.append(xserver_thread)
 
         # expand variables in configuration paths
         self._set_environment()
