@@ -3,6 +3,7 @@ import socket
 from src.manager.manager.docker_thread.docker_thread import DockerThread
 import subprocess
 from typing import List, Any
+import os
 
 class Vnc_server:
     threads: List[Any] = []
@@ -14,7 +15,7 @@ class Vnc_server:
         xserver_thread = DockerThread(xserver_cmd)
         xserver_thread.start()
         self.threads.append(xserver_thread)
-        time.sleep(2)
+        self._wait_for_xserver()
 
         # Start VNC server without password, forever running in background
         x11vnc_cmd = f"x11vnc -quiet -display {display} -nopw -forever -xkb -bg -rfbport {internal_port}"
@@ -82,3 +83,18 @@ class Vnc_server:
     def get_ros_version(self):
         output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
         return output.decode('utf-8').strip()
+    
+    def _is_xserver_running(self, display_number):
+        x_socket_path = os.path.join("/tmp/.X11-unix/", f"X{display_number}")
+        return os.path.exists(x_socket_path)
+    
+    def _wait_for_xserver(self, display="0", timeout=30):
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            if self._is_xserver_running(display):
+                print(f"Xserver on {display} is running!")
+                return
+            print('1')
+            time.sleep(0.1)
+        print(f"Timeout: Xserver on {display} is not available after {timeout} seconds.")
+        
