@@ -7,7 +7,10 @@ from src.manager.ram_logging.log_manager import LogManager
 
 visualization = {
             "none": [],
-            "console": [{"module":"console",
+            "console": [{"type":"module",
+                    "module":"gazebo_xserver",
+                    "display":":0"},
+                    {"module":"console",
                     "display":":1",
                     "external_port":1108,
                     "internal_port":5901}],
@@ -36,7 +39,11 @@ visualization = {
                     "internal_port":5902
                     }
                     ],
-            "gazebo_rae": [{"module":"console",
+            "gazebo_rae": [{"type":"module",
+                    "module":"gazebo_xserver",
+                    "display":":0"},
+                    {"type":"module",
+                    "module":"console",
                     "display":":1",
                     "external_port":1108,
                     "internal_port":5901},
