@@ -206,7 +206,7 @@ class Manager:
 
     def load_code(self, event):
         self.application.pause()
-        self.code_loaded = False
+        self.__code_loaded = False
         LogManager.logger.info("Internal transition load_code executed")
         message_data = event.kwargs.get('data', {})
         
@@ -234,7 +234,7 @@ class Manager:
             except Exception as e:
                 file.write("An error occurred while opening zip_path as r:" + str(e))
         
-        self.code_loaded = True
+        self.__code_loaded = True
 
     def code_loaded(self, event):
         return self.__code_loaded

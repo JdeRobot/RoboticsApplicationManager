@@ -1,6 +1,8 @@
 from src.manager.manager.launcher.launcher_interface import ILauncher
 from src.manager.manager.docker_thread.docker_thread import DockerThread
 from src.manager.manager.vnc.vnc_server import Vnc_server
+from src.manager.libs.process_utils import wait_for_process_to_start
+import subprocess
 import time
 import os
 import stat
@@ -31,25 +33,26 @@ class LauncherGazeboView(ILauncher):
         
 
         if ACCELERATION_ENABLED:
+            # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port, DRI_PATH)
             # Write display config and start gzclient
             gzclient_cmd = (
                 f"export DISPLAY={self.display}; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun gzclient --verbose")
         else:
+            # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config and start gzclient
             gzclient_cmd = (
                 f"export DISPLAY={self.display}; {gzclient_config_cmds} gzclient --verbose")
 
-        # wait for vnc and gazebo servers to load properly
-        if (self.exercise_id == "follow_person_newmanager"):
-            time.sleep(6)
-        else:
-            time.sleep(0.1)
+
 
         gzclient_thread = DockerThread(gzclient_cmd)
         gzclient_thread.start()
         self.threads.append(gzclient_thread)
+
+        process_name = "gzclient"
+        wait_for_process_to_start(process_name, timeout=60)
 
         self.running = True
 
@@ -63,10 +66,8 @@ class LauncherGazeboView(ILauncher):
         return self.running
 
     def terminate(self):
-        print('terminating gz')
         self.gz_vnc.terminate()
         for thread in self.threads:
-            print('terminating in gazebo')
             thread.terminate()
             thread.join()
         self.running = False
