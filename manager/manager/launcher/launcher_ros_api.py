@@ -2,8 +2,11 @@ import os
 import time
 from typing import List, Any
 from src.manager.manager.docker_thread.docker_thread import DockerThread
+from src.manager.libs.process_utils import wait_for_xserver
+from src.manager.libs.process_utils import wait_for_process_to_start
 import roslaunch
 import rospy
+import subprocess
 
 from src.manager.manager.launcher.launcher_interface import ILauncher, LauncherException
 
@@ -42,6 +45,7 @@ class LauncherRosApi(ILauncher):
         xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf :0"
         xserver_thread = DockerThread(xserver_cmd)
         xserver_thread.start()
+        wait_for_xserver(":0")
         self.threads.append(xserver_thread)
         time.sleep(1)
 
@@ -54,6 +58,10 @@ class LauncherRosApi(ILauncher):
         roslaunch.configure_logging(uuid)
         self.launch = roslaunch.parent.ROSLaunchParent(uuid, [launch_file], process_listeners=[self.listener])
         self.launch.start()
+
+        wait_for_process_to_start("rosmaster", timeout=60)
+        wait_for_process_to_start("gzserver", timeout=60)
+
 
         if not self.launch.pm.is_alive():
             raise LauncherException("Exception launching ROS")
@@ -77,7 +85,7 @@ class LauncherRosApi(ILauncher):
                 thread.join()
             self.launch.shutdown()
             self.wait_for_shutdown()
-        except roslaunch.RLException:
+        except Exception as e:
             print("Exception shutting down ROS")
 
     def _set_environment(self):

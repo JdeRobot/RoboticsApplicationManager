@@ -2,19 +2,27 @@ import time
 import socket
 from src.manager.manager.docker_thread.docker_thread import DockerThread
 import subprocess
+from typing import List, Any
+import os
+from src.manager.libs.process_utils import wait_for_xserver
 
 class Vnc_server:
+    threads: List[Any] = []
+    running: bool = False
+
     def start_vnc(self, display, internal_port, external_port):
         # Start X server in display
         xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf {display}"
         xserver_thread = DockerThread(xserver_cmd)
         xserver_thread.start()
-        time.sleep(2)
+        self.threads.append(xserver_thread)
+        wait_for_xserver(display)
 
         # Start VNC server without password, forever running in background
         x11vnc_cmd = f"x11vnc -quiet -display {display} -nopw -forever -xkb -bg -rfbport {internal_port}"
         x11vnc_thread = DockerThread(x11vnc_cmd)
         x11vnc_thread.start()
+        self.threads.append(x11vnc_thread)
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
         if self.get_ros_version() == '2':
@@ -24,6 +32,8 @@ class Vnc_server:
 
         novnc_thread = DockerThread(novnc_cmd)
         novnc_thread.start()
+        self.threads.append(novnc_thread)
+        self.running = True
 
         self.wait_for_port("localhost", internal_port)
 
@@ -59,6 +69,18 @@ class Vnc_server:
             except (ConnectionRefusedError, TimeoutError):
                 time.sleep(1)
 
+    def is_running(self):
+        return self.running
+
+
+    def terminate(self):
+        for thread in self.threads:
+            thread.terminate()
+            thread.join()
+            self.running = False
+        
+
     def get_ros_version(self):
         output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
         return output.decode('utf-8').strip()
+    

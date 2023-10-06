@@ -1,6 +1,8 @@
 from src.manager.manager.launcher.launcher_interface import ILauncher
 from src.manager.manager.docker_thread.docker_thread import DockerThread
 from src.manager.manager.vnc.vnc_server import Vnc_server
+from src.manager.libs.process_utils import wait_for_process_to_start
+import subprocess
 import time
 import os
 import stat
@@ -16,6 +18,10 @@ class LauncherGazeboView(ILauncher):
     width: int
     running: bool = False
     threads: List[Any] = []
+    gz_vnc: Any = Vnc_server()
+    
+    
+        
 
     def run(self, callback):
         DRI_PATH = os.path.join(
@@ -24,28 +30,29 @@ class LauncherGazeboView(ILauncher):
 
         # Configure browser screen width and height for gzclient
         gzclient_config_cmds = f"echo [geometry] > ~/.gazebo/gui.ini; echo x=0 >> ~/.gazebo/gui.ini; echo y=0 >> ~/.gazebo/gui.ini; echo width={self.width} >> ~/.gazebo/gui.ini; echo height={self.height} >> ~/.gazebo/gui.ini;"
-        gz_vnc = Vnc_server()
+        
 
         if ACCELERATION_ENABLED:
-            gz_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port, DRI_PATH)
+            # Starts xserver, x11vnc and novnc
+            self.gz_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port, DRI_PATH)
             # Write display config and start gzclient
             gzclient_cmd = (
                 f"export DISPLAY={self.display}; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun gzclient --verbose")
         else:
-            gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
+            # Starts xserver, x11vnc and novnc
+            self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config and start gzclient
             gzclient_cmd = (
                 f"export DISPLAY={self.display}; {gzclient_config_cmds} gzclient --verbose")
 
-        # wait for vnc and gazebo servers to load properly
-        if (self.exercise_id == "follow_person_newmanager"):
-            time.sleep(6)
-        else:
-            time.sleep(0.1)
+
 
         gzclient_thread = DockerThread(gzclient_cmd)
         gzclient_thread.start()
         self.threads.append(gzclient_thread)
+
+        process_name = "gzclient"
+        wait_for_process_to_start(process_name, timeout=60)
 
         self.running = True
 
@@ -59,6 +66,7 @@ class LauncherGazeboView(ILauncher):
         return self.running
 
     def terminate(self):
+        self.gz_vnc.terminate()
         for thread in self.threads:
             thread.terminate()
             thread.join()

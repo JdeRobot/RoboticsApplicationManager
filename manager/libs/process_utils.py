@@ -2,8 +2,10 @@
 # This should be moved to a utils library
 import importlib.util
 import os.path
+import time
 import sys
 from subprocess import Popen
+import subprocess
 
 import psutil
 
@@ -63,3 +65,63 @@ def singleton(cls):
             instances[cls] = cls()
         return instances[cls]
     return get_instance()
+
+
+def is_xserver_running(display):
+    """
+    Check whether the X server is running on a given display.
+
+    This function checks the existence of a Unix domain socket which X server
+    typically creates to communicate with clients. If the socket exists,
+    it is assumed that X server is running.s"""
+    display_number = display[1:]
+    x_socket_path = os.path.join("/tmp/.X11-unix/", f"X{display_number}")
+    return os.path.exists(x_socket_path)
+
+def wait_for_xserver(display, timeout=30):
+    """
+    Wait for the X server to start within a specified timeout period.
+
+    This function continuously checks if the X server is running on the specified
+    display by checking the existence of the Unix domain socket associated with the X server.
+    It waits until the X server is available or until the timeout is reached, 
+    whichever comes first."""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        if is_xserver_running(display):
+            print(f"Xserver on {display} is running!")
+            return
+        time.sleep(0.1)
+    print(f"Timeout: Xserver on {display} is not available after {timeout} seconds.")
+
+def is_process_running(process_name):
+    """
+    Check if a process with the specified name is currently running.
+
+    Parameters:
+    - process_name (str): The name of the process to check for.
+    """
+    try:
+        process = subprocess.Popen(["pgrep", "-f", process_name], stdout=subprocess.PIPE)
+        # Este comando devuelve el PID si existe, o nada si no existe
+        process_return = process.communicate()[0]
+        return process_return != b''
+    except subprocess.CalledProcessError:
+        # El proceso no está corriendo
+        return False
+
+def wait_for_process_to_start(process_name, timeout=60):
+    """
+    Wait for a specified process to start for up to a defined timeout.
+    Parameters:
+    - process_name (str): The name of the process to wait for.
+    - timeout (int, optional): The number of seconds to wait before giving up. Default is 60.
+    """
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        if is_process_running(process_name):
+            print(f"{process_name} is running!")
+            return True
+        time.sleep(1)
+    print(f"Timeout: {process_name} did not start within {timeout} seconds.")
+    return False

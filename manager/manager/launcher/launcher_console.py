@@ -13,20 +13,21 @@ class LauncherConsole(ILauncher):
     external_port: int
     running:bool = False
     threads: List[Any] = []
+    console_vnc: Any = Vnc_server()
 
     def run(self, callback):
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
         #ACCELERATION_ENABLED = self.check_device(DRI_PATH)
         ACCELERATION_ENABLED = False
 
-        console_vnc = Vnc_server()
+        
         
         if (ACCELERATION_ENABLED):
-            console_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port,DRI_PATH)
+            self.console_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port,DRI_PATH)
             # Write display config and start the console
             console_cmd = f"export VGL_DISPLAY={DRI_PATH}; export DISPLAY={self.display}; vglrun xterm -fullscreen -sb -fa 'Monospace' -fs 10 -bg black -fg white"
         else:
-            console_vnc.start_vnc(self.display, self.internal_port, self.external_port)
+            self.console_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config and start the console
             console_cmd = f"export DISPLAY={self.display};xterm -geometry 100x10+0+0 -fa 'Monospace' -fs 10 -bg black -fg white"
 
@@ -46,6 +47,7 @@ class LauncherConsole(ILauncher):
         return self.running
 
     def terminate(self):
+        self.console_vnc.terminate()
         for thread in self.threads:
             thread.terminate()
             thread.join()
