@@ -9,6 +9,7 @@ class LauncherDronesRos2(ILauncher):
     exercise_id: str
     type: str
     module: str
+    display: str
     resource_folders: List[str]
     model_folders: List[str]
     plugin_folders: List[str]
@@ -30,7 +31,7 @@ class LauncherDronesRos2(ILauncher):
         self.threads.append(as2_launch_thread)
 
         # Launching gzserver and PX4
-        px4_launch_cmd = f"$AS2_GZ_ASSETS_SCRIPT_PATH/default_run.sh {world_file}"
+        px4_launch_cmd = f"$AS2_GZ_ASSETS_SCRIPT_PATH/default_run.sh {world_file} {self.display}"
 
         px4_launch_thread = DockerThread(px4_launch_cmd)
         px4_launch_thread.start()
