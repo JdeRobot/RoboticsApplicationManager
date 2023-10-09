@@ -47,7 +47,7 @@ class LauncherRosApi(ILauncher):
         xserver_thread.start()
         wait_for_xserver(":0")
         self.threads.append(xserver_thread)
-        time.sleep(1)
+        
 
         # expand variables in configuration paths
         self._set_environment()
