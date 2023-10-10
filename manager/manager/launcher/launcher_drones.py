@@ -14,7 +14,10 @@ class LauncherDrones(ILauncher):
     parameters: List[str]
     launch_file: str
     process: Any = None
-    thread: Any = None
+    threads: List[Any] = []
+
+    # holder for roslaunch process
+    launch: Any = None
 
     def run(self, callback: callable = None):
         # Start X server in display
@@ -26,8 +29,9 @@ class LauncherDrones(ILauncher):
         self.launch_file = os.path.expandvars(self.launch_file)
 
         # Inicia el proceso en un hilo separado
-        self.thread = DockerThread(f'python3 {self.launch_file}' )
-        self.thread.start()
+        self.launch = DockerThread(f'python3 {self.launch_file}' )
+        self.launch.start()
+        self.threads.append(self.launch)
 
     def is_running(self):
         return True
