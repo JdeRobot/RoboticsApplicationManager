@@ -42,7 +42,8 @@ class Vnc_server:
         turbovnc_cmd = f"export VGL_DISPLAY={dri_path} && export TVNC_WM=startlxde && /opt/TurboVNC/bin/vncserver {display} -geometry '1920x1080' -vgl -noreset -SecurityTypes None -rfbport {internal_port}"
         turbovnc_thread = DockerThread(turbovnc_cmd)
         turbovnc_thread.start()
-        time.sleep(2)
+        self.threads.append(turbovnc_thread)
+        wait_for_xserver(display)
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
         if self.get_ros_version() == '2':
@@ -52,6 +53,8 @@ class Vnc_server:
 
         novnc_thread = DockerThread(novnc_cmd)
         novnc_thread.start()
+        self.threads.append(novnc_thread)
+        self.running = True
 
         self.wait_for_port("localhost", internal_port)
 
