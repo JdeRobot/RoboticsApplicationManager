@@ -6,6 +6,7 @@ import time
 import sys
 from subprocess import Popen
 import subprocess
+import stat
 
 import psutil
 
@@ -125,3 +126,12 @@ def wait_for_process_to_start(process_name, timeout=60):
         time.sleep(1)
     print(f"Timeout: {process_name} did not start within {timeout} seconds.")
     return False
+
+def check_gpu_acceleration():
+    DRI_PATH = os.path.join(
+            "/dev/dri", os.environ.get("DRI_NAME", "card0"))
+    try:
+        return stat.S_ISCHR(os.lstat(DRI_PATH)[stat.ST_MODE])
+    except Exception as e:
+        return False
+    
