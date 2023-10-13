@@ -1,7 +1,7 @@
 from src.manager.manager.launcher.launcher_interface import ILauncher
 from src.manager.manager.docker_thread.docker_thread import DockerThread
 from src.manager.manager.vnc.vnc_server import Vnc_server
-from src.manager.libs.process_utils import wait_for_process_to_start
+from src.manager.libs.process_utils import wait_for_process_to_start, check_gpu_acceleration
 import subprocess
 import time
 import os
@@ -26,7 +26,7 @@ class LauncherGazeboView(ILauncher):
     def run(self, callback):
         DRI_PATH = os.path.join(
             "/dev/dri", os.environ.get("DRI_NAME", "card0"))
-        ACCELERATION_ENABLED = self.check_device(DRI_PATH)
+        ACCELERATION_ENABLED = check_gpu_acceleration()
 
         # Configure browser screen width and height for gzclient
         gzclient_config_cmds = f"echo [geometry] > ~/.gazebo/gui.ini; echo x=0 >> ~/.gazebo/gui.ini; echo y=0 >> ~/.gazebo/gui.ini; echo width={self.width} >> ~/.gazebo/gui.ini; echo height={self.height} >> ~/.gazebo/gui.ini;"
