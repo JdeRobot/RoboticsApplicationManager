@@ -1,7 +1,7 @@
 from src.manager.manager.launcher.launcher_interface import ILauncher
 from src.manager.manager.docker_thread.docker_thread import DockerThread
 from src.manager.manager.vnc.vnc_server import Vnc_server
-import time
+from src.manager.libs.process_utils import  check_gpu_acceleration
 import os
 import stat
 from typing import List, Any
@@ -17,7 +17,6 @@ class LauncherConsole(ILauncher):
 
     def run(self, callback):
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
-        #ACCELERATION_ENABLED = self.check_device(DRI_PATH)
         ACCELERATION_ENABLED = False
 
         

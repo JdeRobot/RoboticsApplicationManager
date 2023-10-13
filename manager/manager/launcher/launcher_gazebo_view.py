@@ -1,7 +1,7 @@
 from src.manager.manager.launcher.launcher_interface import ILauncher
 from src.manager.manager.docker_thread.docker_thread import DockerThread
 from src.manager.manager.vnc.vnc_server import Vnc_server
-from src.manager.libs.process_utils import wait_for_process_to_start
+from src.manager.libs.process_utils import wait_for_process_to_start, check_gpu_acceleration
 import subprocess
 import time
 import os

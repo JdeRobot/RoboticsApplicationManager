@@ -58,6 +58,9 @@ class Vnc_server:
 
         self.wait_for_port("localhost", internal_port)
 
+        self.create_desktop_icon()
+        self.create_gzclient_icon()
+
 
     def wait_for_port(self, host, port, timeout=20):
         start_time = time.time()
@@ -87,3 +90,42 @@ class Vnc_server:
         output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
         return output.decode('utf-8').strip()
     
+    def create_desktop_icon(self):
+        try:
+            desktop_dir = os.path.expanduser('~/Desktop')
+            if not os.path.exists(desktop_dir):
+             os.makedirs(desktop_dir)
+            desktop_path = os.path.join(desktop_dir, 'terminal_launcher.desktop')
+            with open(desktop_path, 'w') as f:
+                f.write("""[Desktop Entry]
+                    Name=Open Terminal
+                    Exec=xterm
+                    Icon=utilities-terminal
+                    Type=Application
+                    Encoding=UTF-8
+                    Terminal=false
+                    Categories=None;""")
+            os.chmod(desktop_path, 0o755)
+        except Exception as err:
+            print(err)
+
+    def create_gzclient_icon(self):
+        desktop_dir = os.path.expanduser('~/Desktop')
+        if not os.path.exists(desktop_dir):
+            os.makedirs(desktop_dir)
+        desktop_path = os.path.join(desktop_dir, 'gzclient_launcher.desktop')
+
+        try:
+            with open(desktop_path, 'w') as f:
+                f.write("""[Desktop Entry]
+    Name=Gazebo Client
+    Exec=gzclient
+    Icon=gazebo
+    Type=Application
+    Encoding=UTF-8
+    Terminal=false
+    Categories=None;""")
+            os.chmod(desktop_path, 0o755)
+            print("Icono de gzclient creado con éxito en el escritorio.")
+        except Exception as e:
+            print(f"Error al crear el icono de gzclient: {e}")

@@ -57,6 +57,10 @@ class LauncherRos2Api(ILauncher):
 
     def terminate(self):
         if self.is_running():
+            for thread in self.threads:
+                thread.terminate()
+                thread.join()
+                
             kill_cmd = 'pkill -9 -f '
             cmd = kill_cmd + 'gzserver'
             subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1024, universal_newlines=True)

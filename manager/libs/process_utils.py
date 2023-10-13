@@ -6,6 +6,7 @@ import time
 import sys
 from subprocess import Popen
 import subprocess
+import stat
 
 import psutil
 
@@ -125,3 +126,22 @@ def wait_for_process_to_start(process_name, timeout=60):
         time.sleep(1)
     print(f"Timeout: {process_name} did not start within {timeout} seconds.")
     return False
+
+def check_gpu_acceleration():
+    try:
+        # Verifica si /dev/dri existe
+        if not os.path.exists("/dev/dri"):
+            print("/dev/dri does not exist. No direct GPU access.")
+            return False
+
+        # Obtiene la salida de glxinfo
+        result = subprocess.check_output("glxinfo | grep direct", shell=True).decode('utf-8')
+        print(result)
+        
+        # Verifica si la aceleración directa está habilitada
+        return "direct rendering: Yes" in result
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+    
