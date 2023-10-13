@@ -12,7 +12,7 @@ class Vnc_server:
 
     def start_vnc(self, display, internal_port, external_port):
         # Start X server in display
-        xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log {display}"
+        xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf {display}"
         xserver_thread = DockerThread(xserver_cmd)
         xserver_thread.start()
         self.threads.append(xserver_thread)

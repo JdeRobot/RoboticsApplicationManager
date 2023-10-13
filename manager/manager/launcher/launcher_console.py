@@ -17,7 +17,7 @@ class LauncherConsole(ILauncher):
 
     def run(self, callback):
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
-        ACCELERATION_ENABLED = check_gpu_acceleration()
+        ACCELERATION_ENABLED = False
 
         
         

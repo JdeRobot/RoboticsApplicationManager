@@ -26,7 +26,7 @@ class LauncherGazeboView(ILauncher):
     def run(self, callback):
         DRI_PATH = os.path.join(
             "/dev/dri", os.environ.get("DRI_NAME", "card0"))
-        ACCELERATION_ENABLED = check_gpu_acceleration()
+        ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
         # Configure browser screen width and height for gzclient
         gzclient_config_cmds = f"echo [geometry] > ~/.gazebo/gui.ini; echo x=0 >> ~/.gazebo/gui.ini; echo y=0 >> ~/.gazebo/gui.ini; echo width={self.width} >> ~/.gazebo/gui.ini; echo height={self.height} >> ~/.gazebo/gui.ini;"
