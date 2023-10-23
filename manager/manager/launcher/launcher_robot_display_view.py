@@ -4,7 +4,7 @@ from src.manager.manager.vnc.vnc_server import Vnc_server
 import time
 import os
 import stat
-
+from typing import List, Any
 
 class LauncherRobotDisplayView(ILauncher):
     display: str
@@ -12,8 +12,9 @@ class LauncherRobotDisplayView(ILauncher):
     external_port: str
     height: int
     width: int
-    running = False
-    threads = []
+    running: bool = False
+    threads: List[Any] = []
+
 
     def run(self, callback):
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
@@ -23,18 +24,11 @@ class LauncherRobotDisplayView(ILauncher):
         
         if (ACCELERATION_ENABLED):
             robot_display_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port,DRI_PATH)
-            # Write display config and start the console
-            console_cmd = f"export VGL_DISPLAY={DRI_PATH}; export DISPLAY={self.display}; /usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf {self.display}"
+
         else:
             robot_display_vnc.start_vnc(self.display, self.internal_port, self.external_port)
-            # Write display config and start the console
-            console_cmd = f"export DISPLAY={self.display};/usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf {self.display}"
 
-        console_thread = DockerThread(console_cmd)
-        console_thread.start()
-        self.threads.append(console_thread)
-
-        self.running = True        
+        self.running = True
 
     def check_device(self, device_path):
         try:
