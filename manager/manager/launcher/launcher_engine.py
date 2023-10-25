@@ -1,9 +1,49 @@
-from typing import Any
+from typing import List, Any
 
 from pydantic import BaseModel
 import time
 from src.manager.libs.process_utils import get_class, class_from_module
 from src.manager.ram_logging.log_manager import LogManager
+
+worlds = {
+            "gazebo": 
+                {"1": [{
+                    "type": "module",
+                    "module": "ros_api",
+                    "resource_folders": [],
+                    "model_folders": [],
+                    "plugin_folders": [],
+                    "parameters": [],
+                    "launch_file": [],
+                }], "2": [{
+                    "type": "module",
+                    "module": "ros2_api",
+                    "resource_folders": [],
+                    "model_folders": [],
+                    "plugin_folders": [],
+                    "parameters": [],      
+                    "launch_file": [],
+                }]},
+            "drones": 
+                {"1": [{
+                    "type": "module",
+                    "module": "drones",
+                    "resource_folders": [],
+                    "model_folders": [],
+                    "plugin_folders": [],
+                    "parameters": [],
+                    "launch_file": [],
+                }], "2": [{
+                    "type": "module",
+                    "module": "drones_ros2",
+                    "resource_folders": [],
+                    "model_folders": [],
+                    "plugin_folders": [],
+                    "parameters": [],      
+                    "launch_file": [],
+                }]},
+            "physical": {}
+            }
 
 visualization = {
             "none": [],
@@ -80,13 +120,27 @@ visualization = {
 
 class LauncherEngine(BaseModel):
     exercise_id: str
+    ros_version: int
     launch: dict
+    world: str
+    resource_folders: str
+    model_folders: str
+    launch_file: str
     visualization: str
     module:str = '.'.join(__name__.split('.')[:-1])
     terminated_callback: Any = None
 
     def run(self):
         keys = sorted(self.launch.keys())
+        # Launch world
+        for module in worlds[self.world][str(self.ros_version)]:
+            module["exercise_id"] = self.exercise_id
+            module["resource_folders"] = [self.resource_folders]
+            module["model_folders"] = [self.model_folders]
+            module["launch_file"] = self.launch_file
+            launcher = self.launch_module(module)
+            self.launch[str(module['module'])] = {'launcher': launcher}
+        # Launch plugins
         for key in keys:
             launcher_data = self.launch[key]
             launcher_type = launcher_data['type']
@@ -105,7 +159,7 @@ class LauncherEngine(BaseModel):
                 self.launch_command(launcher_data)            
             else:
                 raise LauncherEngineException(f"Launcher type {launcher_type} not valid")
-        # Launch visualization        
+        # Launch visualization
         for module in visualization[self.visualization]:
             module["exercise_id"] = self.exercise_id
             launcher = self.launch_module(module)
