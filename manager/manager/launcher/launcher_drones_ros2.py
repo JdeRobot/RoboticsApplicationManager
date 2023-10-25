@@ -13,7 +13,7 @@ class LauncherDronesRos2(ILauncher):
     resource_folders: List[str]
     model_folders: List[str]
     plugin_folders: List[str]
-    world_file: str
+    launch_file: str
     running = False
     threads: List[Any] = []
 
@@ -27,7 +27,7 @@ class LauncherDronesRos2(ILauncher):
 
         # expand variables in configuration paths
         self._set_environment()
-        world_file = os.path.expandvars(self.world_file)
+        world_file = os.path.expandvars(self.launch_file)
 
         # Launching MicroXRCE and Aerostack2 nodes
         as2_launch_cmd = f"ros2 launch jderobot_drones as2_default_classic_gazebo.launch.py world_file:={world_file}"

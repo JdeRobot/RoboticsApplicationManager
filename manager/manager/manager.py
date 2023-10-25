@@ -117,6 +117,7 @@ class Manager:
                 self.terminate()
 
         configuration = event.kwargs.get('data', {})
+        configuration['ros_version'] = self.ros_version
 
         # generate exercise_folder environment variable
         self.exercise_id = configuration['exercise_id']
@@ -292,7 +293,7 @@ class Manager:
 
     def get_ros_version(self):
         output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
-        return output.decode('utf-8')
+        return output.decode('utf-8')[0]
 
 if __name__ == "__main__":
     import argparse
