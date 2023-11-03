@@ -37,8 +37,12 @@ class LauncherDrones(ILauncher):
         return True
 
     def terminate(self):
-        self.thread.terminate()
-        self.thread.join()
+        try:
+            for thread in self.threads:
+                thread.terminate()
+                thread.join()
+        except Exception as e:
+            print("Exception shutting down ROS")
 
     def died(self):
         pass
