@@ -67,6 +67,12 @@ class Lint:
                 result = result[:eof_exception.start()] + \
                     result[eof_exception.end():]
 
+            # Removes ompl E1101 error
+            ompl_error = re.search(r":[0-9]+: error \(E1101, no-member, \) Module 'ompl.*\n", result)
+            if (ompl_error != None):
+                result = result[:ompl_error.start()] + \
+                    result[ompl_error.end():]
+
             # Removes no value for argument 'self' error
             self_exception = re.search(
                 ":[0-9]+:.*value.*argument.*unbound.*method.*\n", result)
