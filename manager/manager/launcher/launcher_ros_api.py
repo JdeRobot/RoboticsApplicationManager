@@ -81,11 +81,13 @@ class LauncherRosApi(ILauncher):
     def terminate(self):
         try:
             for thread in self.threads:
+                print('terminating', thread)
                 thread.terminate()
                 thread.join()
             self.launch.shutdown()
             self.wait_for_shutdown()
         except Exception as e:
+            print(e)
             print("Exception shutting down ROS")
 
     def _set_environment(self):
