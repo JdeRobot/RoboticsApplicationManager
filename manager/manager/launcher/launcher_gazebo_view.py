@@ -65,7 +65,10 @@ class LauncherGazeboView(ILauncher):
         return self.running
 
     def terminate(self):
-        self.gz_vnc.terminate()
+        try:
+            self.gz_vnc.terminate()
+        except Exception as e:
+            print('Error terminating gz_vnc:', e)
         for thread in self.threads:
             thread.terminate()
             thread.join()
