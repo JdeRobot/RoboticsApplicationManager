@@ -71,6 +71,7 @@ class LauncherRosApi(ILauncher):
     
     def wait_for_shutdown(self, timeout=30):
         print("Waiting for ROS and Gazebo to shutdown")
+    
         start_time = rospy.Time.now().to_sec()
         while not rospy.is_shutdown() and self.is_running():
             if rospy.Time.now().to_sec() - start_time > timeout:
@@ -80,13 +81,19 @@ class LauncherRosApi(ILauncher):
 
     def terminate(self):
         try:
-            for thread in self.threads:
-                thread.terminate()
-                thread.join()
-            self.launch.shutdown()
-            self.wait_for_shutdown()
+            if self.is_running():
+                for thread in self.threads:
+                    if thread.is_alive():
+                        print('Terminating thread:', thread)
+                        thread.terminate()
+                        thread.join()
+                self.launch.shutdown()
+                self.wait_for_shutdown()
+            else:
+                print("ROS launch is not running, skipping termination.")
         except Exception as e:
-            print("Exception shutting down ROS")
+            print(e)
+            print("Exception occurred while shutting down ROS")
 
     def _set_environment(self):
         resource_folders = [os.path.expandvars(path) for path in self.resource_folders]
