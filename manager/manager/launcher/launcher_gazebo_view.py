@@ -26,6 +26,7 @@ class LauncherGazeboView(ILauncher):
 
         # Configure browser screen width and height for gzclient
         gzclient_config_cmds = f"echo [geometry] > ~/.gazebo/gui.ini; echo x=0 >> ~/.gazebo/gui.ini; echo y=0 >> ~/.gazebo/gui.ini; echo width={self.width} >> ~/.gazebo/gui.ini; echo height={self.height} >> ~/.gazebo/gui.ini;"
+        gzclient_config_cmds = ""
 
         if ACCELERATION_ENABLED:
             # Starts xserver, x11vnc and novnc

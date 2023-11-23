@@ -31,6 +31,7 @@ class LauncherDronesRos2(ILauncher):
         # Launching MicroXRCE and Aerostack2 nodes
         as2_launch_cmd = f"ros2 launch jderobot_drones as2_default_classic_gazebo.launch.py world_file:={world_file}"
         as2_launch_cmd = "ros2 launch ros_gz_sim gz_sim.launch.py gz_args:='empty.sdf -s'"
+        as2_launch_cmd = f"ros2 launch as2_ign_gazebo_assets launch_simulation.py world_file:={world_file} verbose:=true headless:=true"
 
         as2_launch_thread = DockerThread(as2_launch_cmd)
         as2_launch_thread.start()
