@@ -40,7 +40,7 @@ class LauncherRosApi(ILauncher):
 
     def run(self, callback: callable = None):
         logging.getLogger("roslaunch").setLevel(logging.CRITICAL)
-
+        rospy.init_node('my_ros_node', anonymous=True)
         # Start X server in display
         xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf :0"
         xserver_thread = DockerThread(xserver_cmd)
