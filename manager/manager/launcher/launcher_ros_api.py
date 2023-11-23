@@ -82,13 +82,16 @@ class LauncherRosApi(ILauncher):
     def terminate(self):
         try:
             if self.is_running():
-                for thread in self.threads:
+                try:
+                    self.launch.shutdown()
+                    self.wait_for_shutdown()
+                except Exception as e:
+                    print(e)
+                for thread in reversed(self.threads):
                     if thread.is_alive():
                         print('Terminating thread:', thread)
                         thread.terminate()
                         thread.join()
-                self.launch.shutdown()
-                self.wait_for_shutdown()
             else:
                 print("ROS launch is not running, skipping termination.")
         except Exception as e:
