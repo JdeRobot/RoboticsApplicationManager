@@ -19,9 +19,6 @@ class LauncherGazeboView(ILauncher):
     running: bool = False
     threads: List[Any] = []
     gz_vnc: Any = Vnc_server()
-    
-    
-        
 
     def run(self, callback):
         DRI_PATH = self.get_dri_path()
@@ -29,22 +26,21 @@ class LauncherGazeboView(ILauncher):
 
         # Configure browser screen width and height for gzclient
         gzclient_config_cmds = f"echo [geometry] > ~/.gazebo/gui.ini; echo x=0 >> ~/.gazebo/gui.ini; echo y=0 >> ~/.gazebo/gui.ini; echo width={self.width} >> ~/.gazebo/gui.ini; echo height={self.height} >> ~/.gazebo/gui.ini;"
-        
 
         if ACCELERATION_ENABLED:
             # Starts xserver, x11vnc and novnc
-            self.gz_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port, DRI_PATH)
+            self.gz_vnc.start_vnc_gpu(
+                self.display, self.internal_port, self.external_port, DRI_PATH)
             # Write display config and start gzclient
             gzclient_cmd = (
-                f"export DISPLAY={self.display}; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun gzclient --verbose")
+                f"export DISPLAY={self.display}; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun ign gazebo -g")
         else:
             # Starts xserver, x11vnc and novnc
-            self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
+            self.gz_vnc.start_vnc(
+                self.display, self.internal_port, self.external_port)
             # Write display config and start gzclient
             gzclient_cmd = (
-                f"export DISPLAY={self.display}; {gzclient_config_cmds} gzclient --verbose")
-
-
+                f"export DISPLAY={self.display}; {gzclient_config_cmds} ign gazebo -g")
 
         gzclient_thread = DockerThread(gzclient_cmd)
         gzclient_thread.start()
