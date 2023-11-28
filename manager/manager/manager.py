@@ -16,8 +16,9 @@ from transitions import Machine
 from src.manager.comms.consumer_message import ManagerConsumerMessageException
 from src.manager.comms.new_consumer import ManagerConsumer
 from src.manager.libs.process_utils import check_gpu_acceleration, get_class_from_file
+from src.manager.libs.launch_world_model import ConfigurationManager
 from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
-from src.manager.manager.launcher.launcher_engine import LauncherEngine
+from src.manager.manager.launcher.launcher_world import LauncherWorld
 from src.manager.ram_logging.log_manager import LogManager
 
 
@@ -35,8 +36,8 @@ class Manager:
         {'trigger': 'connect', 'source': 'idle',
             'dest': 'connected', 'before': 'on_connect'},
         # Transitions for state connected
-        {'trigger': 'launch', 'source': 'connected',
-            'dest': 'ready', 'before': 'on_launch'},
+        {'trigger': 'launch_world', 'source': 'connected',
+            'dest': 'ready', 'before': 'on_launch_world'},
         # Transitions for state ready
         {'trigger': 'terminate', 'source': ['ready', 'running', 'paused'],
             'dest': 'connected', 'before': 'on_terminate'},
@@ -110,71 +111,64 @@ class Manager:
     def on_stop(self, event):
         self.application.stop()
 
-    def on_launch(self, event):
+    def on_launch_world(self, event):
         """
-        Transition executed on launch trigger activ
+        Handles the 'launch' event, transitioning the application from 'connected' to 'ready' state. 
+        This method initializes the launch process based on the provided configuration.
+
+        During the launch process, it validates and processes the configuration data received from the event. 
+        It then creates and starts a LauncherWorld instance with the validated configuration. 
+        This setup is crucial for preparing the environment and resources necessary for the application's execution.
+
+        Parameters:
+            event (Event): The event object containing data related to the 'launch' event. 
+                        This data includes configuration information necessary for initializing the launch process.
+
+        Raises:
+            ValueError: If the configuration data is invalid or incomplete, a ValueError is raised, 
+                        indicating the issue with the provided configuration.
+
+        Note:
+            The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
-        def terminated_callback(name, code):
-            # TODO: Prototype, review this callback
-            LogManager.logger.info(
-                f"Manager: Launcher {name} died with code {code}")
-            if self.state != 'ready':
-                self.terminate()
 
-        configuration = event.kwargs.get('data', {})
-        configuration['ros_version'] = self.ros_version
+        try:
+            config_dict = event.kwargs.get('data', {})
+            configuration = ConfigurationManager.validate(config_dict)
+        except ValueError as e:
+            print(e)
 
-        # generate exercise_folder environment variable
-        self.exercise_id = configuration['exercise_id']
-        os.environ["EXERCISE_FOLDER"] = f"{os.environ.get('EXERCISES_STATIC_FILES')}/{self.exercise_id}"
-
-        # Check if application and launchers configuration is missing
-        # TODO: Maybe encapsulate configuration as a data class with validation?
-        application_configuration = configuration.get('application', None)
-        if application_configuration is None:
-            raise Exception("Application configuration missing")
-
-        # check if launchers configuration is missing
-        launchers_configuration = configuration.get('launch', None)
-        if launchers_configuration is None:
-            raise Exception("Launch configuration missing")
-
-        # check if launch files are sent
-        launch_files = configuration.get('launch_files', None)
-        if (launch_files is not None):
-            try:
-                # Convert base64 to binary
-                binary_content = base64.b64decode(launch_files)
-                # Save the binary content as a file
-                with open('workspace/binaries/user_worlds.zip', 'wb') as file:
-                    file.write(binary_content)
-                # Unzip the file
-                with zipfile.ZipFile('workspace/binaries/user_worlds.zip', 'r') as zip_ref:
-                    zip_ref.extractall('workspace/worlds/')
-            except Exception as e:
-                print("An error occurred while opening zip_path as r:" + str(e))
-
+        """         if (launch_files is not None):
+                    try:
+                        # Convert base64 to binary
+                        binary_content = base64.b64decode(launch_files)
+                        # Save the binary content as a file
+                        with open('workspace/binaries/user_worlds.zip', 'wb') as file:
+                            file.write(binary_content)
+                        # Unzip the file
+                        with zipfile.ZipFile('workspace/binaries/user_worlds.zip', 'r') as zip_ref:
+                            zip_ref.extractall('workspace/worlds/')
+                    except Exception as e:
+                        print("An error occurred while opening zip_path as r:" + str(e))
+        """
         LogManager.logger.info(
             f"Launch transition started, configuration: {configuration}")
 
-        # configuration['terminated_callback'] = terminated_callback
-        self.launcher = LauncherEngine(**configuration)
+        self.launcher = LauncherWorld(**configuration.model_dump())
         self.launcher.run()
 
-        # TODO: launch application
-        application_file = application_configuration['entry_point']
-        params = application_configuration.get('params', None)
-        application_module = os.path.expandvars(application_file)
-        application_class = get_class_from_file(application_module, "Exercise")
+        """         # TODO: launch application
+                application_file = application_configuration['entry_point']
+                params = application_configuration.get('params', None)
+                application_module = os.path.expandvars(application_file)
+                application_class = get_class_from_file(application_module, "Exercise")
 
-        if not issubclass(application_class, IRoboticsPythonApplication):
-            self.launcher.terminate()
-            raise Exception(
-                "The application must be an instance of IRoboticsPythonApplication")
-        params['update_callback'] = self.update
-        self.application = application_class(**params)
-        """  time.sleep(1)
-        self.application.pause() """
+                if not issubclass(application_class, IRoboticsPythonApplication):
+                    self.launcher.terminate()
+                    raise Exception(
+                        "The application must be an instance of IRoboticsPythonApplication")
+                params['update_callback'] = self.update
+                self.application = application_class(**params) """
 
     def on_terminate(self, event):
         """Terminates the application and the launcher \
@@ -199,17 +193,9 @@ class Manager:
         python = sys.executable
         os.execl(python, python, *sys.argv)
 
-    def on_enter_connected(self, event):
-        LogManager.logger.info("Connect state entered")
-
     def on_run(self, event):
         if self.code_loaded:
             self.application.run()
-
-    def on_enter_ready(self, event):
-        configuration = event.kwargs.get('data', {})
-        LogManager.logger.info(
-            f"Start state entered, configuration: {configuration}")
 
     def load_code(self, event):
         self.application.pause()

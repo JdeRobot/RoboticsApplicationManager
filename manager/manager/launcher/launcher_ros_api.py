@@ -24,15 +24,11 @@ class RosProcessListener(roslaunch.pmon.ProcessListener):
 
 
 class LauncherRosApi(ILauncher):
-    exercise_id: str
     type: str
     module: str
-    resource_folders: List[str]
-    model_folders: List[str]
-    plugin_folders: List[str]
-    parameters: List[str]
     launch_file: str
     threads: List[Any] = []
+    exercise_id: str
 
     # holder for roslaunch process
     launch: Any = None
@@ -47,28 +43,28 @@ class LauncherRosApi(ILauncher):
         xserver_thread.start()
         wait_for_xserver(":0")
         self.threads.append(xserver_thread)
-        
 
         # expand variables in configuration paths
-        self._set_environment()
+
+        os.environ["EXERCISE_FOLDER"] = f"{os.environ.get('EXERCISES_STATIC_FILES')}/{self.exercise_id}"
         launch_file = os.path.expandvars(self.launch_file)
 
         self.listener = RosProcessListener(callback=callback)
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
-        self.launch = roslaunch.parent.ROSLaunchParent(uuid, [launch_file], process_listeners=[self.listener])
+        self.launch = roslaunch.parent.ROSLaunchParent(
+            uuid, [launch_file], process_listeners=[self.listener])
         self.launch.start()
 
         wait_for_process_to_start("rosmaster", timeout=60)
         wait_for_process_to_start("gzserver", timeout=60)
-
 
         if not self.launch.pm.is_alive():
             raise LauncherException("Exception launching ROS")
 
     def is_running(self):
         return self.launch.pm.is_alive()
-    
+
     def wait_for_shutdown(self, timeout=30):
         print("Waiting for ROS and Gazebo to shutdown")
         start_time = rospy.Time.now().to_sec()
@@ -87,12 +83,3 @@ class LauncherRosApi(ILauncher):
             self.wait_for_shutdown()
         except Exception as e:
             print("Exception shutting down ROS")
-
-    def _set_environment(self):
-        resource_folders = [os.path.expandvars(path) for path in self.resource_folders]
-        model_folders = [os.path.expandvars(path) for path in self.model_folders]
-        plugin_folders = [os.path.expandvars(path) for path in self.plugin_folders]
-
-        os.environ["GAZEBO_RESOURCE_PATH"] = f"{os.environ.get('GAZEBO_RESOURCE_PATH', '')}:{':'.join(resource_folders)}"
-        os.environ["GAZEBO_MODEL_PATH"] = f"{os.environ.get('GAZEBO_MODEL_PATH', '')}:{':'.join(model_folders)}"
-        os.environ["GAZEBO_PLUGIN_PATH"] = f"{os.environ.get('GAZEBO_PLUGIN_PATH', '')}:{':'.join(plugin_folders)}"
