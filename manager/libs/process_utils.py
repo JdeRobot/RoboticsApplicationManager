@@ -10,6 +10,8 @@ import stat
 
 import psutil
 
+from src.manager.ram_logging.log_manager import LogManager
+
 
 def get_class(kls):
     parts = kls.split('.')
@@ -59,14 +61,6 @@ class classproperty(property):
     def __get__(self, cls, owner):
         return classmethod(self.fget).__get__(None, owner)()
 
-def singleton(cls):
-    instances = {}
-    def get_instance():
-        if cls not in instances:
-            instances[cls] = cls()
-        return instances[cls]
-    return get_instance()
-
 
 def is_xserver_running(display):
     """
@@ -78,6 +72,7 @@ def is_xserver_running(display):
     display_number = display[1:]
     x_socket_path = os.path.join("/tmp/.X11-unix/", f"X{display_number}")
     return os.path.exists(x_socket_path)
+
 
 def wait_for_xserver(display, timeout=30):
     """
@@ -93,7 +88,9 @@ def wait_for_xserver(display, timeout=30):
             print(f"Xserver on {display} is running!")
             return
         time.sleep(0.1)
-    print(f"Timeout: Xserver on {display} is not available after {timeout} seconds.")
+    print(
+        f"Timeout: Xserver on {display} is not available after {timeout} seconds.")
+
 
 def is_process_running(process_name):
     """
@@ -103,13 +100,15 @@ def is_process_running(process_name):
     - process_name (str): The name of the process to check for.
     """
     try:
-        process = subprocess.Popen(["pgrep", "-f", process_name], stdout=subprocess.PIPE)
+        process = subprocess.Popen(
+            ["pgrep", "-f", process_name], stdout=subprocess.PIPE)
         # Este comando devuelve el PID si existe, o nada si no existe
         process_return = process.communicate()[0]
         return process_return != b''
     except subprocess.CalledProcessError:
         # El proceso no está corriendo
         return False
+
 
 def wait_for_process_to_start(process_name, timeout=60):
     """
@@ -127,21 +126,23 @@ def wait_for_process_to_start(process_name, timeout=60):
     print(f"Timeout: {process_name} did not start within {timeout} seconds.")
     return False
 
+
 def check_gpu_acceleration():
     try:
         # Verifica si /dev/dri existe
         if not os.path.exists("/dev/dri"):
-            print("/dev/dri does not exist. No direct GPU access.")
+            LogManager.logger.error(
+                "/dev/dri does not exist. No direct GPU access.")
             return False
 
         # Obtiene la salida de glxinfo
-        result = subprocess.check_output("glxinfo | grep direct", shell=True).decode('utf-8')
+        result = subprocess.check_output(
+            "glxinfo | grep direct", shell=True).decode('utf-8')
         print(result)
-        
+
         # Verifica si la aceleración directa está habilitada
         return "direct rendering: Yes" in result
-        
+
     except Exception as e:
         print(f"Error: {e}")
         return False
-    

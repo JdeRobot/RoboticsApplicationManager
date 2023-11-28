@@ -1,33 +1,24 @@
 from __future__ import annotations
-from transitions import Machine
 
-import sys
-import signal
+import base64
 import os
+import signal
+import subprocess
+import sys
 import time
 import traceback
 import zipfile
-import json
-import base64
 from queue import Queue
 from uuid import uuid4
-import subprocess
 
+from transitions import Machine
 
-from src.manager.manager.launcher.launcher_engine import LauncherEngine
-from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
-from src.manager.libs.process_utils import get_class_from_file
 from src.manager.comms.consumer_message import ManagerConsumerMessageException
-from src.manager.ram_logging.log_manager import LogManager
 from src.manager.comms.new_consumer import ManagerConsumer
-from src.manager.libs.process_utils import check_gpu_acceleration
-
-
-
-
-
-
-# pylint: disable=unused-argument
+from src.manager.libs.process_utils import check_gpu_acceleration, get_class_from_file
+from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
+from src.manager.manager.launcher.launcher_engine import LauncherEngine
+from src.manager.ram_logging.log_manager import LogManager
 
 
 class Manager:
@@ -41,7 +32,8 @@ class Manager:
 
     transitions = [
         # Transitions for state idle
-        {'trigger': 'connect', 'source': 'idle', 'dest': 'connected', 'before': 'on_connect'},
+        {'trigger': 'connect', 'source': 'idle',
+            'dest': 'connected', 'before': 'on_connect'},
         # Transitions for state connected
         {'trigger': 'launch', 'source': 'connected',
             'dest': 'ready', 'before': 'on_launch'},
@@ -62,7 +54,7 @@ class Manager:
             'dest': 'idle', 'before': 'on_disconnect'},
     ]
 
-    def __init__(self, host: str, port: int):       
+    def __init__(self, host: str, port: int):
         self.ros_version = self.get_ros_version()
         self.__code_loaded = False
         self.exercise_id = None
@@ -100,7 +92,20 @@ class Manager:
             self.consumer.send_message({'update': data}, command="update")
 
     def on_connect(self, event):
-        self.consumer.send_message({'radi_version': subprocess.check_output(['bash', '-c', 'echo $IMAGE_TAG']), 'ros_version' : subprocess.check_output(['bash', '-c', 'echo $ROS_DISTRO']), 'gpu_avaliable': check_gpu_acceleration(),}, command="introspection")
+        """
+        This method is triggered when the application transitions to the 'connected' state.
+        It sends an introspection message to a consumer with key information.
+
+        Parameters:
+            event (Event): The event object containing data related to the 'connect' event.
+
+        The message sent to the consumer includes:
+        - `radi_version`: The current RADI (Robotics Application Docker Image) version.
+        - `ros_version`: The current ROS (Robot Operating System) distribution version.
+        - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
+        """
+        self.consumer.send_message({'radi_version': subprocess.check_output(['bash', '-c', 'echo $IMAGE_TAG']), 'ros_version': subprocess.check_output(
+            ['bash', '-c', 'echo $ROS_DISTRO']), 'gpu_avaliable': check_gpu_acceleration(), }, command="introspection")
 
     def on_stop(self, event):
         self.application.stop()
@@ -211,7 +216,7 @@ class Manager:
         self.__code_loaded = False
         LogManager.logger.info("Internal transition load_code executed")
         message_data = event.kwargs.get('data', {})
-        
+
         # Code is sent raw
         message_code = message_data.get('code', None)
         if message_code is not None:
@@ -219,7 +224,7 @@ class Manager:
 
         # Code is sent zipped
         message_zip = message_data.get('zip', None)
-        if message_zip is not None:            
+        if message_zip is not None:
             try:
                 # Convert base64 to binary
                 binary_content = base64.b64decode(message_zip)
@@ -234,8 +239,9 @@ class Manager:
                     entrypoint_path = "/workspace/code/" + entrypoint_path
                     self.application.load_code(entrypoint_path)
             except Exception as e:
-                file.write("An error occurred while opening zip_path as r:" + str(e))
-        
+                file.write(
+                    "An error occurred while opening zip_path as r:" + str(e))
+
         self.__code_loaded = True
 
     def code_loaded(self, event):
@@ -261,13 +267,13 @@ class Manager:
             f"Starting RAM consumer in {self.consumer.server}:{self.consumer.port}")
 
         self.consumer.start()
-        
+
         def signal_handler(sign, frame):
-                print("\nprogram exiting gracefully")
-                self.running = False
-                self.application.terminate()
-                self.__code_loaded = False
-                self.launcher.terminate()
+            print("\nprogram exiting gracefully")
+            self.running = False
+            self.application.terminate()
+            self.__code_loaded = False
+            self.launcher.terminate()
 
         signal.signal(signal.SIGINT, signal_handler)
 
@@ -294,6 +300,7 @@ class Manager:
     def get_ros_version(self):
         output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
         return output.decode('utf-8')[0]
+
 
 if __name__ == "__main__":
     import argparse
