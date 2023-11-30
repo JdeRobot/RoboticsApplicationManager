@@ -40,14 +40,14 @@ class Manager:
             'dest': 'world_ready', 'before': 'on_launch_world'},
         # Transitions for state world ready
         {'trigger': 'prepare_visualiation',
-            'source': 'world_ready', 'before': 'on_prepare_world'},
+            'source': 'world_ready', 'dest': 'visualization_ready', 'before': 'on_prepare_world'},
         # Transitions for state ready
         {'trigger': 'terminate', 'source': ['ready', 'running', 'paused'],
             'dest': 'connected', 'before': 'on_terminate'},
         {'trigger': 'load', 'source': [
             'ready', 'running', 'paused'], 'dest': 'ready', 'before': 'load_code'},
         {'trigger': 'run', 'source': [
-            'ready', 'paused'], 'dest': 'running', 'conditions': 'code_loaded', 'after': 'on_run'},
+            'visualization_ready', 'paused'], 'dest': 'running', 'conditions': 'code_loaded', 'after': 'on_run'},
         # Transitions for state running
         {'trigger': 'pause', 'source': 'running',
             'dest': 'paused', 'before': 'on_pause'},
