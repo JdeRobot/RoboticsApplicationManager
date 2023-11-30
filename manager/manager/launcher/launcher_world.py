@@ -1,7 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel
 
-from src.manager.libs.process_utils import get_class, class_from_module
+from src.manager.libs.process_utils import get_class, class_from_module, get_ros_version
 from src.manager.ram_logging.log_manager import LogManager
 from src.manager.manager.launcher.launcher_interface import ILauncher
 
@@ -10,17 +10,11 @@ worlds = {
     {"1": [{
         "type": "module",
         "module": "ros_api",
-        "resource_folders": [],
-        "model_folders": [],
-        "plugin_folders": [],
         "parameters": [],
         "launch_file": [],
     }], "2": [{
         "type": "module",
         "module": "ros2_api",
-        "resource_folders": [],
-        "model_folders": [],
-        "plugin_folders": [],
         "parameters": [],
         "launch_file": [],
     }]},
@@ -50,15 +44,13 @@ class LauncherWorld(BaseModel):
     world: str
     launch_file: str
     module: str = '.'.join(__name__.split('.')[:-1])
-    ros_version: int = 1
-    exercise_id: str
+    ros_version: int = get_ros_version()
     launcher: Optional[ILauncher] = None
 
     def run(self):
         # Launch world
         for module in worlds[self.world][str(self.ros_version)]:
             module["launch_file"] = self.launch_file
-            module["exercise_id"] = self.exercise_id
             self.launcher = self.launch_module(module)
 
     def terminate(self):

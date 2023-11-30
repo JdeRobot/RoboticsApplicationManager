@@ -6,7 +6,8 @@ import time
 import sys
 from subprocess import Popen
 import subprocess
-import stat
+import zipfile
+import base64
 
 import psutil
 
@@ -146,3 +147,31 @@ def check_gpu_acceleration():
     except Exception as e:
         print(f"Error: {e}")
         return False
+
+
+def get_ros_version():
+    output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
+    return output.decode('utf-8')[0]
+
+
+def get_user_world(launch_file):
+    """"
+    Processes a provided base64 encoded string representing a zip file, decodes it, 
+    saves it as a zip file, and then extracts its contents.
+
+    The function takes a base64 encoded string (`launch_file`) as input. It first decodes this 
+    string into binary format, then saves this binary content as a zip file in a predetermined 
+    directory ('workspace/binaries/'). After saving, it extracts the contents of the zip file into 
+    another specified directory ('workspace/worlds/').
+    """
+    try:
+        # Convert base64 to binary
+        binary_content = base64.b64decode(launch_file)
+        # Save the binary content as a file
+        with open('workspace/binaries/user_worlds.zip', 'wb') as file:
+            file.write(binary_content)
+        # Unzip the file
+        with zipfile.ZipFile('workspace/binaries/user_worlds.zip', 'r') as zip_ref:
+            zip_ref.extractall('workspace/worlds/')
+    except Exception as e:
+        LogManager.logging.error(f"An error occurred getting user world: {e}")

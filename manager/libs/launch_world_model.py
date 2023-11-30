@@ -7,9 +7,9 @@ from pydantic import BaseModel, ValidationError
 
 class ConfigurationModel(BaseModel):
     world: str
-    launch_file: str
+    launch_file_path: str
+    launch_file: Optional[str]
     name: str
-    exercise_id: str
 
 # Definición de la clase de datos
 

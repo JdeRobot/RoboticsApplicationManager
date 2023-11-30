@@ -15,10 +15,10 @@ from transitions import Machine
 
 from src.manager.comms.consumer_message import ManagerConsumerMessageException
 from src.manager.comms.new_consumer import ManagerConsumer
-from src.manager.libs.process_utils import check_gpu_acceleration, get_class_from_file
+from src.manager.libs.process_utils import check_gpu_acceleration, get_user_world
 from src.manager.libs.launch_world_model import ConfigurationManager
-from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
 from src.manager.manager.launcher.launcher_world import LauncherWorld
+from src.manager.manager.launcher.launcher_visualization import LauncherVisualization
 from src.manager.ram_logging.log_manager import LogManager
 
 
@@ -37,7 +37,10 @@ class Manager:
             'dest': 'connected', 'before': 'on_connect'},
         # Transitions for state connected
         {'trigger': 'launch_world', 'source': 'connected',
-            'dest': 'ready', 'before': 'on_launch_world'},
+            'dest': 'world_ready', 'before': 'on_launch_world'},
+        # Transitions for state world ready
+        {'trigger': 'prepare_visualiation',
+            'source': 'world_ready', 'before': 'on_prepare_world'},
         # Transitions for state ready
         {'trigger': 'terminate', 'source': ['ready', 'running', 'paused'],
             'dest': 'connected', 'before': 'on_terminate'},
@@ -56,9 +59,7 @@ class Manager:
     ]
 
     def __init__(self, host: str, port: int):
-        self.ros_version = self.get_ros_version()
         self.__code_loaded = False
-        self.exercise_id = None
         self.machine = Machine(model=self, states=Manager.states, transitions=Manager.transitions,
                                initial='idle', send_event=True, after_state_change=self.state_change)
 
@@ -66,7 +67,8 @@ class Manager:
 
         # TODO: review, hardcoded values
         self.consumer = ManagerConsumer(host, port, self.queue)
-        self.launcher = None
+        self.world_launcher = None
+        self.visualization_launcher = None
         self.application = None
         self.running = True
 
@@ -136,26 +138,13 @@ class Manager:
             config_dict = event.kwargs.get('data', {})
             configuration = ConfigurationManager.validate(config_dict)
         except ValueError as e:
-            print(e)
+            LogManager.logger.error(f'Configuration validotion failed: {e}')
 
-        """         if (launch_files is not None):
-                    try:
-                        # Convert base64 to binary
-                        binary_content = base64.b64decode(launch_files)
-                        # Save the binary content as a file
-                        with open('workspace/binaries/user_worlds.zip', 'wb') as file:
-                            file.write(binary_content)
-                        # Unzip the file
-                        with zipfile.ZipFile('workspace/binaries/user_worlds.zip', 'r') as zip_ref:
-                            zip_ref.extractall('workspace/worlds/')
-                    except Exception as e:
-                        print("An error occurred while opening zip_path as r:" + str(e))
-        """
-        LogManager.logger.info(
-            f"Launch transition started, configuration: {configuration}")
+        get_user_world(configuration.launch_file)
 
-        self.launcher = LauncherWorld(**configuration.model_dump())
-        self.launcher.run()
+        self.world_launcher = LauncherWorld(**configuration.model_dump())
+        self.world_launcher.run()
+        LogManager.logger.info("Launch transition finished")
 
         """         # TODO: launch application
                 application_file = application_configuration['entry_point']
@@ -169,6 +158,13 @@ class Manager:
                         "The application must be an instance of IRoboticsPythonApplication")
                 params['update_callback'] = self.update
                 self.application = application_class(**params) """
+
+    def on_prepare_visualization(self, event):
+        visualization_type = event.kwargs.get('data', {})
+        self.visualization_launcher = LauncherVisualization(
+            **visualization_type)
+        self.visualization_launcher.run()
+        LogManager.logger.info("Visualization transition finished")
 
     def on_terminate(self, event):
         """Terminates the application and the launcher \
@@ -282,10 +278,6 @@ class Manager:
                         id=str(uuid4()), message=str(e))
                 self.consumer.send_message(ex)
                 LogManager.logger.error(e, exc_info=True)
-
-    def get_ros_version(self):
-        output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
-        return output.decode('utf-8')[0]
 
 
 if __name__ == "__main__":

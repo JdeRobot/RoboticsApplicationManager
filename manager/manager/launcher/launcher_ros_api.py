@@ -6,7 +6,7 @@ from src.manager.libs.process_utils import wait_for_xserver
 from src.manager.libs.process_utils import wait_for_process_to_start
 import roslaunch
 import rospy
-import subprocess
+
 
 from src.manager.manager.launcher.launcher_interface import ILauncher, LauncherException
 
@@ -28,7 +28,6 @@ class LauncherRosApi(ILauncher):
     module: str
     launch_file: str
     threads: List[Any] = []
-    exercise_id: str
 
     # holder for roslaunch process
     launch: Any = None
@@ -44,16 +43,11 @@ class LauncherRosApi(ILauncher):
         wait_for_xserver(":0")
         self.threads.append(xserver_thread)
 
-        # expand variables in configuration paths
-
-        os.environ["EXERCISE_FOLDER"] = f"{os.environ.get('EXERCISES_STATIC_FILES')}/{self.exercise_id}"
-        launch_file = os.path.expandvars(self.launch_file)
-
         self.listener = RosProcessListener(callback=callback)
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.launch = roslaunch.parent.ROSLaunchParent(
-            uuid, [launch_file], process_listeners=[self.listener])
+            uuid, [self.launch_file], process_listeners=[self.listener])
         self.launch.start()
 
         wait_for_process_to_start("rosmaster", timeout=60)
