@@ -9,7 +9,6 @@ class ConfigurationModel(BaseModel):
     world: str
     launch_file_path: str
     launch_file: Optional[str]
-    name: str
 
 # Definición de la clase de datos
 

@@ -42,7 +42,7 @@ worlds = {
 
 class LauncherWorld(BaseModel):
     world: str
-    launch_file: str
+    launch_file_path: str
     module: str = '.'.join(__name__.split('.')[:-1])
     ros_version: int = get_ros_version()
     launcher: Optional[ILauncher] = None
@@ -50,7 +50,7 @@ class LauncherWorld(BaseModel):
     def run(self):
         # Launch world
         for module in worlds[self.world][str(self.ros_version)]:
-            module["launch_file"] = self.launch_file
+            module["launch_file"] = self.launch_file_path
             self.launcher = self.launch_module(module)
 
     def terminate(self):
