@@ -26,7 +26,8 @@ class Manager:
     states = [
         "idle",
         "connected",
-        "ready",
+        "world_ready",
+        "visualization_ready",
         "running",
         "paused"
     ]
@@ -39,8 +40,8 @@ class Manager:
         {'trigger': 'launch_world', 'source': 'connected',
             'dest': 'world_ready', 'before': 'on_launch_world'},
         # Transitions for state world ready
-        {'trigger': 'prepare_visualiation',
-            'source': 'world_ready', 'dest': 'visualization_ready', 'before': 'on_prepare_world'},
+        {'trigger': 'prepare_visualization',
+            'source': 'world_ready', 'dest': 'visualization_ready', 'before': 'on_prepare_visualization'},
         # Transitions for state ready
         {'trigger': 'terminate', 'source': ['ready', 'running', 'paused'],
             'dest': 'connected', 'before': 'on_terminate'},
@@ -140,7 +141,7 @@ class Manager:
         except ValueError as e:
             LogManager.logger.error(f'Configuration validotion failed: {e}')
 
-        get_user_world(configuration.launch_file)
+        """ get_user_world(configuration.launch_file) """
 
         self.world_launcher = LauncherWorld(**configuration.model_dump())
         self.world_launcher.run()
@@ -162,7 +163,7 @@ class Manager:
     def on_prepare_visualization(self, event):
         visualization_type = event.kwargs.get('data', {})
         self.visualization_launcher = LauncherVisualization(
-            **visualization_type)
+            visualization=visualization_type)
         self.visualization_launcher.run()
         LogManager.logger.info("Visualization transition finished")
 
