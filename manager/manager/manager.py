@@ -48,10 +48,8 @@ class Manager:
         # Transitions for state ready
         {'trigger': 'terminate', 'source': ['ready', 'running', 'paused'],
             'dest': 'connected', 'before': 'on_terminate'},
-        {'trigger': 'load', 'source': [
-            'ready', 'running', 'paused'], 'dest': 'ready', 'before': 'load_code'},
         {'trigger': 'run', 'source': [
-            'ready', 'paused'], 'dest': 'running', 'conditions': 'code_loaded', 'after': 'on_run'},
+            'ready', 'paused'], 'dest': 'running', 'before': 'load_code', 'after': 'on_run'},
         # Transitions for state running
         {'trigger': 'pause', 'source': 'running',
             'dest': 'paused', 'before': 'on_pause'},
