@@ -18,7 +18,7 @@ from src.manager.manager.lint.linter import Lint
 class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
     def __init__(self, exercise_command, gui_command, update_callback):
         super().__init__(update_callback)
-
+        home_dir = os.path.expanduser('~')
         self.running = False
         self.linter = Lint()
         self.brain_ready_event = threading.Event()
@@ -30,8 +30,9 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.gui_server = None
         self.exercise_connection = None
         self.gui_connection = None
+        self._run_exercise_server(
+            f"python {self.exercise_command}", f'{home_dir}/ws_code.log', 'websocket_code=ready')
         # TODO: review hardcoded values
-
 
     def send_freq(self, exercise_connection, is_alive):
         """Send the frequency of the brain and gui to the exercise server"""
@@ -43,7 +44,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
 
     def save_pick(self, pick):
         self.pick = pick
-    
+
     def send_pick(self, pick):
         self.gui_connection.send("#pick" + json.dumps(pick))
         print("#pick" + json.dumps(pick))
@@ -54,12 +55,11 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         else:
             self.gui_connection.send(msg['msg'])
 
-
     def start_send_freq_thread(self):
         """Start a thread to send the frequency of the brain and gui to the exercise server"""
         self.running = True
         self.send_freq_thread = Thread(target=lambda: self.send_freq(self.exercise_connection,
-                        lambda: self.is_alive), daemon=False, name='Monitor frequencies')
+                                                                     lambda: self.is_alive), daemon=False, name='Monitor frequencies')
         self.send_freq_thread.start()
 
     def stop_send_freq_thread(self):
@@ -86,28 +86,6 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
                 time.sleep(0.2)
 
         return process_ready, process
-
-    def server_message(self, name, message):
-        if name == "gui":  # message received from GUI server
-            LogManager.logger.debug(
-                f"Message received from gui: {message[:30]}")
-            self._process_gui_message(message)
-        elif name == "exercise":  # message received from EXERCISE server
-            if message.startswith("#exec"):
-                self.brain_ready_event.set()
-            LogManager.logger.info(
-                f"Message received from exercise: {message[:30]}")
-            self._process_exercise_message(message)
-
-    def _process_gui_message(self, message):
-        payload = json.loads(message[4:])
-        self.update_callback(payload)
-        self.gui_connection.send("#ack")
-
-    def _process_exercise_message(self, message):
-        payload = json.loads(message[5:])
-        self.update_callback(payload)
-        self.exercise_connection.send("#ack")
 
     def run(self):
         rosservice.call_service("/gazebo/unpause_physics", [])
@@ -136,26 +114,25 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             self.gui_connection.stop()
         except Exception as error:
             pass
-            
+
         try:
             home_dir = os.path.expanduser('~')
             os.remove(f'{home_dir}/ws_code.log')
             os.remove(f'{home_dir}/ws_gui.log')
         except OSError as error:
-            LogManager.logger.error(f"Error al eliminar el archivo log: {error}")
-            
+            LogManager.logger.error(
+                f"Error al eliminar el archivo log: {error}")
 
-        process_ready_exercise,self.exercise_server = self._run_exercise_server(f"python {self.exercise_command}",
-                                                                        f'{home_dir}/ws_code.log',
-                                                                        'websocket_code=ready')
+        process_ready_exercise, self.exercise_server = self._run_exercise_server(f"python {self.exercise_command}",
+                                                                                 f'{home_dir}/ws_code.log',
+                                                                                 'websocket_code=ready')
         if process_ready_exercise:
             self.exercise_connection = Client(
                 'ws://127.0.0.1:1905', 'exercise', self.server_message)
             self.exercise_connection.start()
 
-
         process_ready_gui, self.gui_server = self._run_exercise_server(f"python {self.gui_command}", f'{home_dir}/ws_gui.log',
-                                                                   'websocket_gui=ready')
+                                                                       'websocket_gui=ready')
         if process_ready_gui:
             self.gui_connection = Client(
                 'ws://127.0.0.1:2303', 'gui', self.server_message)
@@ -163,8 +140,6 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             if self.pick:
                 time.sleep(2)
                 self.send_pick(self.pick)
-            
-    
 
     @property
     def is_alive(self):
@@ -185,31 +160,35 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         try:
             self.stop_send_freq_thread()
         except Exception as error:
-            LogManager.logger.error(f"Error al detener el hilo de frecuencia: {error}")
+            LogManager.logger.error(
+                f"Error al detener el hilo de frecuencia: {error}")
 
         if self.exercise_connection is not None:
             try:
                 self.exercise_connection.stop()
             except Exception as error:
-                LogManager.logger.error(f"Error al detener la conexión del ejercicio: {error}")
+                LogManager.logger.error(
+                    f"Error al detener la conexión del ejercicio: {error}")
 
         if self.gui_connection is not None:
             try:
                 self.gui_connection.stop()
             except Exception as error:
-                LogManager.logger.error(f"Error al detener la conexión de la GUI: {error}")
+                LogManager.logger.error(
+                    f"Error al detener la conexión de la GUI: {error}")
 
         if self.exercise_server is not None:
             try:
                 stop_process_and_children(self.exercise_server)
             except Exception as error:
-                LogManager.logger.error(f"Error al detener el servidor de ejercicio: {error}")
+                LogManager.logger.error(
+                    f"Error al detener el servidor de ejercicio: {error}")
 
         if self.gui_server is not None:
             try:
                 stop_process_and_children(self.gui_server)
             except Exception as error:
-                LogManager.logger.error(f"Error al detener el servidor de la GUI: {error}")
+                LogManager.logger.error(
+                    f"Error al detener el servidor de la GUI: {error}")
 
         self.running = False
-

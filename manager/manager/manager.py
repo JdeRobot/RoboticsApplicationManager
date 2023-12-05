@@ -20,6 +20,7 @@ from src.manager.libs.launch_world_model import ConfigurationManager
 from src.manager.manager.launcher.launcher_world import LauncherWorld
 from src.manager.manager.launcher.launcher_visualization import LauncherVisualization
 from src.manager.ram_logging.log_manager import LogManager
+from src.manager.libs.applications.compatibility.server import Server
 
 
 class Manager:
@@ -28,7 +29,7 @@ class Manager:
         "connected",
         "world_ready",
         "visualization_ready",
-        "running",
+        "application_running",
         "paused"
     ]
 
@@ -45,10 +46,9 @@ class Manager:
         # Transitions for state ready
         {'trigger': 'terminate', 'source': ['ready', 'running', 'paused'],
             'dest': 'connected', 'before': 'on_terminate'},
-        {'trigger': 'load', 'source': [
-            'ready', 'running', 'paused'], 'dest': 'ready', 'before': 'load_code'},
-        {'trigger': 'run', 'source': [
-            'visualization_ready', 'paused'], 'dest': 'running', 'conditions': 'code_loaded', 'after': 'on_run'},
+
+        {'trigger': 'run_application', 'source': [
+            'visualization_ready', 'paused'], 'dest': 'application_running', 'conditions': 'code_loaded', 'after': 'on_run'},
         # Transitions for state running
         {'trigger': 'pause', 'source': 'running',
             'dest': 'paused', 'before': 'on_pause'},
@@ -72,6 +72,8 @@ class Manager:
         self.visualization_launcher = None
         self.application = None
         self.running = True
+        self.exercise_server = None
+        self.gui_server = None
 
         # Creates workspace directories
         worlds_dir = "/workspace/worlds"
@@ -147,24 +149,17 @@ class Manager:
         self.world_launcher.run()
         LogManager.logger.info("Launch transition finished")
 
-        """         # TODO: launch application
-                application_file = application_configuration['entry_point']
-                params = application_configuration.get('params', None)
-                application_module = os.path.expandvars(application_file)
-                application_class = get_class_from_file(application_module, "Exercise")
-
-                if not issubclass(application_class, IRoboticsPythonApplication):
-                    self.launcher.terminate()
-                    raise Exception(
-                        "The application must be an instance of IRoboticsPythonApplication")
-                params['update_callback'] = self.update
-                self.application = application_class(**params) """
-
     def on_prepare_visualization(self, event):
         visualization_type = event.kwargs.get('data', {})
         self.visualization_launcher = LauncherVisualization(
             visualization=visualization_type)
         self.visualization_launcher.run()
+
+        if visualization_type == "gazebo_rae":
+            self.exercise_server = Server(1905, self.update)
+            self.exercise_server.run()
+            self.gui_server = Server(2303, self.update)
+            self.exercise_server.run()
         LogManager.logger.info("Visualization transition finished")
 
     def on_terminate(self, event):
@@ -190,9 +185,21 @@ class Manager:
         python = sys.executable
         os.execl(python, python, *sys.argv)
 
-    def on_run(self, event):
-        if self.code_loaded:
-            self.application.run()
+    def on_run(self, event)
+        
+        application_configuration = event.kwargs.get('data', {})
+        application_file = application_configuration['entry_point']
+        params = application_configuration.get('params', None)
+        application_module = os.path.expandvars(application_file)
+        application_class = get_class_from_file(application_module, "Exercise")
+
+        if not issubclass(application_class, IRoboticsPythonApplication):
+            self.launcher.terminate()
+            raise Exception(
+                "The application must be an instance of IRoboticsPythonApplication")
+        params['update_callback'] = self.update
+        self.application = application_class(**params)
+        self.application.run()
 
     def load_code(self, event):
         self.application.pause()
