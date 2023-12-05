@@ -48,7 +48,7 @@ class Manager:
             'dest': 'connected', 'before': 'on_terminate'},
 
         {'trigger': 'run_application', 'source': [
-            'visualization_ready', 'paused'], 'dest': 'application_running', 'conditions': 'code_loaded', 'after': 'on_run'},
+            'visualization_ready', 'paused'], 'dest': 'application_running',  'before': 'on_run'},
         # Transitions for state running
         {'trigger': 'pause', 'source': 'running',
             'dest': 'paused', 'before': 'on_pause'},
@@ -150,6 +150,8 @@ class Manager:
         LogManager.logger.info("Launch transition finished")
 
     def on_prepare_visualization(self, event):
+        LogManager.logger.info("Visualization transition started")
+
         visualization_type = event.kwargs.get('data', {})
         self.visualization_launcher = LauncherVisualization(
             visualization=visualization_type)
@@ -157,9 +159,9 @@ class Manager:
 
         if visualization_type == "gazebo_rae":
             self.exercise_server = Server(1905, self.update)
-            self.exercise_server.run()
+            self.exercise_server.start()
             self.gui_server = Server(2303, self.update)
-            self.exercise_server.run()
+            self.gui_server.start()
         LogManager.logger.info("Visualization transition finished")
 
     def on_terminate(self, event):
@@ -185,10 +187,10 @@ class Manager:
         python = sys.executable
         os.execl(python, python, *sys.argv)
 
-    def on_run(self, event)
-        
+    def on_run(self, event):
+
         application_configuration = event.kwargs.get('data', {})
-        application_file = application_configuration['entry_point']
+        application_file = application_configuration['template']
         params = application_configuration.get('params', None)
         application_module = os.path.expandvars(application_file)
         application_class = get_class_from_file(application_module, "Exercise")

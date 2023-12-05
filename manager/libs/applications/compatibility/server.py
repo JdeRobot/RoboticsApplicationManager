@@ -10,11 +10,12 @@ class Server(threading.Thread):
     def __init__(self, port, callback,):
         super().__init__()
         self.update_callback = callback
-        self.server = WebsocketServer(port, host='127.0.0.1')
+        self.server = WebsocketServer(port=port, host='127.0.0.1')
         self.server.set_fn_new_client(self.on_open)
         self.server.set_fn_client_left(self.on_close)
         self.server.set_fn_message_received(self.on_message)
         self._stop = threading.Event()
+        LogManager.logger.info("Server Launched")
 
     def run(self) -> None:
         try:
