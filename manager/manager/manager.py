@@ -15,12 +15,13 @@ from transitions import Machine
 
 from src.manager.comms.consumer_message import ManagerConsumerMessageException
 from src.manager.comms.new_consumer import ManagerConsumer
-from src.manager.libs.process_utils import check_gpu_acceleration, get_user_world
+from src.manager.libs.process_utils import check_gpu_acceleration, get_class_from_file
 from src.manager.libs.launch_world_model import ConfigurationManager
 from src.manager.manager.launcher.launcher_world import LauncherWorld
 from src.manager.manager.launcher.launcher_visualization import LauncherVisualization
 from src.manager.ram_logging.log_manager import LogManager
 from src.manager.libs.applications.compatibility.server import Server
+from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
 
 
 class Manager:
@@ -191,7 +192,7 @@ class Manager:
 
         application_configuration = event.kwargs.get('data', {})
         application_file = application_configuration['template']
-        params = application_configuration.get('params', None)
+        params = {}
         application_module = os.path.expandvars(application_file)
         application_class = get_class_from_file(application_module, "Exercise")
 
@@ -200,6 +201,7 @@ class Manager:
             raise Exception(
                 "The application must be an instance of IRoboticsPythonApplication")
         params['update_callback'] = self.update
+        params['circuit'] = None
         self.application = application_class(**params)
         self.application.run()
 
