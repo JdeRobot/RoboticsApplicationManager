@@ -76,17 +76,15 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         return process
 
     def run(self, code: str):
-        self.start_send_freq_thread()
         errors = self.linter.evaluate_code(code)
         if errors == "":
-            self.brain_ready_event.clear()
+
             self.exercise_server.send(f"#run {code}")
             print('test')
-            self.brain_ready_event.wait()
+
         else:
             raise Exception(errors)
         rosservice.call_service("/gazebo/unpause_physics", [])
-        self.exercise_connection.send("#play")
 
     def stop(self):
         rosservice.call_service('/gazebo/pause_physics', [])
