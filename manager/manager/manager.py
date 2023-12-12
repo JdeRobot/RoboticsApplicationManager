@@ -195,15 +195,19 @@ class Manager:
         params = {}
         application_module = os.path.expandvars(application_file)
         application_class = get_class_from_file(application_module, "Exercise")
+        print(application_class)
 
         if not issubclass(application_class, IRoboticsPythonApplication):
             self.launcher.terminate()
             raise Exception(
                 "The application must be an instance of IRoboticsPythonApplication")
+
         params['update_callback'] = self.update
         params['circuit'] = None
+        params['exercise_server'] = self.exercise_server
+        params['gui_server'] = self.gui_server
         self.application = application_class(**params)
-        self.application.run()
+        self.application.run(application_configuration["code"])
 
     def load_code(self, event):
         self.application.pause()

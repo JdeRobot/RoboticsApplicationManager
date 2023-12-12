@@ -43,4 +43,4 @@ class Server(threading.Thread):
         LogManager.logger.info("Connection with client closed")
 
     def on_open(self, client, server):
-        LogManager.logger.info("New client connected")
+        LogManager.logger.info(f"New client connected {client}")

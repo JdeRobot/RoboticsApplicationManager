@@ -16,7 +16,7 @@ from src.manager.manager.lint.linter import Lint
 
 
 class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
-    def __init__(self, exercise_command, gui_command, update_callback):
+    def __init__(self,  exercise_command, gui_command, update_callback, exercise_server, gui_server,):
         super().__init__(update_callback)
         home_dir = os.path.expanduser('~')
         self.running = False
@@ -26,13 +26,12 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.gui_command = gui_command
         self.update_callback = update_callback
         self.pick = None
-        self.exercise_server = None
-        self.gui_server = None
-        self.exercise_connection = None
-        self.gui_connection = None
-        self._run_exercise_server(
+        self.exercise_server = exercise_server
+        self.gui_server = gui_server
+        self. exercise_connection = self._run_exercise_server(
             f"python {self.exercise_command}", f'{home_dir}/ws_code.log', 'websocket_code=ready')
-        # TODO: review hardcoded values
+        self.gui_connection = self._run_exercise_server(
+            f"python {self.gui_command}", f'{home_dir}/ws_code.log', 'websocket_code=ready')
 
     def send_freq(self, exercise_connection, is_alive):
         """Send the frequency of the brain and gui to the exercise server"""
@@ -72,27 +71,17 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         process = subprocess.Popen(f"{cmd}", shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT,
                                    bufsize=1024, universal_newlines=True)
 
-        process_ready = False
-        while not process_ready:
-            try:
-                f = open(log_file, "r")
-                if f.readline() == load_string:
-                    process_ready = True
-                f.close()
-                time.sleep(0.2)
-            except Exception as e:
-                LogManager.logger.debug(
-                    f"waiting for server string '{load_string}'...")
-                time.sleep(0.2)
+        time.sleep(5)
 
-        return process_ready, process
+        return process
 
     def run(self, code: str):
         self.start_send_freq_thread()
         errors = self.linter.evaluate_code(code)
         if errors == "":
             self.brain_ready_event.clear()
-            self.exercise_connection.send(f"#code {code}")
+            self.exercise_server.send(f"#code {code}")
+            print('test')
             self.brain_ready_event.wait()
         else:
             raise Exception(errors)
