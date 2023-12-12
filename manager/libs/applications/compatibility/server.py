@@ -14,6 +14,7 @@ class Server(threading.Thread):
         self.server.set_fn_new_client(self.on_open)
         self.server.set_fn_client_left(self.on_close)
         self.server.set_fn_message_received(self.on_message)
+        self.current_client = None
         self._stop = threading.Event()
         LogManager.logger.info("Server Launched")
 
@@ -29,8 +30,11 @@ class Server(threading.Thread):
         self._stop.set()
         self.server.shutdown()
 
-    def send(self, client, data):
-        self.server.send_message(client, data)
+    def send(self, data):
+        if self.current_client is not None:
+            self.server.send_message(self.current_client, data)
+        else:
+            LogManager.logger.error("No client is connected.")
 
     def on_message(self, client, server, message):
         payload = json.loads(message[4:])
@@ -44,3 +48,4 @@ class Server(threading.Thread):
 
     def on_open(self, client, server):
         LogManager.logger.info(f"New client connected {client}")
+        self.current_client = client

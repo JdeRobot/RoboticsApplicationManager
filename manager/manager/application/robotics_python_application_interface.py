@@ -1,8 +1,6 @@
 class IRoboticsPythonApplication:
-    def __init__(self, update_callback, exercise_server, gui_server):
+    def __init__(self, update_callback):
         self.update_callback = update_callback
-        self.exercise_server = exercise_server
-        self.gui_server = gui_server
 
     def load_code(self, code: str) -> bool:
         raise NotImplementedError("Exercise brains must implement load_code")

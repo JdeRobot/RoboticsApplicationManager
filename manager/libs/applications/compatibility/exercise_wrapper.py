@@ -80,7 +80,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         errors = self.linter.evaluate_code(code)
         if errors == "":
             self.brain_ready_event.clear()
-            self.exercise_server.send(f"#code {code}")
+            self.exercise_server.send(f"#run {code}")
             print('test')
             self.brain_ready_event.wait()
         else:
