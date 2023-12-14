@@ -28,10 +28,11 @@ class Lint:
             open("user_code.py", "r")
 
             command = ""
-            output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
+            output = subprocess.check_output(
+                ['bash', '-c', 'echo $ROS_VERSION'])
             output_str = output.decode('utf-8')
             version = int(output_str[0])
-            if (version == 2):                
+            if (version == 2):
                 command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
             else:
                 command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
@@ -68,7 +69,8 @@ class Lint:
                     result[eof_exception.end():]
 
             # Removes ompl E1101 error
-            ompl_error = re.search(r":[0-9]+: error \(E1101, no-member, \) Module 'ompl.*\n", result)
+            ompl_error = re.search(
+                r":[0-9]+: error \(E1101, no-member, .*\) Module 'ompl.*\n", result)
             if (ompl_error != None):
                 result = result[:ompl_error.start()] + \
                     result[ompl_error.end():]
