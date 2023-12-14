@@ -11,6 +11,7 @@ import zipfile
 from queue import Queue
 from uuid import uuid4
 
+
 from transitions import Machine
 
 from src.manager.comms.consumer_message import ManagerConsumerMessageException
@@ -159,8 +160,6 @@ class Manager:
         self.visualization_launcher.run()
 
         if visualization_type == "gazebo_rae":
-            self.exercise_server = Server(1905, self.update)
-            self.exercise_server.start()
             self.gui_server = Server(2303, self.update)
             self.gui_server.start()
         LogManager.logger.info("Visualization transition finished")
@@ -195,7 +194,6 @@ class Manager:
         params = {}
         application_module = os.path.expandvars(application_file)
         application_class = get_class_from_file(application_module, "Exercise")
-        print(application_class)
 
         if not issubclass(application_class, IRoboticsPythonApplication):
             self.launcher.terminate()
@@ -206,6 +204,7 @@ class Manager:
         params['circuit'] = None
         params['exercise_server'] = self.exercise_server
         params['gui_server'] = self.gui_server
+        params['code'] = application_configuration["code"]
         self.application = application_class(**params)
         self.application.run(application_configuration["code"])
 

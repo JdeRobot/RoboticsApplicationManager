@@ -6,6 +6,7 @@ import sys
 import threading
 import time
 import rosservice
+import importlib
 from threading import Thread
 
 from src.manager.libs.applications.compatibility.client import Client
@@ -16,22 +17,18 @@ from src.manager.manager.lint.linter import Lint
 
 
 class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
-    def __init__(self,  exercise_command, gui_command, update_callback, exercise_server, gui_server,):
+    def __init__(self,  modules_path, update_callback, exercise_command, gui_server,):
         super().__init__(update_callback)
-        home_dir = os.path.expanduser('~')
         self.running = False
         self.linter = Lint()
         self.brain_ready_event = threading.Event()
-        self.exercise_command = exercise_command
-        self.gui_command = gui_command
         self.update_callback = update_callback
         self.pick = None
-        self.exercise_server = exercise_server
         self.gui_server = gui_server
-        self. exercise_connection = self._run_exercise_server(
-            f"python {self.exercise_command}", f'{home_dir}/ws_code.log', 'websocket_code=ready')
-        self.gui_connection = self._run_exercise_server(
-            f"python {self.gui_command}", f'{home_dir}/ws_code.log', 'websocket_code=ready')
+        self.exercise_command = exercise_command
+        self.gui_connection = self._run_server(
+            f"python {modules_path}/gui.py 0.0.0.0")
+        self.generate_modules(modules_path)
 
     def send_freq(self, exercise_connection, is_alive):
         """Send the frequency of the brain and gui to the exercise server"""
@@ -67,20 +64,20 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             self.running = False
             self.send_freq_thread.join()
 
-    def _run_exercise_server(self, cmd, log_file, load_string, timeout: int = 5):
+    def _run_server(self, cmd):
         process = subprocess.Popen(f"{cmd}", shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT,
                                    bufsize=1024, universal_newlines=True)
-
-        time.sleep(5)
-
         return process
 
     def run(self, code: str):
+        f = open(f"code/academy.py", "w")
+        f.write(code)
+        f.close()
         errors = self.linter.evaluate_code(code)
         if errors == "":
-
+            self.exercise = self._run_server(
+                f"python3 {self.exercise_command}")
             self.exercise_server.send(f"#run {code}")
-            print('test')
 
         else:
             raise Exception(errors)
@@ -97,7 +94,8 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         rosservice.call_service('/gazebo/pause_physics', [])
 
     def restart(self):
-        # Terminate current processes
+        pass
+        """  # Terminate current processes
         try:
             self.stop_send_freq_thread()
         except Exception as error:
@@ -134,7 +132,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             self.gui_connection.start()
             if self.pick:
                 time.sleep(2)
-                self.send_pick(self.pick)
+                self.send_pick(self.pick) """
 
     @property
     def is_alive(self):
