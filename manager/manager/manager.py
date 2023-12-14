@@ -204,7 +204,7 @@ class Manager:
         params['circuit'] = None
         params['exercise_server'] = self.exercise_server
         params['gui_server'] = self.gui_server
-        params['code'] = application_configuration["code"]
+
         self.application = application_class(**params)
         self.application.run(application_configuration["code"])
 

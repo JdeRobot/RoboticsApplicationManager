@@ -17,7 +17,7 @@ from src.manager.manager.lint.linter import Lint
 
 
 class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
-    def __init__(self,  modules_path, update_callback, exercise_command, gui_server,):
+    def __init__(self,  update_callback, exercise_command, gui_command, exercise_server, gui_server,):
         super().__init__(update_callback)
         self.running = False
         self.linter = Lint()
@@ -26,11 +26,11 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.pick = None
         self.gui_server = gui_server
         self.exercise_command = exercise_command
-        self.gui_connection = self._run_server(
+        """         self.gui_connection = self._run_server(
             f"python {modules_path}/gui.py 0.0.0.0")
-        self.generate_modules(modules_path)
+        self.generate_modules(modules_path) """
 
-    def send_freq(self, exercise_connection, is_alive):
+    def send_freq(self, exercise_connection):
         """Send the frequency of the brain and gui to the exercise server"""
         while self.running:
             if exercise_connection.client.sock.connected:
@@ -73,14 +73,10 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         f = open(f"code/academy.py", "w")
         f.write(code)
         f.close()
-        errors = self.linter.evaluate_code(code)
-        if errors == "":
-            self.exercise = self._run_server(
-                f"python3 {self.exercise_command}")
-            self.exercise_server.send(f"#run {code}")
 
-        else:
-            raise Exception(errors)
+        self.exercise = self._run_server(
+            f"python3 {self.exercise_command}")
+
         rosservice.call_service("/gazebo/unpause_physics", [])
 
     def stop(self):
