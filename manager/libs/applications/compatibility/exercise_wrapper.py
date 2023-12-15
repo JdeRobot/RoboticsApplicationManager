@@ -17,7 +17,7 @@ from src.manager.manager.lint.linter import Lint
 
 
 class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
-    def __init__(self,  update_callback, exercise_command, gui_command, exercise_server, gui_server,):
+    def __init__(self, exercise_command, update_callback,  gui_server):
         super().__init__(update_callback)
         self.running = False
         self.linter = Lint()
@@ -26,9 +26,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.pick = None
         self.gui_server = gui_server
         self.exercise_command = exercise_command
-        """         self.gui_connection = self._run_server(
-            f"python {modules_path}/gui.py 0.0.0.0")
-        self.generate_modules(modules_path) """
+
 
     def send_freq(self, exercise_connection):
         """Send the frequency of the brain and gui to the exercise server"""
@@ -70,14 +68,19 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         return process
 
     def run(self, code: str):
-        f = open(f"/workspace/code/academy.py", "w")
-        f.write(code)
-        f.close()
+        errors = self.linter.evaluate_code(code)
+        if errors == "":
+            f = open("/workspace/code/academy.py", "w")
+            f.write(code)
+            f.close()
+            self.exercise = self._run_server(
+                f"python3 {self.exercise_command}")
 
-        self.exercise = self._run_server(
-            f"python3 {self.exercise_command}")
+            rosservice.call_service("/gazebo/unpause_physics", [])
+        else:
+            raise Exception(errors)
 
-        rosservice.call_service("/gazebo/unpause_physics", [])
+
 
     def stop(self):
         rosservice.call_service('/gazebo/pause_physics', [])
@@ -88,47 +91,6 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
 
     def pause(self):
         rosservice.call_service('/gazebo/pause_physics', [])
-
-    def restart(self):
-        pass
-        """  # Terminate current processes
-        try:
-            self.stop_send_freq_thread()
-        except Exception as error:
-            pass
-        try:
-            stop_process_and_children(self.exercise_server)
-            stop_process_and_children(self.gui_server)
-            self.exercise_connection.stop()
-            self.gui_connection.stop()
-        except Exception as error:
-            pass
-
-        try:
-            home_dir = os.path.expanduser('~')
-            os.remove(f'{home_dir}/ws_code.log')
-            os.remove(f'{home_dir}/ws_gui.log')
-        except OSError as error:
-            LogManager.logger.error(
-                f"Error al eliminar el archivo log: {error}")
-
-        process_ready_exercise, self.exercise_server = self._run_exercise_server(f"python {self.exercise_command}",
-                                                                                 f'{home_dir}/ws_code.log',
-                                                                                 'websocket_code=ready')
-        if process_ready_exercise:
-            self.exercise_connection = Client(
-                'ws://127.0.0.1:1905', 'exercise', self.server_message)
-            self.exercise_connection.start()
-
-        process_ready_gui, self.gui_server = self._run_exercise_server(f"python {self.gui_command}", f'{home_dir}/ws_gui.log',
-                                                                       'websocket_gui=ready')
-        if process_ready_gui:
-            self.gui_connection = Client(
-                'ws://127.0.0.1:2303', 'gui', self.server_message)
-            self.gui_connection.start()
-            if self.pick:
-                time.sleep(2)
-                self.send_pick(self.pick) """
 
     @property
     def is_alive(self):
