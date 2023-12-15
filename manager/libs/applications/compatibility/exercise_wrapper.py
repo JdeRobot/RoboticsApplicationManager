@@ -70,7 +70,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         return process
 
     def run(self, code: str):
-        f = open(f"code/academy.py", "w")
+        f = open(f"/workspace/code/academy.py", "w")
         f.write(code)
         f.close()
 
