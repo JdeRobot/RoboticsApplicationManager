@@ -45,20 +45,20 @@ class Manager:
         # Transitions for state world ready
         {'trigger': 'prepare_visualization',
             'source': 'world_ready', 'dest': 'visualization_ready', 'before': 'on_prepare_visualization'},
-        # Transitions for state ready
-        {'trigger': 'terminate', 'source': ['ready', 'running', 'paused'],
-            'dest': 'connected', 'before': 'on_terminate'},
-
+        # Transitions for state visualization_ready
         {'trigger': 'run_application', 'source': [
-            'visualization_ready', 'paused'], 'dest': 'application_running',  'before': 'on_run'},
-        # Transitions for state running
+            'visualization_ready', 'paused'], 'dest': 'application_running',  'before': 'on_run_application'},
+        # Transitions for state application_running
         {'trigger': 'pause', 'source': 'running',
             'dest': 'paused', 'before': 'on_pause'},
+        {'trigger': 'terminate', 'source': ['ready', 'running', 'paused'],
+            'dest': 'connected', 'before': 'on_terminate'},
         {'trigger': 'stop', 'source': [
             'running', 'paused'], 'dest': 'ready', 'before': 'on_stop'},
         # Global transitions
         {'trigger': 'disconnect', 'source': '*',
             'dest': 'idle', 'before': 'on_disconnect'},
+
     ]
 
     def __init__(self, host: str, port: int):
@@ -68,13 +68,11 @@ class Manager:
 
         self.queue = Queue()
 
-        # TODO: review, hardcoded values
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.world_launcher = None
         self.visualization_launcher = None
         self.application = None
         self.running = True
-        self.exercise_server = None
         self.gui_server = None
 
         # Creates workspace directories
@@ -114,9 +112,6 @@ class Manager:
         """
         self.consumer.send_message({'radi_version': subprocess.check_output(['bash', '-c', 'echo $IMAGE_TAG']), 'ros_version': subprocess.check_output(
             ['bash', '-c', 'echo $ROS_DISTRO']), 'gpu_avaliable': check_gpu_acceleration(), }, command="introspection")
-
-    def on_stop(self, event):
-        self.application.stop()
 
     def on_launch_world(self, event):
         """
@@ -164,6 +159,25 @@ class Manager:
             self.gui_server.start()
         LogManager.logger.info("Visualization transition finished")
 
+    def on_run_application(self, event):
+        application_configuration = event.kwargs.get('data', {})
+        application_file = application_configuration['template']
+        
+        application_module = os.path.expandvars(application_file)
+        application_class = get_class_from_file(application_module, "Exercise")
+
+        if not issubclass(application_class, IRoboticsPythonApplication):
+            self.launcher.terminate()
+            raise Exception(
+                "The application must be an instance of IRoboticsPythonApplication")
+        self.application = application_class(self.update, self.gui_server)
+        self.application.run(application_configuration["code"])
+
+
+    def on_stop(self, event):
+        self.application.stop()
+
+
     def on_terminate(self, event):
         """Terminates the application and the launcher \
             and sets the variable __code_loaded to False"""
@@ -187,59 +201,6 @@ class Manager:
         python = sys.executable
         os.execl(python, python, *sys.argv)
 
-    def on_run(self, event):
-
-        application_configuration = event.kwargs.get('data', {})
-        application_file = application_configuration['template']
-        params = {}
-        application_module = os.path.expandvars(application_file)
-        application_class = get_class_from_file(application_module, "Exercise")
-
-        if not issubclass(application_class, IRoboticsPythonApplication):
-            self.launcher.terminate()
-            raise Exception(
-                "The application must be an instance of IRoboticsPythonApplication")
-
-        params['update_callback'] = self.update
-        params['circuit'] = None
-        params['exercise_server'] = self.exercise_server
-        params['gui_server'] = self.gui_server
-
-        self.application = application_class(**params)
-        self.application.run(application_configuration["code"])
-
-    def load_code(self, event):
-        self.application.pause()
-        self.__code_loaded = False
-        LogManager.logger.info("Internal transition load_code executed")
-        message_data = event.kwargs.get('data', {})
-
-        # Code is sent raw
-        message_code = message_data.get('code', None)
-        if message_code is not None:
-            self.application.load_code(message_code)
-
-        # Code is sent zipped
-        message_zip = message_data.get('zip', None)
-        if message_zip is not None:
-            try:
-                # Convert base64 to binary
-                binary_content = base64.b64decode(message_zip)
-                # Save the binary content as a file
-                with open('workspace/binaries/user_app.zip', 'wb') as file:
-                    file.write(binary_content)
-                # Unzip the file
-                with zipfile.ZipFile('workspace/binaries/user_app.zip', 'r') as zip_ref:
-                    zip_ref.extractall('workspace/code/')
-                entrypoint_path = message_data.get('entrypoint', None)
-                if (entrypoint_path is not None):
-                    entrypoint_path = "/workspace/code/" + entrypoint_path
-                    self.application.load_code(entrypoint_path)
-            except Exception as e:
-                file.write(
-                    "An error occurred while opening zip_path as r:" + str(e))
-
-        self.__code_loaded = True
 
     def code_loaded(self, event):
         return self.__code_loaded
