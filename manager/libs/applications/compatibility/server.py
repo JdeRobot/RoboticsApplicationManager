@@ -38,10 +38,11 @@ class Server(threading.Thread):
 
     def on_message(self, client, server, message):
         payload = json.loads(message[4:])
+        print(message)
         self.update_callback(payload)
-        client.send("#ack")
+        server.send_message(client, "#ack")
         LogManager.logger.debug(
-            f"Message received from exercise template: {message[:30]}")
+            f"Message received from template: {message[:30]}")
 
     def on_close(self, client, server):
         LogManager.logger.info("Connection with client closed")
