@@ -32,11 +32,10 @@ class Lint:
             output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
             output_str = output.decode('utf-8')
             version = int(output_str[0])
-            os.environ["EXERCISE_FOLDER"] = f"{os.environ.get('EXERCISES_STATIC_FOLDER')}/{exercise_id}"
             if (version == 2):                
-                command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
+                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
             else:
-                command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
+                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
             ret = subprocess.run(command, capture_output=True, shell=True)
             result = ret.stdout.decode()
             result = result + "\n"
