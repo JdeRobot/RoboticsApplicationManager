@@ -49,12 +49,12 @@ class Manager:
         {'trigger': 'run_application', 'source': [
             'visualization_ready', 'paused'], 'dest': 'application_running',  'before': 'on_run_application'},
         # Transitions for state application_running
-        {'trigger': 'pause', 'source': 'running',
+        {'trigger': 'pause', 'source': 'application_running',
             'dest': 'paused', 'before': 'on_pause'},
-        {'trigger': 'terminate', 'source': ['ready', 'running', 'paused'],
+        {'trigger': 'terminate', 'source': ['ready', 'application_running', 'paused'],
             'dest': 'connected', 'before': 'on_terminate'},
         {'trigger': 'stop', 'source': [
-            'running', 'paused'], 'dest': 'ready', 'before': 'on_stop'},
+            'application_running', 'paused'], 'dest': 'ready', 'before': 'on_stop'},
         # Global transitions
         {'trigger': 'disconnect', 'source': '*',
             'dest': 'idle', 'before': 'on_disconnect'},
@@ -175,7 +175,8 @@ class Manager:
 
 
     def on_stop(self, event):
-        self.application.stop()
+        self.application.terminate()
+        self.__code_loaded = False
 
 
     def on_terminate(self, event):
@@ -211,7 +212,8 @@ class Manager:
         self.consumer.send_message(message.response(response))
 
     def on_pause(self, msg):
-        self.application.pause()
+        self.application.terminate()
+        self.__code_loaded = False
 
     def on_resume(self, msg):
         self.application.resume()
