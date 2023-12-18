@@ -67,8 +67,8 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
                                    bufsize=1024, universal_newlines=True)
         return process
 
-    def run(self, code: str):
-        errors = self.linter.evaluate_code(code)
+    def run(self, code: str, exercise_id: str):
+        errors = self.linter.evaluate_code(code, exercise_id)
         if errors == "":
             f = open("/workspace/code/academy.py", "w")
             f.write(code)

@@ -162,6 +162,7 @@ class Manager:
     def on_run_application(self, event):
         application_configuration = event.kwargs.get('data', {})
         application_file = application_configuration['template']
+        exercise_id = application_configuration['exerise_id']
         
         application_module = os.path.expandvars(application_file)
         application_class = get_class_from_file(application_module, "Exercise")
@@ -171,7 +172,7 @@ class Manager:
             raise Exception(
                 "The application must be an instance of IRoboticsPythonApplication")
         self.application = application_class(self.update, self.gui_server)
-        self.application.run(application_configuration["code"])
+        self.application.run(application_configuration["code"], exercise_id)
 
 
     def on_stop(self, event):

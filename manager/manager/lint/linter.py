@@ -1,10 +1,11 @@
 import re
+import os
 import subprocess
 
 
 class Lint:
 
-    def evaluate_code(self, code, warnings=False):
+    def evaluate_code(self, code, exercise_id, warnings=False):
         try:
             code = re.sub(r'from HAL import HAL', 'from hal import HAL', code)
             code = re.sub(r'from GUI import GUI', 'from gui import GUI', code)
@@ -31,6 +32,7 @@ class Lint:
             output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
             output_str = output.decode('utf-8')
             version = int(output_str[0])
+            os.environ["EXERCISE_FOLDER"] = f"{os.environ.get('EXERCISES_STATIC_FOLDER')}/{exercise_id}"
             if (version == 2):                
                 command = "export PYTHONPATH=$PYTHONPATH:/$EXERCISE_FOLDER/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
             else:
