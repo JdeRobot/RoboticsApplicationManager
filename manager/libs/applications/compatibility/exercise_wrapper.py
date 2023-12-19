@@ -1,6 +1,4 @@
 import json
-import logging
-import os.path
 import subprocess
 import sys
 import threading
@@ -96,17 +94,6 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
     @property
     def is_alive(self):
         return self.running
-
-    def load_code(self, code: str):
-        self.restart()
-        self.start_send_freq_thread()
-        errors = self.linter.evaluate_code(code)
-        if errors == "":
-            self.brain_ready_event.clear()
-            self.exercise_connection.send(f"#code {code}")
-            self.brain_ready_event.wait()
-        else:
-            raise Exception(errors)
 
     def terminate(self):
         try:
