@@ -37,7 +37,6 @@ class Server(threading.Thread):
             LogManager.logger.error("No client is connected.")
 
     def on_message(self, client, server, message):
-        print(message)
         payload = json.loads(message)
         self.update_callback(payload)
         server.send_message(client, "#ack")
