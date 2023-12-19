@@ -26,15 +26,6 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.exercise_command = exercise_command
         self.exercise = None
 
-
-    def send_freq(self, exercise_connection):
-        """Send the frequency of the brain and gui to the exercise server"""
-        while self.running:
-            if exercise_connection.client.sock.connected:
-                exercise_connection.send(
-                    """#freq{"brain": 20, "gui": 10, "rtf": 100}""")
-                time.sleep(1)
-
     def save_pick(self, pick):
         self.pick = pick
 
@@ -47,19 +38,6 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
             self.pick = msg['data']
         else:
             self.gui_connection.send(msg['msg'])
-
-    def start_send_freq_thread(self):
-        """Start a thread to send the frequency of the brain and gui to the exercise server"""
-        self.running = True
-        self.send_freq_thread = Thread(target=lambda: self.send_freq(self.exercise_connection,
-                                                                     lambda: self.is_alive), daemon=False, name='Monitor frequencies')
-        self.send_freq_thread.start()
-
-    def stop_send_freq_thread(self):
-        """Stop the thread sending the frequency of the brain and gui to the exercise server"""
-        if self.running:
-            self.running = False
-            self.send_freq_thread.join()
 
     def _run_server(self, cmd):
         process = subprocess.Popen(f"{cmd}", shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT,
@@ -96,12 +74,6 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         return self.running
 
     def terminate(self):
-        try:
-            self.stop_send_freq_thread()
-        except Exception as error:
-            LogManager.logger.error(
-                f"Error al detener el hilo de frecuencia: {error}")        
-
         if self.gui_server is not None:
             try:
                 stop_process_and_children(self.gui_server)
