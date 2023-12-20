@@ -1,4 +1,5 @@
 import json
+import signal
 import subprocess
 import sys
 import threading
@@ -13,26 +14,13 @@ from src.manager.manager.application.robotics_python_application_interface impor
 from src.manager.manager.lint.linter import Lint
 
 
-class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
-    def __init__(self, exercise_command, update_callback,  gui_server):
-        super().__init__(update_callback)
+class CompatibilityExerciseWrapper():
+    def __init__(self):
         self.running = False
         self.linter = Lint()
         self.brain_ready_event = threading.Event()
-        self.update_callback = update_callback
         self.pick = None
-        self.gui_server = gui_server
-        self.exercise_command = exercise_command
         self.exercise = None
-    
-    def set_data(self, code: str, exercise_id: str):
-        errors = self.linter.evaluate_code(code, exercise_id)
-        if errors == "":
-            f = open("/workspace/code/academy.py", "w")
-            f.write(code)
-            f.close()            
-        else:
-            raise Exception(errors)
         
 
     def save_pick(self, pick):
@@ -54,7 +42,7 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         return process
 
     def run(self):
-        self.exercise = self._run_server(f"python3 {self.exercise_command}")
+        self.exercise = self._run_server(f"python3 $EXERCISE_FOLDER/entry_point/exercise.py")
 
     def stop(self):
         pass
@@ -70,12 +58,6 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         return self.running
 
     def terminate(self):
-        if self.gui_server is not None:
-            try:
-                stop_process_and_children(self.gui_server)
-            except Exception as error:
-                LogManager.logger.error(
-                    f"Error al detener el servidor de la GUI: {error}")
                 
         if self.exercise is not None:
             stop_process_and_children(self.exercise)

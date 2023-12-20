@@ -26,6 +26,7 @@ from src.manager.manager.launcher.launcher_visualization import LauncherVisualiz
 from src.manager.ram_logging.log_manager import LogManager
 from src.manager.libs.applications.compatibility.server import Server
 from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
+from src.manager.libs.process_utils import stop_process_and_children
 
 
 class Manager:
@@ -171,16 +172,18 @@ class Manager:
         application_module = os.path.expandvars(application_file)
         application_class = get_class_from_file(application_module, "Exercise")
 
-        if not issubclass(application_class, IRoboticsPythonApplication):
-            self.launcher.terminate()
-            raise Exception(
-                "The application must be an instance of IRoboticsPythonApplication")
-        self.application = application_class(self.update, self.gui_server)
+        if self.application_process is not None:
+            stop_process_and_children(self.application_process)
+            self.application_process = None
         try:
-            self.application.set_data(application_configuration["code"], exercise_id)
-            self.application_process = multiprocessing.Process(target=self.application.run, args=())
-            self.application_process.daemon = True
-            self.application_process.start()
+            f = open("/workspace/code/academy.py", "w")
+            f.write(application_configuration["code"])
+            f.close()   
+            self.application_process = subprocess.Popen(f"python3 /RoboticsAcademy/src/manager/libs/applications/compatibility/exercise_wrapper.py", shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT,
+                                   bufsize=1024, universal_newlines=True)
+            print("\n\n\n PROCESS APPLICATION STARTED: " + str(self.application_process) + "\n\n\n")
+            #self.application_process.daemon = True
+            
             rosservice.call_service("/gazebo/unpause_physics", [])
         except Exception as e:
             # TODO return linter errors to the frontend
@@ -188,7 +191,8 @@ class Manager:
      
 
     def on_stop(self, event):
-        self.application_process.terminate()
+        stop_process_and_children(self.application_process)
+        self.application_process = None
         rosservice.call_service('/gazebo/pause_physics', [])
         rosservice.call_service("/gazebo/reset_world", [])
         self.__code_loaded = False
@@ -198,7 +202,8 @@ class Manager:
         """Terminates the application and the launcher \
             and sets the variable __code_loaded to False"""
         try:
-            self.application_process.terminate()
+            stop_process_and_children(self.application_process)
+            self.application_process = None
             self.__code_loaded = False
             self.launcher.terminate()
         except Exception:
@@ -209,7 +214,8 @@ class Manager:
         try:
             self.consumer.stop()
             self.__code_loaded = False
-            self.application_process.terminate()
+            stop_process_and_children(self.application_process)
+            self.application_process = None
             self.launcher.terminate()
         except Exception as e:
             LogManager.logger.exception(f"Exception terminating instance")
@@ -228,7 +234,8 @@ class Manager:
 
     def on_pause(self, msg):
         # TODO pause application through signal
-        self.application_process.terminate()
+        stop_process_and_children(self.application_process)
+        self.application_process = None
         rosservice.call_service('/gazebo/pause_physics', [])
         self.__code_loaded = False
 
@@ -249,7 +256,8 @@ class Manager:
         def signal_handler(sign, frame):
             print("\nprogram exiting gracefully")
             self.running = False
-            self.application_process.terminate()
+            stop_process_and_children(self.application_process)
+            self.application_process = None
             self.__code_loaded = False
             self.launcher.terminate()
 
