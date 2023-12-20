@@ -5,7 +5,10 @@ import os
 import signal
 import subprocess
 import sys
+import psutil
 import time
+import rosservice
+import multiprocessing
 import traceback
 import zipfile
 from queue import Queue
@@ -72,6 +75,7 @@ class Manager:
         self.world_launcher = None
         self.visualization_launcher = None
         self.application = None
+        self.application_process = None
         self.running = True
         self.gui_server = None
 
@@ -162,7 +166,7 @@ class Manager:
     def on_run_application(self, event):
         application_configuration = event.kwargs.get('data', {})
         application_file = application_configuration['template']
-        exercise_id = application_configuration['exercise_id']
+        exercise_id = "autoparking_newmanager"
         
         application_module = os.path.expandvars(application_file)
         application_class = get_class_from_file(application_module, "Exercise")
@@ -172,11 +176,21 @@ class Manager:
             raise Exception(
                 "The application must be an instance of IRoboticsPythonApplication")
         self.application = application_class(self.update, self.gui_server)
-        self.application.run(application_configuration["code"], exercise_id)
-
+        try:
+            self.application.set_data(application_configuration["code"], exercise_id)
+            self.application_process = multiprocessing.Process(target=self.application.run, args=())
+            self.application_process.daemon = True
+            self.application_process.start()
+            rosservice.call_service("/gazebo/unpause_physics", [])
+        except Exception as e:
+            # TODO return linter errors to the frontend
+            print("Exception encountered: " + str(e))
+     
 
     def on_stop(self, event):
-        self.application.terminate()
+        self.application_process.terminate()
+        rosservice.call_service('/gazebo/pause_physics', [])
+        rosservice.call_service("/gazebo/reset_world", [])
         self.__code_loaded = False
 
 
@@ -184,7 +198,7 @@ class Manager:
         """Terminates the application and the launcher \
             and sets the variable __code_loaded to False"""
         try:
-            self.application.terminate()
+            self.application_process.terminate()
             self.__code_loaded = False
             self.launcher.terminate()
         except Exception:
@@ -195,7 +209,7 @@ class Manager:
         try:
             self.consumer.stop()
             self.__code_loaded = False
-            self.application.terminate()
+            self.application_process.terminate()
             self.launcher.terminate()
         except Exception as e:
             LogManager.logger.exception(f"Exception terminating instance")
@@ -213,11 +227,14 @@ class Manager:
         self.consumer.send_message(message.response(response))
 
     def on_pause(self, msg):
-        self.application.terminate()
+        # TODO pause application through signal
+        self.application_process.terminate()
+        rosservice.call_service('/gazebo/pause_physics', [])
         self.__code_loaded = False
 
     def on_resume(self, msg):
-        self.application.resume()
+        # TODO resume application through signal
+        rosservice.call_service("/gazebo/unpause_physics", [])
 
     def start(self):
         """
@@ -232,7 +249,7 @@ class Manager:
         def signal_handler(sign, frame):
             print("\nprogram exiting gracefully")
             self.running = False
-            self.application.terminate()
+            self.application_process.terminate()
             self.__code_loaded = False
             self.launcher.terminate()
 
@@ -248,8 +265,6 @@ class Manager:
                     self.process_messsage(message)
             except Exception as e:
                 if message is not None:
-                    if message.command == "#gui":
-                        self.application.handle_client_gui(message.data)
                     ex = ManagerConsumerMessageException(
                         id=message.id, message=str(e))
                 else:

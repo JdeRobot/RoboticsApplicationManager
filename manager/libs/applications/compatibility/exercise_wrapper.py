@@ -3,7 +3,6 @@ import subprocess
 import sys
 import threading
 import time
-import rosservice
 import importlib
 from threading import Thread
 
@@ -25,6 +24,16 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
         self.gui_server = gui_server
         self.exercise_command = exercise_command
         self.exercise = None
+    
+    def set_data(self, code: str, exercise_id: str):
+        errors = self.linter.evaluate_code(code, exercise_id)
+        if errors == "":
+            f = open("/workspace/code/academy.py", "w")
+            f.write(code)
+            f.close()            
+        else:
+            raise Exception(errors)
+        
 
     def save_pick(self, pick):
         self.pick = pick
@@ -44,30 +53,17 @@ class CompatibilityExerciseWrapper(IRoboticsPythonApplication):
                                    bufsize=1024, universal_newlines=True)
         return process
 
-    def run(self, code: str, exercise_id: str):
-        errors = self.linter.evaluate_code(code, exercise_id)
-        if errors == "":
-            f = open("/workspace/code/academy.py", "w")
-            f.write(code)
-            f.close()
-            self.exercise = self._run_server(
-                f"python3 {self.exercise_command}")
-
-            rosservice.call_service("/gazebo/unpause_physics", [])
-        else:
-            raise Exception(errors)
-
-
+    def run(self):
+        self.exercise = self._run_server(f"python3 {self.exercise_command}")
 
     def stop(self):
-        rosservice.call_service('/gazebo/pause_physics', [])
-        rosservice.call_service("/gazebo/reset_world", [])
+        pass
 
     def resume(self):
-        rosservice.call_service("/gazebo/unpause_physics", [])
+        pass
 
     def pause(self):
-        rosservice.call_service('/gazebo/pause_physics', [])
+        pass
 
     @property
     def is_alive(self):
