@@ -231,34 +231,14 @@ class Manager:
         self.consumer.send_message(message.response(response))
 
     def on_pause(self, msg):
-        print("\n\n\nTrying to suspend process: " + str(self.application_process.pid))
-        
         proc = psutil.Process(self.application_process.pid)
-        
-        #proc.send_signal(signal.SIGTSTP)
-        
-        #proc.wait()
-        
         proc.suspend()
-
-        #os.kill(self.application_process.pid, signal.SIGTSTP)
-        
-        print("\n\n\nProcess suspended: " + str(self.application_process.pid))
         rosservice.call_service('/gazebo/pause_physics', [])
         self.__code_loaded = False
 
     def on_resume(self, msg):
-        print("\n\n\nTrying to resume process: " + str(self.application_process.pid))
-        
         proc = psutil.Process(self.application_process.pid)
-
-        #proc.send_signal(signal.SIGCONT)
-
         proc.resume()
-
-        #os.kill(self.application_process.pid, signal.SIGCONT)
-        
-        print("\n\n\nProcess resumed: " + str(self.application_process.pid))
         rosservice.call_service("/gazebo/unpause_physics", [])
 
     def start(self):
