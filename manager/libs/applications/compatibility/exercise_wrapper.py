@@ -21,7 +21,7 @@ class CompatibilityExerciseWrapper():
         self.brain_ready_event = threading.Event()
         self.pick = None
         self.exercise = None
-        
+        self.run() 
 
     def save_pick(self, pick):
         self.pick = pick
