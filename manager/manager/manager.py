@@ -176,12 +176,12 @@ class Manager:
         application_class = get_class_from_file(application_module, "Exercise")
         errors = self.linter.evaluate_code(code, exercise_id)
         if errors == "":
-            print('no errors')
+            
             f = open("/workspace/code/academy.py", "w")
             f.write(code)
             f.close()
 
-            self.application_process = subprocess.Popen(["python3", "/RoboticsAcademy/exercises/static/exercises/autoparking_newmanager/python_template/ros1_noetic/exercise.py"], shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT,
+            self.application_process = subprocess.Popen(["python3", "/RoboticsAcademy/exercises/static/exercises/autoparking_newmanager/python_template/ros1_noetic/exercise.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
                                 bufsize=1024, universal_newlines=True)
             print("\n\n\n PROCESS APPLICATION STARTED: " + str(self.application_process) + "\n\n\n")
             rosservice.call_service("/gazebo/unpause_physics", [])
@@ -230,14 +230,14 @@ class Manager:
         self.consumer.send_message(message.response(response))
 
     def on_pause(self, msg):
-        # TODO pause application through signal
-        stop_process_and_children(self.application_process)
-        self.application_process = None
+        proc = psutil.Process(self.application_process.pid)
+        proc.suspend()
         rosservice.call_service('/gazebo/pause_physics', [])
         self.__code_loaded = False
 
     def on_resume(self, msg):
-        # TODO resume application through signal
+        proc = psutil.Process(self.application_process.pid)
+        proc.resume()
         rosservice.call_service("/gazebo/unpause_physics", [])
 
     def start(self):
