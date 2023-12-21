@@ -173,21 +173,19 @@ class Manager:
         application_class = get_class_from_file(application_module, "Exercise")
 
         if self.application_process is not None:
-            stop_process_and_children(self.application_process)
-            self.application_process = None
-        try:
-            f = open("/workspace/code/academy.py", "w")
-            f.write(application_configuration["code"])
-            f.close()   
-            self.application_process = subprocess.Popen(f"python3 /RoboticsAcademy/src/manager/libs/applications/compatibility/exercise_wrapper.py", shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT,
-                                   bufsize=1024, universal_newlines=True)
-            print("\n\n\n PROCESS APPLICATION STARTED: " + str(self.application_process) + "\n\n\n")
-            #self.application_process.daemon = True
-            
-            rosservice.call_service("/gazebo/unpause_physics", [])
-        except Exception as e:
-            # TODO return linter errors to the frontend
-            print("Exception encountered: " + str(e))
+            proc = psutil.Process(self.application_process.pid)
+            proc.resume()
+        else:
+            try:
+                f = open("/workspace/code/academy.py", "w")
+                f.write(application_configuration["code"])
+                f.close()   
+                self.application_process = subprocess.Popen(['python3', '/RoboticsAcademy/test_app.py'], stdout=sys.stdout, stderr=subprocess.STDOUT,
+                                    bufsize=1024, universal_newlines=True)            
+                rosservice.call_service("/gazebo/unpause_physics", [])
+            except Exception as e:
+                # TODO return linter errors to the frontend
+                print("Exception encountered: " + str(e))
      
 
     def on_stop(self, event):
@@ -233,14 +231,34 @@ class Manager:
         self.consumer.send_message(message.response(response))
 
     def on_pause(self, msg):
-        # TODO pause application through signal
-        stop_process_and_children(self.application_process)
-        self.application_process = None
+        print("\n\n\nTrying to suspend process: " + str(self.application_process.pid))
+        
+        proc = psutil.Process(self.application_process.pid)
+        
+        #proc.send_signal(signal.SIGTSTP)
+        
+        #proc.wait()
+        
+        proc.suspend()
+
+        #os.kill(self.application_process.pid, signal.SIGTSTP)
+        
+        print("\n\n\nProcess suspended: " + str(self.application_process.pid))
         rosservice.call_service('/gazebo/pause_physics', [])
         self.__code_loaded = False
 
     def on_resume(self, msg):
-        # TODO resume application through signal
+        print("\n\n\nTrying to resume process: " + str(self.application_process.pid))
+        
+        proc = psutil.Process(self.application_process.pid)
+
+        #proc.send_signal(signal.SIGCONT)
+
+        proc.resume()
+
+        #os.kill(self.application_process.pid, signal.SIGCONT)
+        
+        print("\n\n\nProcess resumed: " + str(self.application_process.pid))
         rosservice.call_service("/gazebo/unpause_physics", [])
 
     def start(self):
