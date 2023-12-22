@@ -202,13 +202,26 @@ class Manager:
     def on_disconnect(self, event):
         try:
             self.consumer.stop()
+        except Exception as e:
+            LogManager.logger.exception("Exception stopping consumer")
+
+        try:
             stop_process_and_children(self.application_process)
             self.application_process = None
-            self.world_launcher.terminate()
+        except Exception as e:
+            LogManager.logger.exception("Exception stopping application process")
+
+        try:
             self.visualization_launcher.terminate()
         except Exception as e:
-            LogManager.logger.exception(f"Exception terminating instance")
-            print(traceback.format_exc())
+            LogManager.logger.exception("Exception terminating visualization launcher")
+
+        try:
+            self.world_launcher.terminate()
+        except Exception as e:
+            LogManager.logger.exception("Exception terminating world launcher")
+
+        # Reiniciar el script
         python = sys.executable
         os.execl(python, python, *sys.argv)
 
