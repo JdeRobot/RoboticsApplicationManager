@@ -81,6 +81,7 @@ class Manager:
         self.running = True
         self.gui_server = None
         self.linter = Lint()
+        self.ros_version = self.get_ros_version()
 
         # Creates workspace directories
         worlds_dir = "/workspace/worlds"
@@ -92,6 +93,13 @@ class Manager:
             os.makedirs(code_dir)
         if not os.path.isdir(binaries_dir):
             os.makedirs(binaries_dir)
+
+    def get_ros_version(self):
+        version = subprocess.check_output(['bash', '-c', 'echo $ROS_DISTRO'])
+        if "noetic" in str(version):
+            return "ros1_noetic"
+        else:
+            return "ros2_humble"
 
     def state_change(self, event):
         LogManager.logger.info(f"State changed to {self.state}")
@@ -180,8 +188,7 @@ class Manager:
             f = open("/workspace/code/academy.py", "w")
             f.write(code)
             f.close()
-
-            self.application_process = subprocess.Popen(["python3", "/RoboticsAcademy/exercises/static/exercises/autoparking_newmanager/python_template/ros1_noetic/exercise.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
+            self.application_process = subprocess.Popen(["python3", f"/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/{self.ros_version}/exercise.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
                                 bufsize=1024, universal_newlines=True)
             print("\n\n\n PROCESS APPLICATION STARTED: " + str(self.application_process) + "\n\n\n")
             rosservice.call_service("/gazebo/unpause_physics", [])
@@ -236,9 +243,9 @@ class Manager:
         self.__code_loaded = False
 
     def on_resume(self, msg):
+        rosservice.call_service("/gazebo/unpause_physics", [])
         proc = psutil.Process(self.application_process.pid)
         proc.resume()
-        rosservice.call_service("/gazebo/unpause_physics", [])
 
     def start(self):
         """
