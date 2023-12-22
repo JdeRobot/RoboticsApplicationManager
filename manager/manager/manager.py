@@ -56,8 +56,8 @@ class Manager:
             # Transitions for state paused
         {'trigger': 'resume', 'source': 'paused',
             'dest': 'application_running', 'before': 'on_resume'},
-        {'trigger': 'terminate', 'source': ['application_running', 'paused'],
-            'dest': 'connected', 'before': 'on_terminate'},
+        {'trigger': 'terminate', 'source': ['visualization_ready','application_running', 'paused'],
+            'dest': 'visualization_ready', 'before': 'on_terminate'},
         {'trigger': 'stop', 'source': [
             'application_running', 'paused'], 'dest': 'ready', 'before': 'on_stop'},
         # Global transitions
