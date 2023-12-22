@@ -56,7 +56,7 @@ class Manager:
             # Transitions for state paused
         {'trigger': 'resume', 'source': 'paused',
             'dest': 'application_running', 'before': 'on_resume'},
-        {'trigger': 'terminate', 'source': ['ready', 'application_running', 'paused'],
+        {'trigger': 'terminate', 'source': ['application_running', 'paused'],
             'dest': 'connected', 'before': 'on_terminate'},
         {'trigger': 'stop', 'source': [
             'application_running', 'paused'], 'dest': 'ready', 'before': 'on_stop'},
@@ -191,15 +191,12 @@ class Manager:
 
 
     def on_terminate(self, event):
-        """Terminates the application and the launcher"""
+        """Terminates the application"""
         try:
             stop_process_and_children(self.application_process)
             self.application_process = None
-            self.application_process = None
-            self.world_launcher.terminate()
-            self.visualization_launcher.terminate()
         except Exception:
-            LogManager.logger.exception(f"Exception terminating instance")
+            LogManager.logger.exception("No application running")
             print(traceback.format_exc())
 
     def on_disconnect(self, event):
