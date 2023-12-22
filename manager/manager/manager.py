@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import os
 import signal
 import subprocess
@@ -8,9 +7,7 @@ import sys
 import psutil
 import time
 import rosservice
-import multiprocessing
 import traceback
-import zipfile
 from queue import Queue
 from uuid import uuid4
 
@@ -56,6 +53,9 @@ class Manager:
         # Transitions for state application_running
         {'trigger': 'pause', 'source': 'application_running',
             'dest': 'paused', 'before': 'on_pause'},
+            # Transitions for state paused
+        {'trigger': 'resume', 'source': 'paused',
+            'dest': 'application_running', 'before': 'on_resume'},
         {'trigger': 'terminate', 'source': ['ready', 'application_running', 'paused'],
             'dest': 'connected', 'before': 'on_terminate'},
         {'trigger': 'stop', 'source': [
@@ -67,16 +67,13 @@ class Manager:
     ]
 
     def __init__(self, host: str, port: int):
-        self.__code_loaded = False
         self.machine = Machine(model=self, states=Manager.states, transitions=Manager.transitions,
                                initial='idle', send_event=True, after_state_change=self.state_change)
 
         self.queue = Queue()
-
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.world_launcher = None
         self.visualization_launcher = None
-        self.application = None
         self.application_process = None
         self.running = True
         self.gui_server = None
@@ -147,8 +144,6 @@ class Manager:
         except ValueError as e:
             LogManager.logger.error(f'Configuration validotion failed: {e}')
 
-        """ get_user_world(configuration.launch_file) """
-
         self.world_launcher = LauncherWorld(**configuration.model_dump())
         self.world_launcher.run()
         LogManager.logger.info("Launch transition finished")
@@ -172,22 +167,20 @@ class Manager:
         exercise_id = application_configuration['exercise_id']
         code = application_configuration['code']
         
-        application_module = os.path.expandvars(application_file)
-        application_class = get_class_from_file(application_module, "Exercise")
         errors = self.linter.evaluate_code(code, exercise_id)
         if errors == "":
-            
             f = open("/workspace/code/academy.py", "w")
             f.write(code)
             f.close()
 
-            self.application_process = subprocess.Popen(["python3", "/RoboticsAcademy/exercises/static/exercises/autoparking_newmanager/python_template/ros1_noetic/exercise.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
+            self.application_process = subprocess.Popen(["python3", application_file], stdout=sys.stdout, stderr=subprocess.STDOUT,
                                 bufsize=1024, universal_newlines=True)
-            print("\n\n\n PROCESS APPLICATION STARTED: " + str(self.application_process) + "\n\n\n")
             rosservice.call_service("/gazebo/unpause_physics", [])
         else:
             print('errors')
             raise Exception(errors)
+        
+        LogManager.logger.info("Run application transition finished")
 
 
     def on_stop(self, event):
@@ -195,17 +188,16 @@ class Manager:
         self.application_process = None
         rosservice.call_service('/gazebo/pause_physics', [])
         rosservice.call_service("/gazebo/reset_world", [])
-        self.__code_loaded = False
 
 
     def on_terminate(self, event):
-        """Terminates the application and the launcher \
-            and sets the variable __code_loaded to False"""
+        """Terminates the application and the launcher"""
         try:
             stop_process_and_children(self.application_process)
             self.application_process = None
-            self.__code_loaded = False
-            self.launcher.terminate()
+            self.application_process = None
+            self.world_launcher.terminate()
+            self.visualization_launcher.terminate()
         except Exception:
             LogManager.logger.exception(f"Exception terminating instance")
             print(traceback.format_exc())
@@ -213,10 +205,10 @@ class Manager:
     def on_disconnect(self, event):
         try:
             self.consumer.stop()
-            self.__code_loaded = False
             stop_process_and_children(self.application_process)
             self.application_process = None
-            self.launcher.terminate()
+            self.world_launcher.terminate()
+            self.visualization_launcher.terminate()
         except Exception as e:
             LogManager.logger.exception(f"Exception terminating instance")
             print(traceback.format_exc())
@@ -233,7 +225,6 @@ class Manager:
         proc = psutil.Process(self.application_process.pid)
         proc.suspend()
         rosservice.call_service('/gazebo/pause_physics', [])
-        self.__code_loaded = False
 
     def on_resume(self, msg):
         proc = psutil.Process(self.application_process.pid)
@@ -255,8 +246,8 @@ class Manager:
             self.running = False
             stop_process_and_children(self.application_process)
             self.application_process = None
-            self.__code_loaded = False
-            self.launcher.terminate()
+            self.world_launcher.terminate()
+            self.visualization_launcher.terminate()
 
         signal.signal(signal.SIGINT, signal_handler)
 
