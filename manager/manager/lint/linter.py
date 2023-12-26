@@ -71,16 +71,20 @@ class Lint:
             # Removes ompl E1101 error
             ompl_error = re.search(
                 r":[0-9]+: error \(E1101, no-member, *\) Module 'ompl.*\n", result)
-            if (ompl_error != None):
+            while (ompl_error is not None):                
                 result = result[:ompl_error.start()] + \
                     result[ompl_error.end():]
+                ompl_error = re.search(
+                    r":[0-9]+: error \(E1101, no-member, *\) Module 'ompl.*\n", result)
             
             # Removes cv2 E1101 error
             cv2_error = re.search(
                 r":[0-9]+: error \(E1101, no-member, *\) Module 'cv2.*\n", result)
-            if (cv2_error != None):
+            while (cv2_error is not None):
                 result = result[:cv2_error.start()] + \
                     result[cv2_error.end():]
+                cv2_error = re.search(
+                    r":[0-9]+: error \(E1101, no-member, *\) Module 'cv2.*\n", result)
 
             # Removes no value for argument 'self' error
             self_exception = re.search(
