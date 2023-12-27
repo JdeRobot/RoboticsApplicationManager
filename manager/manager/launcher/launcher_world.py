@@ -45,19 +45,20 @@ class LauncherWorld(BaseModel):
     launch_file_path: str
     module: str = '.'.join(__name__.split('.')[:-1])
     ros_version: int = get_ros_version()
-    launcher: Optional[ILauncher] = None
+    launchers: Optional[ILauncher] = []
 
     def run(self):
-        # Launch world
         for module in worlds[self.world][str(self.ros_version)]:
             module["launch_file"] = self.launch_file_path
-            self.launcher = self.launch_module(module)
+            launcher = self.launch_module(module)
+            self.launchers.append(launcher)
 
     def terminate(self):
-        if self.launcher is not None and self.launcher.is_running():
-            LogManager.logger.info(f"Terminating world launcher")
-            self.launcher.terminate()
-        self.launcher = None  # Restablecer el lanzador del mundo
+        LogManager.logger.info("Terminating world launcher")
+        if self.launchers:
+            for launcher in self.launchers:
+                launcher.terminate()
+        self.launchers = []
 
     def launch_module(self, configuration):
         def process_terminated(name, exit_code):

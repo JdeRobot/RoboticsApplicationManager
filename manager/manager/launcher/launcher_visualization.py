@@ -85,17 +85,19 @@ visualization = {
 class LauncherVisualization(BaseModel):
     module: str = '.'.join(__name__.split('.')[:-1])
     visualization: str
-    launcher: Optional[ILauncher] = None
+    launchers: Optional[ILauncher] = []
 
     def run(self):
         for module in visualization[self.visualization]:
-            self.launcher = self.launch_module(module)
+            launcher = self.launch_module(module)
+            self.launchers.append(launcher)
 
     def terminate(self):
-        if self.launcher is not None and self.launcher.is_running():
-            LogManager.logger.info(f"Terminating world launcher")
-            self.launcher.terminate()
-        self.launcher = None  # Restablecer el lanzador del mundo
+        LogManager.logger.info("Terminating visualization launcher")
+        for launcher in self.launchers:
+            if launcher.is_running():
+                launcher.terminate()
+        self.launchers = []
 
     def launch_module(self, configuration):
         def process_terminated(name, exit_code):
