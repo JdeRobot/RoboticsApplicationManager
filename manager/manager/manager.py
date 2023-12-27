@@ -59,7 +59,7 @@ class Manager:
         {'trigger': 'terminate', 'source': ['visualization_ready','application_running', 'paused'],
             'dest': 'visualization_ready', 'before': 'on_terminate'},
         {'trigger': 'stop', 'source': [
-            'application_running', 'paused'], 'dest': 'ready', 'before': 'on_stop'},
+            'application_running', 'paused'], 'dest': 'visualization_ready', 'before': 'on_stop'},
         # Global transitions
         {'trigger': 'disconnect', 'source': '*',
             'dest': 'idle', 'before': 'on_disconnect'},
@@ -182,14 +182,6 @@ class Manager:
         
         LogManager.logger.info("Run application transition finished")
 
-
-    def on_stop(self, event):
-        stop_process_and_children(self.application_process)
-        self.application_process = None
-        rosservice.call_service('/gazebo/pause_physics', [])
-        rosservice.call_service("/gazebo/reset_world", [])
-
-
     def on_terminate(self, event):
         """Terminates the application"""
         try:
@@ -241,6 +233,12 @@ class Manager:
         proc.resume()
         rosservice.call_service("/gazebo/unpause_physics", [])
 
+    def on_stop(self, event):
+        stop_process_and_children(self.application_process)
+        self.application_process = None
+        rosservice.call_service('/gazebo/pause_physics', [])
+        rosservice.call_service("/gazebo/reset_world", [])
+
     def start(self):
         """
         Starts the RAM
@@ -254,10 +252,32 @@ class Manager:
         def signal_handler(sign, frame):
             print("\nprogram exiting gracefully")
             self.running = False
-            stop_process_and_children(self.application_process)
-            self.application_process = None
-            self.world_launcher.terminate()
-            self.visualization_launcher.terminate()
+            if self.gui_server is not None:
+                try:
+                    self.gui_server.stop()
+                except Exception as e:
+                    LogManager.logger.exception("Exception stopping GUI server")
+            try:
+                self.consumer.stop()
+            except Exception as e:
+                LogManager.logger.exception("Exception stopping consumer")
+            if self.application_process:
+                try:
+                    stop_process_and_children(self.application_process)
+                    self.application_process = None
+                except Exception as e:
+                    LogManager.logger.exception("Exception stopping application process")
+
+            try:
+                self.visualization_launcher.terminate()
+            except Exception as e:
+                LogManager.logger.exception("Exception terminating visualization launcher")
+
+            try:
+                self.world_launcher.terminate()
+            except Exception as e:
+                LogManager.logger.exception("Exception terminating world launcher")
+
 
         signal.signal(signal.SIGINT, signal_handler)
 
