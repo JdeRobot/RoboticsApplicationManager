@@ -1,5 +1,5 @@
 import os
-from typing import List, Any
+from typing import ClassVar, List, Any
 import time
 import stat
 
@@ -18,7 +18,7 @@ class LauncherRos2Api(ILauncher):
     plugin_folders: List[str]
     parameters: List[str]
     launch_file: str
-    running = False
+    running: ClassVar[bool] = False
     threads: List[Any] = []
 
     def run(self,callback):
