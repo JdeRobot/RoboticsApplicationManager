@@ -146,7 +146,7 @@ class CompatibilityExerciseWrapperRos2(IRoboticsPythonApplication):
 
     def load_code(self, code: str):
         errors = self.linter.evaluate_code(code)
-        if errors == "":
+        if errors == "" or errors == "None":
             self.brain_ready_event.clear()
             self.exercise_connection.send(f"#code {code}")
             self.brain_ready_event.wait()
