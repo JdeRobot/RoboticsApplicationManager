@@ -6,7 +6,8 @@ import subprocess
 import sys
 import psutil
 import time
-import rosservice
+if ("noetic" in str(subprocess.check_output(['bash', '-c', 'echo $ROS_DISTRO']))):
+    import rosservice
 import traceback
 from queue import Queue
 from uuid import uuid4
@@ -69,7 +70,8 @@ class Manager:
     def __init__(self, host: str, port: int):
         self.machine = Machine(model=self, states=Manager.states, transitions=Manager.transitions,
                                initial='idle', send_event=True, after_state_change=self.state_change)
-
+        self.ros_version = subprocess.check_output(
+            ['bash', '-c', 'echo $ROS_DISTRO'])
         self.queue = Queue()
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.world_launcher = None
@@ -175,13 +177,13 @@ class Manager:
 
             self.application_process = subprocess.Popen(["python3", application_file], stdout=sys.stdout, stderr=subprocess.STDOUT,
                                 bufsize=1024, universal_newlines=True)
-            rosservice.call_service("/gazebo/unpause_physics", [])
+            self.unpause_sim()
         else:
             print('errors')
             raise Exception(errors)
         
-        LogManager.logger.info("Run application transition finished")
-
+        LogManager.logger.info("Run application transition finished")    
+        
     def on_terminate(self, event):
         """Terminates the application"""
         try:
@@ -226,18 +228,18 @@ class Manager:
     def on_pause(self, msg):
         proc = psutil.Process(self.application_process.pid)
         proc.suspend()
-        rosservice.call_service('/gazebo/pause_physics', [])
+        self.pause_sim()
 
     def on_resume(self, msg):
         proc = psutil.Process(self.application_process.pid)
         proc.resume()
-        rosservice.call_service("/gazebo/unpause_physics", [])
+        self.unpause_sim()
 
     def on_stop(self, event):
         stop_process_and_children(self.application_process)
         self.application_process = None
-        rosservice.call_service('/gazebo/pause_physics', [])
-        rosservice.call_service("/gazebo/reset_world", [])
+        self.pause_sim()
+        self.reset_sim()
 
     def start(self):
         """
@@ -298,6 +300,29 @@ class Manager:
                         id=str(uuid4()), message=str(e))
                 self.consumer.send_message(ex)
                 LogManager.logger.error(e, exc_info=True)
+
+    def pause_sim(self):
+        if "noetic" in str(self.ros_version):
+            rosservice.call_service("/gazebo/pause_physics", [])
+        else:
+            self.call_service("/pause_physics","std_srvs/srv/Empty")
+
+    def unpause_sim(self):
+        if "noetic" in str(self.ros_version):
+            rosservice.call_service("/gazebo/unpause_physics", [])
+        else:
+            self.call_service("/unpause_physics","std_srvs/srv/Empty")
+
+    def reset_sim(self):
+        if "noetic" in str(self.ros_version):
+            rosservice.call_service("/gazebo/reset_world", [])
+        else:
+            self.call_service("/reset_physics","std_srvs/srv/Empty")
+
+    def call_service(self, service, service_type):
+        command = f"ros2 service call {service} {service_type}"
+        subprocess.call(f"{command}", shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT, bufsize=1024,
+                                   universal_newlines=True)
 
 
 if __name__ == "__main__":
