@@ -187,8 +187,9 @@ class Manager:
     def on_terminate(self, event):
         """Terminates the application"""
         try:
-            stop_process_and_children(self.application_process)
-            self.application_process = None
+            if self.application_process is not None:
+                stop_process_and_children(self.application_process)
+                self.application_process = None
         except Exception:
             LogManager.logger.exception("No application running")
             print(traceback.format_exc())
