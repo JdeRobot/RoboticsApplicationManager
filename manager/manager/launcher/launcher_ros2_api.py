@@ -10,15 +10,9 @@ import subprocess
 import logging
 
 class LauncherRos2Api(ILauncher):
-    exercise_id: str
     type: str
     module: str
-    resource_folders: List[str]
-    model_folders: List[str]
-    plugin_folders: List[str]
-    parameters: List[str]
     launch_file: str
-    running: ClassVar[bool] = False
     threads: List[Any] = []
 
     def run(self,callback):
@@ -33,7 +27,6 @@ class LauncherRos2Api(ILauncher):
         self.threads.append(xserver_thread)
 
         # expand variables in configuration paths
-        self._set_environment()
         launch_file = os.path.expandvars(self.launch_file)
 
         if (ACCELERATION_ENABLED):
@@ -44,7 +37,6 @@ class LauncherRos2Api(ILauncher):
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
 
-        self.running = True
 
     def is_running(self):
         return self.running
@@ -56,22 +48,17 @@ class LauncherRos2Api(ILauncher):
             return False
 
     def terminate(self):
-        if self.is_running():
+        try:
             for thread in self.threads:
                 thread.terminate()
                 thread.join()
-                
-            kill_cmd = 'pkill -9 -f '
-            cmd = kill_cmd + 'gzserver'
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1024, universal_newlines=True)
-            cmd = kill_cmd + 'spawn_model.launch.py'
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1024, universal_newlines=True)
+            self.launch.shutdown()
+            self.wait_for_shutdown()
+        except Exception as e:
+            print("Exception shutting down ROS")
 
-    def _set_environment(self):
-        resource_folders = [os.path.expandvars(path) for path in self.resource_folders]
-        model_folders = [os.path.expandvars(path) for path in self.model_folders]
-        plugin_folders = [os.path.expandvars(path) for path in self.plugin_folders]
-
-        os.environ["GAZEBO_RESOURCE_PATH"] = f"{os.environ.get('GAZEBO_RESOURCE_PATH', '')}:{':'.join(resource_folders)}"
-        os.environ["GAZEBO_MODEL_PATH"] = f"{os.environ.get('GAZEBO_MODEL_PATH', '')}:{':'.join(model_folders)}"
-        os.environ["GAZEBO_PLUGIN_PATH"] = f"{os.environ.get('GAZEBO_PLUGIN_PATH', '')}:{':'.join(plugin_folders)}"
+        kill_cmd = 'pkill -9 -f '
+        cmd = kill_cmd + 'gzserver'
+        subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1024, universal_newlines=True)
+        cmd = kill_cmd + 'spawn_model.launch.py'
+        subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1024, universal_newlines=True)
