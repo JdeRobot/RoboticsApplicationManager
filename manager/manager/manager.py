@@ -169,18 +169,16 @@ class Manager:
         exercise_id = application_configuration['exercise_id']
         code = application_configuration['code']
         
-        errors = self.linter.evaluate_code(code, exercise_id)
-        if errors == "":
-            f = open("/workspace/code/academy.py", "w")
-            f.write(code)
-            f.close()
+        
+       
+        f = open("/workspace/code/academy.py", "w")
+        f.write(code)
+        f.close()
 
-            self.application_process = subprocess.Popen(["python3", application_file], stdout=sys.stdout, stderr=subprocess.STDOUT,
-                                bufsize=1024, universal_newlines=True)
-            self.unpause_sim()
-        else:
-            print('errors')
-            raise Exception(errors)
+        self.application_process = subprocess.Popen(["python3", application_file], stdout=sys.stdout, stderr=subprocess.STDOUT,
+                            bufsize=1024, universal_newlines=True)
+        self.unpause_sim()
+
         
         LogManager.logger.info("Run application transition finished")    
         
