@@ -1,5 +1,5 @@
 import os
-from typing import ClassVar, List, Any
+from typing import List, Any
 import time
 import stat
 
@@ -26,20 +26,13 @@ class LauncherRos2Api(ILauncher):
         xserver_thread.start()
         self.threads.append(xserver_thread)
 
-        # expand variables in configuration paths
-        launch_file = os.path.expandvars(self.launch_file)
-
         if (ACCELERATION_ENABLED):
-            exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {launch_file}"
+            exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file}"
         else:
-            exercise_launch_cmd = f"ros2 launch {launch_file}"
+            exercise_launch_cmd = f"ros2 launch {self.launch_file}"
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
-
-
-    def is_running(self):
-        return self.running
     
     def check_device(self, device_path):
         try:
@@ -48,14 +41,16 @@ class LauncherRos2Api(ILauncher):
             return False
 
     def terminate(self):
-        try:
+        if self.threads is not None:
             for thread in self.threads:
                 thread.terminate()
                 thread.join()
-            self.launch.shutdown()
-            self.wait_for_shutdown()
-        except Exception as e:
-            print("Exception shutting down ROS")
+            
+        kill_cmd = 'pkill -9 -f '
+        cmd = kill_cmd + 'gzserver'
+        subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1024, universal_newlines=True)
+        cmd = kill_cmd + 'spawn_model.launch.py'
+        subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1024, universal_newlines=True)
 
         kill_cmd = 'pkill -9 -f '
         cmd = kill_cmd + 'gzserver'
