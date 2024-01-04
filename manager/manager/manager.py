@@ -168,7 +168,7 @@ class Manager:
         application_file = application_configuration['template']
         exercise_id = application_configuration['exercise_id']
         code = application_configuration['code']
-        
+    
         errors = self.linter.evaluate_code(code, exercise_id)
         if errors == "":
             f = open("/workspace/code/academy.py", "w")
