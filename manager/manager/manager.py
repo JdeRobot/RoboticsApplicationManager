@@ -169,17 +169,18 @@ class Manager:
         exercise_id = application_configuration['exercise_id']
         code = application_configuration['code']
         
-        
-       
-        f = open("/workspace/code/academy.py", "w")
-        f.write(code)
-        f.close()
+        errors = self.linter.evaluate_code(code, exercise_id)
+        if errors == "":
+            f = open("/workspace/code/academy.py", "w")
+            f.write(code)
+            f.close()
 
-        self.application_process = subprocess.Popen(["python3", application_file], stdout=sys.stdout, stderr=subprocess.STDOUT,
-                            bufsize=1024, universal_newlines=True)
-        self.unpause_sim()
-
-        
+            self.application_process = subprocess.Popen(["python3", application_file], stdout=sys.stdout, stderr=subprocess.STDOUT,
+                                bufsize=1024, universal_newlines=True)
+            self.unpause_sim()
+        else:
+            print('errors')
+            raise Exception(errors)
         LogManager.logger.info("Run application transition finished")    
         
     def on_terminate(self, event):
@@ -220,6 +221,10 @@ class Manager:
 
 
     def process_messsage(self, message):
+        if message.command == "#gui":
+            self.gui_server.send(message.data)
+            return
+        
         self.trigger(message.command, data=message.data or None)
         response = {"message": f"Exercise state changed to {self.state}"}
         self.consumer.send_message(message.response(response))
