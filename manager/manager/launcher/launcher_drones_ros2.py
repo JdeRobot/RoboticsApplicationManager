@@ -6,14 +6,9 @@ from typing import List, Any
 
 
 class LauncherDronesRos2(ILauncher):
-    exercise_id: str
     type: str
     module: str
-    resource_folders: List[str]
-    model_folders: List[str]
-    plugin_folders: List[str]
     launch_file: str
-    running = False
     threads: List[Any] = []
 
     def run(self, callback):
@@ -25,7 +20,6 @@ class LauncherDronesRos2(ILauncher):
         self.threads.append(xserver_thread)
 
         # expand variables in configuration paths
-        self._set_environment()
         world_file = os.path.expandvars(self.launch_file)
 
         # Launching MicroXRCE and Aerostack2 nodes
@@ -42,7 +36,7 @@ class LauncherDronesRos2(ILauncher):
         px4_launch_thread.start()
         self.threads.append(px4_launch_thread)
 
-        self.running = True
+        
 
     def is_running(self):
         return True
@@ -52,13 +46,4 @@ class LauncherDronesRos2(ILauncher):
             for thread in self.threads:
                 thread.terminate()
                 thread.join()
-            self.running = False
-
-    def _set_environment(self):
-        resource_folders = [os.path.expandvars(path) for path in self.resource_folders]
-        model_folders = [os.path.expandvars(path) for path in self.model_folders]
-        plugin_folders = [os.path.expandvars(path) for path in self.plugin_folders]
-
-        os.environ["GAZEBO_RESOURCE_PATH"] = f"{os.environ.get('GAZEBO_RESOURCE_PATH', '')}:{':'.join(resource_folders)}"
-        os.environ["GAZEBO_MODEL_PATH"] = f"{os.environ.get('GAZEBO_MODEL_PATH', '')}:{':'.join(model_folders)}"
-        os.environ["GAZEBO_PLUGIN_PATH"] = f"{os.environ.get('GAZEBO_PLUGIN_PATH', '')}:{':'.join(plugin_folders)}"
+           
