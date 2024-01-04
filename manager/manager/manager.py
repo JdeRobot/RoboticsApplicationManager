@@ -321,7 +321,7 @@ class Manager:
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/reset_world", [])
         else:
-            self.call_service("/reset_physics","std_srvs/srv/Empty")
+            self.call_service("/reset_world","std_srvs/srv/Empty")
 
     def call_service(self, service, service_type):
         command = f"ros2 service call {service} {service_type}"
