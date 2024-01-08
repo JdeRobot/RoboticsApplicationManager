@@ -4,6 +4,7 @@ import os
 import signal
 import subprocess
 import sys
+import re
 import psutil
 import time
 if ("noetic" in str(subprocess.check_output(['bash', '-c', 'echo $ROS_DISTRO']))):
@@ -163,6 +164,29 @@ class Manager:
             self.gui_server.start()
         LogManager.logger.info("Visualization transition finished")
 
+    def add_frequency_control(self, code):
+        frequency_control_code_imports = """
+from datetime import datetime
+ideal_cycle = 20
+"""
+        code = frequency_control_code_imports + code
+        infinite_loop = re.search(
+            r'[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:', code)        
+        frequency_control_code_pre = """
+    start_time = datetime.now()
+            """
+        code = code[:infinite_loop.end()] + frequency_control_code_pre + code[infinite_loop.end():]
+        frequency_control_code_post = """
+    finish_time = datetime.now()
+    dt = finish_time - start_time
+    ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
+
+    if (ms < ideal_cycle):
+        time.sleep((ideal_cycle - ms) / 1000.0)
+"""        
+        code = code + frequency_control_code_post
+        return code
+
     def on_run_application(self, event):
         application_configuration = event.kwargs.get('data', {})
         application_file = application_configuration['template']
@@ -171,13 +195,14 @@ class Manager:
     
         errors = self.linter.evaluate_code(code, exercise_id)
         if errors == "":
+            code = self.add_frequency_control(code)
             f = open("/workspace/code/academy.py", "w")
             f.write(code)
             f.close()
 
+            self.unpause_sim()
             self.application_process = subprocess.Popen(["python3", application_file], stdout=sys.stdout, stderr=subprocess.STDOUT,
                                 bufsize=1024, universal_newlines=True)
-            self.unpause_sim()
         else:
             print('errors')
             raise Exception(errors)
