@@ -6,6 +6,7 @@ import subprocess
 import sys
 import re
 import psutil
+import shutil
 import time
 if ("noetic" in str(subprocess.check_output(['bash', '-c', 'echo $ROS_DISTRO']))):
     import rosservice
@@ -201,7 +202,10 @@ ideal_cycle = 20
             f.close()
 
             self.unpause_sim()
-            self.application_process = subprocess.Popen(["python3", application_file], stdout=sys.stdout, stderr=subprocess.STDOUT,
+            shutil.copyfile(application_file, "/workspace/code/exercise.py")
+            application_folder = application_file.replace("/exercise.py", "")            
+            shutil.copytree(application_folder, "/workspace/code", dirs_exist_ok=True)
+            self.application_process = subprocess.Popen(["python3", "/workspace/code/exercise.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
                                 bufsize=1024, universal_newlines=True)
         else:
             print('errors')
