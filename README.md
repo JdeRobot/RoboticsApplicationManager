@@ -1,6 +1,6 @@
-*#Robotics Application Manager (RAM) Repository*
+# Robotics Application Manager (RAM) Repository
 
-*## Overview*
+## Overview
 
 This repository provides a framework for managing the lifecycle of robotics applications, enabling their remote execution, communication, and state management. It offers the following key features:
 
@@ -11,7 +11,7 @@ This repository provides a framework for managing the lifecycle of robotics appl
 - *Introspection data about the system*
 - *Logging for tracking application activity*
 
-*## Key Components*
+## Key Components
 
 - *Manager (manager.py):*
     - Orchestrates application states (idle, connected, ready, running, paused)
@@ -19,17 +19,20 @@ This repository provides a framework for managing the lifecycle of robotics appl
     - Launches applications and ROS environments
     - Interacts with applications through a defined interface
     - Provides introspection data about the system
+      
 - *Communication Modules:*
     - *WebSocket Servers (consumer.py, new_consumer.py):* Facilitate communication with clients
     - *JavaScript Client Library (comms_manager.js):* Enables client-side interaction
+      
 - *Application Interface:*
     - *Robotics Python Application Interface (robotics_python_application_interface.py):* Defines methods for loading code, managing execution, monitoring status, and receiving updates
+      
 - *Utility Functions:*
     - *Process Utilities (process_utils.py):* Handle process management, class loading, and system state checks
     - *Logging (log_manager.py):* Tracks application activity and potential issues
     - *Docker Thread (docker_thread.py):* Runs Docker commands in separate threads for enhanced control
 
-*## Usage*
+## Usage
 
 1. *Prerequisites:*
     - Python 3.x
@@ -41,9 +44,9 @@ This repository provides a framework for managing the lifecycle of robotics appl
 4. *Connecting a Client:*
     - Use the provided JavaScript client library to connect to the WebSocket server and interact with the Manager.
 
-*## Contributing*
+## Contributing
 
-Organizational Guidelines:
+### Organizational Guidelines:
 
 
 Fork: Create a fork of this repository within the organization's GitHub account.
@@ -66,13 +69,13 @@ Pull Request: Create a pull request to merge your changes into the main reposito
 
 Address Feedback: Responsively address comments and feedback from reviewers.
 
-*### Additional Contribution Tips:*
+### Additional Contribution Tips:
 
 Familiarize with Project Structure: Review the repository structure to understand component relationships.
 Communicate: Ask questions and discuss ideas with team members through issue trackers or designated channels.
 Document Changes: Clearly explain the purpose and impact of your modifications in pull requests.
 Test Thoroughly: Ensure your changes don't introduce regressions or unexpected behavior.
 
-*## License*
+## License
 
 This project is licensed under the MIT License. See the LICENSE file for more details.
