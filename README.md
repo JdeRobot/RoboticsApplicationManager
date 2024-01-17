@@ -71,10 +71,21 @@ Address Feedback: Responsively address comments and feedback from reviewers.
 
 ### Additional Contribution Tips:
 
-Familiarize with Project Structure: Review the repository structure to understand component relationships.
-Communicate: Ask questions and discuss ideas with team members through issue trackers or designated channels.
-Document Changes: Clearly explain the purpose and impact of your modifications in pull requests.
-Test Thoroughly: Ensure your changes don't introduce regressions or unexpected behavior.
+#### Familiarize with Project Structure: 
+Review the repository structure to understand component relationships.
+
+
+#### Communicate:
+Ask questions and discuss ideas with team members through issue trackers or designated channels.
+
+
+#### Document Changes:
+Clearly explain the purpose and impact of your modifications in pull requests.
+
+
+#### Test Thoroughly:
+Ensure your changes don't introduce regressions or unexpected behavior.
+
 
 ## License
 
