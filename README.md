@@ -1,4 +1,4 @@
-*# Robotics Application Manager (RAM) Repository*
+*#Robotics Application Manager (RAM) Repository*
 
 *## Overview*
 
