@@ -55,35 +55,35 @@ This repository provides a framework for managing the lifecycle of robotics appl
 ### Organizational Guidelines:
 
 
-#### Fork:
-Create a fork of this repository within the organization's GitHub account.
+**1. Fork:**
+* Create a fork of this repository within the organization's GitHub account.
 
 
-#### Branch:
-Create a descriptively named branch for your changes.
+**2. Branch:**
+* Create a descriptively named branch for your changes.
 
 
-#### Coding Style:
-Adhere to the organization's coding style guidelines (link to guidelines).
+**3. Coding Style:**
+* Adhere to the organization's coding style guidelines (link to guidelines).
 
 
-#### Testing:
-Write thorough unit tests for any new code or modifications.
+**4. Testing:**
+* Write thorough unit tests for any new code or modifications.
 
 
-#### Code Review:
-Request code reviews from appropriate team members before merging.
+**5. Code Review:**
+* Request code reviews from appropriate team members before merging.
 
 
-#### Pull Request:
-Create a pull request to merge your changes into the main repository.
+**6. Pull Request:**
+* Create a pull request to merge your changes into the main repository.
 
 
-#### Address Feedback:
-Responsively address comments and feedback from reviewers.
+**7. Address Feedback:**
+* Responsively address comments and feedback from reviewers.
 
 
-### Additional Contribution Tips:
+## Additional Contribution Tips:
 
 #### Familiarize with Project Structure: 
 Review the repository structure to understand component relationships.
