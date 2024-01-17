@@ -44,7 +44,12 @@ This repository provides a framework for managing the lifecycle of robotics appl
     ```
 
 3. **Starting the Manager:**
-    - Run `python manager.py`
+   
+Run the following command:
+
+```bash
+python manager.py
+```
 
 4. **Connecting a Client:**
     - Use the provided JavaScript client library to connect to the WebSocket server and interact with the Manager.
