@@ -38,7 +38,10 @@ This repository provides a framework for managing the lifecycle of robotics appl
     - Python [3.x](https://www.python.org/downloads/)
     - Required libraries (listed in requirements.txt)
 2. *Installation:*
-    - Install dependencies: pip install -r requirements.txt
+    - Install dependencies:
+      ```bash
+      pip install -r requirements.txt
+
 3. *Starting the Manager:*
     - Run python manager.py
 4. *Connecting a Client:*
