@@ -85,20 +85,20 @@ This repository provides a framework for managing the lifecycle of robotics appl
 
 ## Additional Contribution Tips:
 
-#### Familiarize with Project Structure: 
-Review the repository structure to understand component relationships.
+**1. Familiarize with Project Structure:** 
+* Review the repository structure to understand component relationships.
 
 
-#### Communicate:
-Ask questions and discuss ideas with team members through issue trackers or designated channels.
+**2. Communicate:**
+* Ask questions and discuss ideas with team members through issue trackers or designated channels.
 
 
-#### Document Changes:
-Clearly explain the purpose and impact of your modifications in pull requests.
+**3. Document Changes:**
+* Clearly explain the purpose and impact of your modifications in pull requests.
 
 
-#### Test Thoroughly:
-Ensure your changes don't introduce regressions or unexpected behavior.
+**4. Test Thoroughly:**
+* Ensure your changes don't introduce regressions or unexpected behavior.
 
 
 ## License
