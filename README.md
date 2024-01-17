@@ -103,5 +103,4 @@ This repository provides a framework for managing the lifecycle of robotics appl
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for more details.
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+This project is licensed under the MIT License. See the LICENSE file for more details. [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
