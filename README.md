@@ -69,7 +69,7 @@ This repository provides a framework for managing the lifecycle of robotics appl
 
 
 **3. Coding Style:**
-* Adhere to the organization's coding style guidelines (link to guidelines).
+* Adhere to the organization's coding style guidelines [link to guidelines](https://github.com/JdeRobot).
 
 
 **4. Testing:**
