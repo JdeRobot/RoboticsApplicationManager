@@ -35,7 +35,7 @@ This repository provides a framework for managing the lifecycle of robotics appl
 ## Usage
 
 1. *Prerequisites:*
-    - Python 3.x
+    - Python [3.x](https://www.python.org/downloads/)
     - Required libraries (listed in requirements.txt)
 2. *Installation:*
     - Install dependencies: pip install -r requirements.txt
@@ -49,25 +49,33 @@ This repository provides a framework for managing the lifecycle of robotics appl
 ### Organizational Guidelines:
 
 
-Fork: Create a fork of this repository within the organization's GitHub account.
+#### Fork:
+Create a fork of this repository within the organization's GitHub account.
 
 
-Branch: Create a descriptively named branch for your changes.
+#### Branch:
+Create a descriptively named branch for your changes.
 
 
-Coding Style: Adhere to the organization's coding style guidelines (link to guidelines).
+#### Coding Style:
+Adhere to the organization's coding style guidelines (link to guidelines).
 
 
-Testing: Write thorough unit tests for any new code or modifications.
+#### Testing:
+Write thorough unit tests for any new code or modifications.
 
 
-Code Review: Request code reviews from appropriate team members before merging.
+#### Code Review:
+Request code reviews from appropriate team members before merging.
 
 
-Pull Request: Create a pull request to merge your changes into the main repository.
+#### Pull Request:
+Create a pull request to merge your changes into the main repository.
 
 
-Address Feedback: Responsively address comments and feedback from reviewers.
+#### Address Feedback:
+Responsively address comments and feedback from reviewers.
+
 
 ### Additional Contribution Tips:
 
