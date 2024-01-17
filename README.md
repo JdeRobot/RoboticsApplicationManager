@@ -13,21 +13,21 @@ This repository provides a framework for managing the lifecycle of robotics appl
 
 ## Key Components
 
-- *Manager (manager.py):*
+- **Manager (manager.py):**
     - Orchestrates application states (idle, connected, ready, running, paused)
     - Handles external commands (start, stop, load code, pause, resume, terminate, disconnect)
     - Launches applications and ROS environments
     - Interacts with applications through a defined interface
     - Provides introspection data about the system
       
-- *Communication Modules:*
+- **Communication Modules:**
     - *WebSocket Servers (consumer.py, new_consumer.py):* Facilitate communication with clients
     - *JavaScript Client Library (comms_manager.js):* Enables client-side interaction
       
-- *Application Interface:*
+- **Application Interface:**
     - *Robotics Python Application Interface (robotics_python_application_interface.py):* Defines methods for loading code, managing execution, monitoring status, and receiving updates
       
-- *Utility Functions:*
+- **Utility Functions:**
     - *Process Utilities (process_utils.py):* Handle process management, class loading, and system state checks
     - *Logging (log_manager.py):* Tracks application activity and potential issues
     - *Docker Thread (docker_thread.py):* Runs Docker commands in separate threads for enhanced control
