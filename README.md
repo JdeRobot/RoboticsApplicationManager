@@ -32,18 +32,23 @@ This repository provides a framework for managing the lifecycle of robotics appl
     - *Logging (log_manager.py):* Tracks application activity and potential issues
     - *Docker Thread (docker_thread.py):* Runs Docker commands in separate threads for enhanced control
 
-## Usage
+ **## Usage**
 
-1. *Prerequisites:*
-    - Python [3.x](https://www.python.org/downloads/)
-    - Required libraries (listed in requirements.txt)
-2. *Installation:*
-    - Install dependencies: ```bash
-pip install -r requirements.txt
-3. *Starting the Manager:*
-    - Run python manager.py
-4. *Connecting a Client:*
+1. **Prerequisites:**
+    - Python 3.x: [https://www.python.org/downloads/](https://www.python.org/downloads/)
+    - Required libraries (listed in `requirements.txt`)
+
+2. **Installation:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3. **Starting the Manager:**
+    - Run `python manager.py`
+
+4. **Connecting a Client:**
     - Use the provided JavaScript client library to connect to the WebSocket server and interact with the Manager.
+
 
 ## Contributing
 
