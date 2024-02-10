@@ -190,10 +190,15 @@ ideal_cycle = 20
 
     def on_run_application(self, event):
         application_configuration = event.kwargs.get('data', {})
-        application_file = application_configuration['template']
+        application_file_path = application_configuration['template']
         exercise_id = application_configuration['exercise_id']
         code = application_configuration['code']
-    
+
+        if "noetic" in str(self.ros_version):
+            application_file = application_file_path + '/ros1_noetic/exercise.py'
+        else:
+            application_file = application_file_path + '/ros2_humble/exercise.py'
+
         errors = self.linter.evaluate_code(code, exercise_id)
         if errors == "":
             code = self.add_frequency_control(code)
