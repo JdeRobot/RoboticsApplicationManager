@@ -18,6 +18,7 @@ class LauncherRos2Api(ILauncher):
     plugin_folders: List[str]
     parameters: List[str]
     launch_file: str
+    running: bool
     running = False
     threads: List[Any] = []
 
