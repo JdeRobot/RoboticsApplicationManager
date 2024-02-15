@@ -13,6 +13,7 @@ class LauncherDronesRos2(ILauncher):
     model_folders: List[str]
     plugin_folders: List[str]
     launch_file: str
+    running: bool
     running = False
     threads: List[Any] = []
 
