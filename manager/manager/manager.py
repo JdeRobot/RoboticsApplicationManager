@@ -219,13 +219,13 @@ ideal_cycle = 20
         
     def on_terminate(self, event):
         """Terminates the application"""
-        try:
-            if self.application_process is not None:
+        if self.application_process:
+            try:
                 stop_process_and_children(self.application_process)
                 self.application_process = None
-        except Exception:
-            LogManager.logger.exception("No application running")
-            print(traceback.format_exc())
+            except Exception:
+                LogManager.logger.exception("No application running")
+                print(traceback.format_exc())
 
     def on_disconnect(self, event):
         try:
@@ -233,21 +233,24 @@ ideal_cycle = 20
         except Exception as e:
             LogManager.logger.exception("Exception stopping consumer")
 
-        try:
-            stop_process_and_children(self.application_process)
-            self.application_process = None
-        except Exception as e:
-            LogManager.logger.exception("Exception stopping application process")
+        if self.application_process:
+            try:
+                stop_process_and_children(self.application_process)
+                self.application_process = None
+            except Exception as e:
+                LogManager.logger.exception("Exception stopping application process")
 
-        try:
-            self.visualization_launcher.terminate()
-        except Exception as e:
-            LogManager.logger.exception("Exception terminating visualization launcher")
+        if self.visualization_launcher:
+            try:
+                self.visualization_launcher.terminate()
+            except Exception as e:
+                LogManager.logger.exception("Exception terminating visualization launcher")
 
-        try:
-            self.world_launcher.terminate()
-        except Exception as e:
-            LogManager.logger.exception("Exception terminating world launcher")
+        if self.world_launcher:
+            try:
+                self.world_launcher.terminate()
+            except Exception as e:
+                LogManager.logger.exception("Exception terminating world launcher")
 
         # Reiniciar el script
         python = sys.executable
@@ -301,6 +304,7 @@ ideal_cycle = 20
                 self.consumer.stop()
             except Exception as e:
                 LogManager.logger.exception("Exception stopping consumer")
+
             if self.application_process:
                 try:
                     stop_process_and_children(self.application_process)
@@ -308,15 +312,17 @@ ideal_cycle = 20
                 except Exception as e:
                     LogManager.logger.exception("Exception stopping application process")
 
-            try:
-                self.visualization_launcher.terminate()
-            except Exception as e:
-                LogManager.logger.exception("Exception terminating visualization launcher")
+            if self.visualization_launcher:
+                try:
+                    self.visualization_launcher.terminate()
+                except Exception as e:
+                    LogManager.logger.exception("Exception terminating visualization launcher")
 
-            try:
-                self.world_launcher.terminate()
-            except Exception as e:
-                LogManager.logger.exception("Exception terminating world launcher")
+            if self.world_launcher:
+                try:
+                    self.world_launcher.terminate()
+                except Exception as e:
+                    LogManager.logger.exception("Exception terminating world launcher")
 
 
         signal.signal(signal.SIGINT, signal_handler)
