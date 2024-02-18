@@ -167,6 +167,7 @@ class Manager:
 
     def add_frequency_control(self, code):
         frequency_control_code_imports = """
+import time
 from datetime import datetime
 ideal_cycle = 20
 """
@@ -184,7 +185,7 @@ ideal_cycle = 20
 
     if (ms < ideal_cycle):
         time.sleep((ideal_cycle - ms) / 1000.0)
-"""        
+"""
         code = code + frequency_control_code_post
         return code
 
