@@ -44,29 +44,36 @@ class Manager:
         # Transitions for state idle
         {'trigger': 'connect', 'source': 'idle',
             'dest': 'connected', 'before': 'on_connect'},
+
         # Transitions for state connected
         {'trigger': 'launch_world', 'source': 'connected',
             'dest': 'world_ready', 'before': 'on_launch_world'},
+
         # Transitions for state world ready
         {'trigger': 'prepare_visualization',
             'source': 'world_ready', 'dest': 'visualization_ready', 'before': 'on_prepare_visualization'},
+
         # Transitions for state visualization_ready
         {'trigger': 'run_application', 'source': [
             'visualization_ready', 'paused'], 'dest': 'application_running',  'before': 'on_run_application'},
+
         # Transitions for state application_running
         {'trigger': 'pause', 'source': 'application_running',
             'dest': 'paused', 'before': 'on_pause'},
-            # Transitions for state paused
         {'trigger': 'resume', 'source': 'paused',
             'dest': 'application_running', 'before': 'on_resume'},
-        {'trigger': 'terminate', 'source': ['visualization_ready','application_running', 'paused'],
-            'dest': 'visualization_ready', 'before': 'on_terminate'},
-        {'trigger': 'stop', 'source': [
-            'application_running', 'paused'], 'dest': 'visualization_ready', 'before': 'on_stop'},
+        
+        # Transitions for terminate levels
+        {'trigger': 'terminate_application', 'source': ['visualization_ready','application_running', 'paused'],
+            'dest': 'visualization_ready', 'before': 'on_terminate_application'},
+        {'trigger': 'terminate_visualization', 'source': 'visualization_ready',
+            'dest': 'world_ready', 'before': 'on_terminate_visualization'},
+        {'trigger': 'terminate_universe', 'source': 'world_ready',
+            'dest': 'connected', 'before': 'on_terminate_universe'},
+
         # Global transitions
         {'trigger': 'disconnect', 'source': '*',
             'dest': 'idle', 'before': 'on_disconnect'},
-
     ]
 
     def __init__(self, host: str, port: int):
@@ -217,16 +224,28 @@ ideal_cycle = 20
             print('errors')
             raise Exception(errors)
         LogManager.logger.info("Run application transition finished")    
-        
-    def on_terminate(self, event):
-        """Terminates the application"""
+    
+    def on_terminate_application(self, event):
+
         if self.application_process:
             try:
                 stop_process_and_children(self.application_process)
                 self.application_process = None
+                self.pause_sim()
+                self.reset_sim()
             except Exception:
                 LogManager.logger.exception("No application running")
                 print(traceback.format_exc())
+
+    def on_terminate_visualization(self, event):
+
+        self.visualization_launcher.terminate()
+        self.gui_server.stop()
+        self.gui_server = None
+
+    def on_terminate_universe(self, event):
+
+        self.world_launcher.terminate()
 
     def on_disconnect(self, event):
         try:
@@ -276,12 +295,28 @@ ideal_cycle = 20
         proc = psutil.Process(self.application_process.pid)
         proc.resume()
         self.unpause_sim()
+    def pause_sim(self):
+        if "noetic" in str(self.ros_version):
+            rosservice.call_service("/gazebo/pause_physics", [])
+        else:
+            self.call_service("/pause_physics","std_srvs/srv/Empty")
 
-    def on_stop(self, event):
-        stop_process_and_children(self.application_process)
-        self.application_process = None
-        self.pause_sim()
-        self.reset_sim()
+    def unpause_sim(self):
+        if "noetic" in str(self.ros_version):
+            rosservice.call_service("/gazebo/unpause_physics", [])
+        else:
+            self.call_service("/unpause_physics","std_srvs/srv/Empty")
+
+    def reset_sim(self):
+        if "noetic" in str(self.ros_version):
+            rosservice.call_service("/gazebo/reset_world", [])
+        else:
+            self.call_service("/reset_world","std_srvs/srv/Empty")
+
+    def call_service(self, service, service_type):
+        command = f"ros2 service call {service} {service_type}"
+        subprocess.call(f"{command}", shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT, bufsize=1024,
+                                   universal_newlines=True)
 
     def start(self):
         """
@@ -345,30 +380,6 @@ ideal_cycle = 20
                         id=str(uuid4()), message=str(e))
                 self.consumer.send_message(ex)
                 LogManager.logger.error(e, exc_info=True)
-
-    def pause_sim(self):
-        if "noetic" in str(self.ros_version):
-            rosservice.call_service("/gazebo/pause_physics", [])
-        else:
-            self.call_service("/pause_physics","std_srvs/srv/Empty")
-
-    def unpause_sim(self):
-        if "noetic" in str(self.ros_version):
-            rosservice.call_service("/gazebo/unpause_physics", [])
-        else:
-            self.call_service("/unpause_physics","std_srvs/srv/Empty")
-
-    def reset_sim(self):
-        if "noetic" in str(self.ros_version):
-            rosservice.call_service("/gazebo/reset_world", [])
-        else:
-            self.call_service("/reset_world","std_srvs/srv/Empty")
-
-    def call_service(self, service, service_type):
-        command = f"ros2 service call {service} {service_type}"
-        subprocess.call(f"{command}", shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT, bufsize=1024,
-                                   universal_newlines=True)
-
 
 if __name__ == "__main__":
     import argparse

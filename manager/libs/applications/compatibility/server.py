@@ -28,7 +28,7 @@ class Server(threading.Thread):
 
     def stop(self) -> None:
         self._stop.set()
-        self.server.shutdown()
+        self.server.shutdown_gracefully()
 
     def send(self, data):
         if self.current_client is not None:
