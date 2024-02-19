@@ -57,6 +57,7 @@ class Vnc_server:
         self.running = True
 
         self.wait_for_port("localhost", internal_port)
+        self.wait_for_port("localhost", external_port)
 
         self.create_desktop_icon()
         self.create_gzclient_icon()
