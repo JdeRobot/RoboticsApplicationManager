@@ -77,6 +77,7 @@ class Manager:
     ]
 
     def __init__(self, host: str, port: int):
+
         self.machine = Machine(model=self, states=Manager.states, transitions=Manager.transitions,
                                initial='idle', send_event=True, after_state_change=self.state_change)
         self.ros_version = subprocess.check_output(
@@ -197,32 +198,37 @@ ideal_cycle = 20
         return code
 
     def on_run_application(self, event):
+
+        # Extract app config
         application_configuration = event.kwargs.get('data', {})
         application_file_path = application_configuration['template']
         exercise_id = application_configuration['exercise_id']
         code = application_configuration['code']
 
+        # Template version
         if "noetic" in str(self.ros_version):
-            application_file = application_file_path + '/ros1_noetic/exercise.py'
+            application_folder = application_file_path + '/ros1_noetic/'
         else:
-            application_file = application_file_path + '/ros2_humble/exercise.py'
+            application_folder = application_file_path + '/ros2_humble/'
 
+        # Create executable app
         errors = self.linter.evaluate_code(code, exercise_id)
         if errors == "":
+
             code = self.add_frequency_control(code)
             f = open("/workspace/code/academy.py", "w")
             f.write(code)
             f.close()
 
-            self.unpause_sim()
-            shutil.copyfile(application_file, "/workspace/code/exercise.py")
-            application_folder = application_file.replace("/exercise.py", "")            
             shutil.copytree(application_folder, "/workspace/code", dirs_exist_ok=True)
-            self.application_process = subprocess.Popen(["python3", "/workspace/code/exercise.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
+            self.application_process = subprocess.Popen(["python3", "/workspace/code/academy.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
                                 bufsize=1024, universal_newlines=True)
+            
+            self.unpause_sim()
         else:
             print('errors')
             raise Exception(errors)
+        
         LogManager.logger.info("Run application transition finished")    
     
     def on_terminate_application(self, event):
@@ -276,7 +282,6 @@ ideal_cycle = 20
         python = sys.executable
         os.execl(python, python, *sys.argv)
 
-
     def process_messsage(self, message):
         if message.command == "#gui":
             self.gui_server.send(message.data)
@@ -295,6 +300,7 @@ ideal_cycle = 20
         proc = psutil.Process(self.application_process.pid)
         proc.resume()
         self.unpause_sim()
+
     def pause_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/pause_physics", [])
