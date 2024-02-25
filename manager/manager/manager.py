@@ -199,6 +199,7 @@ ideal_cycle = 20
 
     def on_run_application(self, event):
 
+        superthin = False
         # Extract app config
         application_configuration = event.kwargs.get('data', {})
         application_file_path = application_configuration['template']
@@ -211,6 +212,9 @@ ideal_cycle = 20
         else:
             application_folder = application_file_path + '/ros2_humble/'
 
+        if not os.path.isfile(application_folder + 'exercise.py'):
+            superthin = True
+
         # Create executable app
         errors = self.linter.evaluate_code(code, exercise_id)
         if errors == "":
@@ -221,9 +225,12 @@ ideal_cycle = 20
             f.close()
 
             shutil.copytree(application_folder, "/workspace/code", dirs_exist_ok=True)
-            self.application_process = subprocess.Popen(["python3", "/workspace/code/academy.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
+            if superthin:
+                self.application_process = subprocess.Popen(["python3", "/workspace/code/academy.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
                                 bufsize=1024, universal_newlines=True)
-            
+            else:
+                self.application_process = subprocess.Popen(["python3", "/workspace/code/exercise.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
+                                bufsize=1024, universal_newlines=True)
             self.unpause_sim()
         else:
             print('errors')
