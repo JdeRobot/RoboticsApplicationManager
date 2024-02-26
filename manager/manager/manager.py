@@ -13,6 +13,8 @@ if ("noetic" in str(subprocess.check_output(['bash', '-c', 'echo $ROS_DISTRO']))
 import traceback
 from queue import Queue
 from uuid import uuid4
+import base64
+import zipfile
 
 
 from transitions import Machine
@@ -200,41 +202,76 @@ ideal_cycle = 20
     def on_run_application(self, event):
 
         superthin = False
+
         # Extract app config
         application_configuration = event.kwargs.get('data', {})
-        application_file_path = application_configuration['template']
-        exercise_id = application_configuration['exercise_id']
-        code = application_configuration['code']
 
-        # Template version
-        if "noetic" in str(self.ros_version):
-            application_folder = application_file_path + '/ros1_noetic/'
+        if 'type' in application_configuration:
+
+            print("LET'S WATER THE TREES!")
+            code = application_configuration['code']
+            
+            # Unzip the app
+            if code.startswith('data:'):
+                _, _, code = code.partition('base64,')
+
+            print("Decoding and writing to app.zip")
+            try:
+                with open('/workspace/code/app.zip', 'wb') as result:
+                    result.write(base64.b64decode(code))
+            except Exception as e:
+                print(f"Error writing ZIP file: {e}")
+                raise
+            
+            print("Attempting to extract app.zip")
+            try:
+                with zipfile.ZipFile('/workspace/code/app.zip', 'r') as zip_ref:
+                    zip_ref.extractall('/workspace/code/')
+                print("Extraction successful!")
+            except zipfile.BadZipFile:
+                print("Error: The file is not a zip file or it is corrupted.")
+            except Exception as e:
+                print(f"Error extracting ZIP file: {e}")
+
+            # Launch the app
+            self.application_process = subprocess.Popen(["python3", "/workspace/code/execute_docker.py"], stdout=sys.stdout, 
+                                                        stderr=subprocess.STDOUT, bufsize=1024, universal_newlines=True)
+
         else:
-            application_folder = application_file_path + '/ros2_humble/'
 
-        if not os.path.isfile(application_folder + 'exercise.py'):
-            superthin = True
+            application_file_path = application_configuration['template']
+            exercise_id = application_configuration['exercise_id']
+            code = application_configuration['code']
 
-        # Create executable app
-        errors = self.linter.evaluate_code(code, exercise_id)
-        if errors == "":
-
-            code = self.add_frequency_control(code)
-            f = open("/workspace/code/academy.py", "w")
-            f.write(code)
-            f.close()
-
-            shutil.copytree(application_folder, "/workspace/code", dirs_exist_ok=True)
-            if superthin:
-                self.application_process = subprocess.Popen(["python3", "/workspace/code/academy.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
-                                bufsize=1024, universal_newlines=True)
+            # Template version
+            if "noetic" in str(self.ros_version):
+                application_folder = application_file_path + '/ros1_noetic/'
             else:
-                self.application_process = subprocess.Popen(["python3", "/workspace/code/exercise.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
-                                bufsize=1024, universal_newlines=True)
-            self.unpause_sim()
-        else:
-            print('errors')
-            raise Exception(errors)
+                application_folder = application_file_path + '/ros2_humble/'
+
+            if not os.path.isfile(application_folder + 'exercise.py'):
+                superthin = True
+
+            # Create executable app
+            errors = self.linter.evaluate_code(code, exercise_id)
+            if errors == "":
+
+                code = self.add_frequency_control(code)
+                f = open("/workspace/code/academy.py", "w")
+                f.write(code)
+                f.close()
+
+                shutil.copytree(application_folder, "/workspace/code", dirs_exist_ok=True)
+                if superthin:
+                    self.application_process = subprocess.Popen(["python3", "/workspace/code/academy.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
+                                    bufsize=1024, universal_newlines=True)
+                else:
+                    self.application_process = subprocess.Popen(["python3", "/workspace/code/exercise.py"], stdout=sys.stdout, stderr=subprocess.STDOUT,
+                                    bufsize=1024, universal_newlines=True)
+                self.unpause_sim()
+            else:
+                print('errors')
+                raise Exception(errors)
         
         LogManager.logger.info("Run application transition finished")    
     
