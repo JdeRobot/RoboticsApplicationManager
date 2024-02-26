@@ -237,6 +237,8 @@ ideal_cycle = 20
             self.application_process = subprocess.Popen(["python3", "/workspace/code/execute_docker.py"], stdout=sys.stdout, 
                                                         stderr=subprocess.STDOUT, bufsize=1024, universal_newlines=True)
 
+            self.unpause_sim()
+
         else:
 
             application_file_path = application_configuration['template']
