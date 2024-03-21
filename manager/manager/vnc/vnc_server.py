@@ -1,5 +1,6 @@
 import time
 import socket
+import ssl
 from src.manager.manager.docker_thread.docker_thread import DockerThread
 import subprocess
 from typing import List, Any
@@ -26,7 +27,7 @@ class Vnc_server:
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
         if self.get_ros_version() == '2':
-            novnc_cmd = f"/noVNC/utils/novnc_proxy --listen {external_port} --vnc localhost:{internal_port}"
+            novnc_cmd = f"/noVNC/utils/novnc_proxy --listen {external_port} --vnc localhost:{internal_port} --cert /etc/cert.pem --key /etc/key.pem"
         else:
             novnc_cmd = f"/noVNC/utils/launch.sh --listen {external_port} --vnc localhost:{internal_port}"
 
@@ -47,7 +48,7 @@ class Vnc_server:
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
         if self.get_ros_version() == '2':
-            novnc_cmd = f"/noVNC/utils/novnc_proxy --listen {external_port} --vnc localhost:{internal_port}"
+            novnc_cmd = f"/noVNC/utils/novnc_proxy --listen {external_port} --vnc localhost:{internal_port} --cert /etc/cert.pem --key /etc/key.pem"
         else:
             novnc_cmd = f"/noVNC/utils/launch.sh --listen {external_port} --vnc localhost:{internal_port}"
 
@@ -62,15 +63,26 @@ class Vnc_server:
         self.create_gzclient_icon()
 
 
-    def wait_for_port(self, host, port, timeout=20):
+    def wait_for_port(self, host, port, timeout=30):
         start_time = time.time()
         while True:
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Port {port} on {host} didn't become available within {timeout} seconds.")
+            # try http connection
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                     sock.settimeout(1)
                     sock.connect((host, port))
+                break
+            except (ConnectionRefusedError, TimeoutError):
+                time.sleep(1)
+            # try https connection
+            try:
+                context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    sock.settimeout(1)
+                    s_sock = context.wrap_socket(sock, server_hostname=host)
+                    s_sock.connect((host, port))
                 break
             except (ConnectionRefusedError, TimeoutError):
                 time.sleep(1)
