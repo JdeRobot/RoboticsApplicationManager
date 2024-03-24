@@ -8,7 +8,8 @@ import re
 import psutil
 import shutil
 import time
-if ("noetic" in str(subprocess.check_output(['bash', '-c', 'echo $ROS_DISTRO']))):
+
+if "noetic" in str(subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])):
     import rosservice
 import traceback
 from queue import Queue
@@ -27,7 +28,9 @@ from src.manager.manager.launcher.launcher_world import LauncherWorld
 from src.manager.manager.launcher.launcher_visualization import LauncherVisualization
 from src.manager.ram_logging.log_manager import LogManager
 from src.manager.libs.applications.compatibility.server import Server
-from src.manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
+from src.manager.manager.application.robotics_python_application_interface import (
+    IRoboticsPythonApplication,
+)
 from src.manager.libs.process_utils import stop_process_and_children
 from src.manager.manager.lint.linter import Lint
 
@@ -39,51 +42,90 @@ class Manager:
         "world_ready",
         "visualization_ready",
         "application_running",
-        "paused"
+        "paused",
     ]
 
     transitions = [
         # Transitions for state idle
-        {'trigger': 'connect', 'source': 'idle',
-            'dest': 'connected', 'before': 'on_connect'},
-
+        {
+            "trigger": "connect",
+            "source": "idle",
+            "dest": "connected",
+            "before": "on_connect",
+        },
         # Transitions for state connected
-        {'trigger': 'launch_world', 'source': 'connected',
-            'dest': 'world_ready', 'before': 'on_launch_world'},
-
+        {
+            "trigger": "launch_world",
+            "source": "connected",
+            "dest": "world_ready",
+            "before": "on_launch_world",
+        },
         # Transitions for state world ready
-        {'trigger': 'prepare_visualization',
-            'source': 'world_ready', 'dest': 'visualization_ready', 'before': 'on_prepare_visualization'},
-
+        {
+            "trigger": "prepare_visualization",
+            "source": "world_ready",
+            "dest": "visualization_ready",
+            "before": "on_prepare_visualization",
+        },
         # Transitions for state visualization_ready
-        {'trigger': 'run_application', 'source': [
-            'visualization_ready', 'paused'], 'dest': 'application_running',  'before': 'on_run_application'},
-
+        {
+            "trigger": "run_application",
+            "source": ["visualization_ready", "paused"],
+            "dest": "application_running",
+            "before": "on_run_application",
+        },
         # Transitions for state application_running
-        {'trigger': 'pause', 'source': 'application_running',
-            'dest': 'paused', 'before': 'on_pause'},
-        {'trigger': 'resume', 'source': 'paused',
-            'dest': 'application_running', 'before': 'on_resume'},
-        
+        {
+            "trigger": "pause",
+            "source": "application_running",
+            "dest": "paused",
+            "before": "on_pause",
+        },
+        {
+            "trigger": "resume",
+            "source": "paused",
+            "dest": "application_running",
+            "before": "on_resume",
+        },
         # Transitions for terminate levels
-        {'trigger': 'terminate_application', 'source': ['visualization_ready','application_running', 'paused'],
-            'dest': 'visualization_ready', 'before': 'on_terminate_application'},
-        {'trigger': 'terminate_visualization', 'source': 'visualization_ready',
-            'dest': 'world_ready', 'before': 'on_terminate_visualization'},
-        {'trigger': 'terminate_universe', 'source': 'world_ready',
-            'dest': 'connected', 'before': 'on_terminate_universe'},
-
+        {
+            "trigger": "terminate_application",
+            "source": ["visualization_ready", "application_running", "paused"],
+            "dest": "visualization_ready",
+            "before": "on_terminate_application",
+        },
+        {
+            "trigger": "terminate_visualization",
+            "source": "visualization_ready",
+            "dest": "world_ready",
+            "before": "on_terminate_visualization",
+        },
+        {
+            "trigger": "terminate_universe",
+            "source": "world_ready",
+            "dest": "connected",
+            "before": "on_terminate_universe",
+        },
         # Global transitions
-        {'trigger': 'disconnect', 'source': '*',
-            'dest': 'idle', 'before': 'on_disconnect'},
+        {
+            "trigger": "disconnect",
+            "source": "*",
+            "dest": "idle",
+            "before": "on_disconnect",
+        },
     ]
 
     def __init__(self, host: str, port: int):
 
-        self.machine = Machine(model=self, states=Manager.states, transitions=Manager.transitions,
-                               initial='idle', send_event=True, after_state_change=self.state_change)
-        self.ros_version = subprocess.check_output(
-            ['bash', '-c', 'echo $ROS_DISTRO'])
+        self.machine = Machine(
+            model=self,
+            states=Manager.states,
+            transitions=Manager.transitions,
+            initial="idle",
+            send_event=True,
+            after_state_change=self.state_change,
+        )
+        self.ros_version = subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])
         self.queue = Queue()
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.world_launcher = None
@@ -107,13 +149,12 @@ class Manager:
     def state_change(self, event):
         LogManager.logger.info(f"State changed to {self.state}")
         if self.consumer is not None:
-            self.consumer.send_message(
-                {'state': self.state}, command="state-changed")
+            self.consumer.send_message({"state": self.state}, command="state-changed")
 
     def update(self, data):
         LogManager.logger.debug(f"Sending update to client")
         if self.consumer is not None:
-            self.consumer.send_message({'update': data}, command="update")
+            self.consumer.send_message({"update": data}, command="update")
 
     def on_connect(self, event):
         """
@@ -128,24 +169,34 @@ class Manager:
         - `ros_version`: The current ROS (Robot Operating System) distribution version.
         - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
         """
-        self.consumer.send_message({'radi_version': subprocess.check_output(['bash', '-c', 'echo $IMAGE_TAG']), 'ros_version': subprocess.check_output(
-            ['bash', '-c', 'echo $ROS_DISTRO']), 'gpu_avaliable': check_gpu_acceleration(), }, command="introspection")
+        self.consumer.send_message(
+            {
+                "radi_version": subprocess.check_output(
+                    ["bash", "-c", "echo $IMAGE_TAG"]
+                ),
+                "ros_version": subprocess.check_output(
+                    ["bash", "-c", "echo $ROS_DISTRO"]
+                ),
+                "gpu_avaliable": check_gpu_acceleration(),
+            },
+            command="introspection",
+        )
 
     def on_launch_world(self, event):
         """
-        Handles the 'launch' event, transitioning the application from 'connected' to 'ready' state. 
+        Handles the 'launch' event, transitioning the application from 'connected' to 'ready' state.
         This method initializes the launch process based on the provided configuration.
 
-        During the launch process, it validates and processes the configuration data received from the event. 
-        It then creates and starts a LauncherWorld instance with the validated configuration. 
+        During the launch process, it validates and processes the configuration data received from the event.
+        It then creates and starts a LauncherWorld instance with the validated configuration.
         This setup is crucial for preparing the environment and resources necessary for the application's execution.
 
         Parameters:
-            event (Event): The event object containing data related to the 'launch' event. 
+            event (Event): The event object containing data related to the 'launch' event.
                         This data includes configuration information necessary for initializing the launch process.
 
         Raises:
-            ValueError: If the configuration data is invalid or incomplete, a ValueError is raised, 
+            ValueError: If the configuration data is invalid or incomplete, a ValueError is raised,
                         indicating the issue with the provided configuration.
 
         Note:
@@ -153,10 +204,10 @@ class Manager:
         """
 
         try:
-            config_dict = event.kwargs.get('data', {})
+            config_dict = event.kwargs.get("data", {})
             configuration = ConfigurationManager.validate(config_dict)
         except ValueError as e:
-            LogManager.logger.error(f'Configuration validotion failed: {e}')
+            LogManager.logger.error(f"Configuration validotion failed: {e}")
 
         self.world_launcher = LauncherWorld(**configuration.model_dump())
         self.world_launcher.run()
@@ -165,9 +216,10 @@ class Manager:
     def on_prepare_visualization(self, event):
         LogManager.logger.info("Visualization transition started")
 
-        visualization_type = event.kwargs.get('data', {})
+        visualization_type = event.kwargs.get("data", {})
         self.visualization_launcher = LauncherVisualization(
-            visualization=visualization_type)
+            visualization=visualization_type
+        )
         self.visualization_launcher.run()
 
         if visualization_type == "gazebo_rae":
@@ -183,11 +235,17 @@ ideal_cycle = 20
 """
         code = frequency_control_code_imports + code
         infinite_loop = re.search(
-            r'[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:', code)        
+            r"[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:",
+            code,
+        )
         frequency_control_code_pre = """
     start_time = datetime.now()
             """
-        code = code[:infinite_loop.end()] + frequency_control_code_pre + code[infinite_loop.end():]
+        code = (
+            code[: infinite_loop.end()]
+            + frequency_control_code_pre
+            + code[infinite_loop.end() :]
+        )
         frequency_control_code_post = """
     finish_time = datetime.now()
     dt = finish_time - start_time
@@ -208,7 +266,7 @@ ideal_cycle = 20
 
         if 'type' in application_configuration:
 
-            print("LET'S WATER THE TREES!")
+            print("BT STUDIO MODE!")
             code = application_configuration['code']
             
             # Unzip the app
@@ -236,7 +294,7 @@ ideal_cycle = 20
             # Launch the app
             self.application_process = subprocess.Popen(["python3", "/workspace/code/execute_docker.py"], stdout=sys.stdout, 
                                                         stderr=subprocess.STDOUT, bufsize=1024, universal_newlines=True)
-
+                
             self.unpause_sim()
 
         else:
@@ -253,6 +311,24 @@ ideal_cycle = 20
 
             if not os.path.isfile(application_folder + 'exercise.py'):
                 superthin = True
+            
+            shutil.copytree(application_folder, "/workspace/code", dirs_exist_ok=True)
+            if superthin:
+                self.application_process = subprocess.Popen(
+                    ["python3", "/workspace/code/academy.py"],
+                    stdout=sys.stdout,
+                    stderr=subprocess.STDOUT,
+                    bufsize=1024,
+                    universal_newlines=True,
+                )
+            else:
+                self.application_process = subprocess.Popen(
+                    ["python3", "/workspace/code/exercise.py"],
+                    stdout=sys.stdout,
+                    stderr=subprocess.STDOUT,
+                    bufsize=1024,
+                    universal_newlines=True,
+                )
 
             # Create executable app
             errors = self.linter.evaluate_code(code, exercise_id)
@@ -316,7 +392,9 @@ ideal_cycle = 20
             try:
                 self.visualization_launcher.terminate()
             except Exception as e:
-                LogManager.logger.exception("Exception terminating visualization launcher")
+                LogManager.logger.exception(
+                    "Exception terminating visualization launcher"
+                )
 
         if self.world_launcher:
             try:
@@ -329,10 +407,10 @@ ideal_cycle = 20
         os.execl(python, python, *sys.argv)
 
     def process_messsage(self, message):
-        if message.command == "#gui":
+        if message.command == "gui":
             self.gui_server.send(message.data)
             return
-        
+
         self.trigger(message.command, data=message.data or None)
         response = {"message": f"Exercise state changed to {self.state}"}
         self.consumer.send_message(message.response(response))
@@ -351,24 +429,30 @@ ideal_cycle = 20
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/pause_physics", [])
         else:
-            self.call_service("/pause_physics","std_srvs/srv/Empty")
+            self.call_service("/pause_physics", "std_srvs/srv/Empty")
 
     def unpause_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/unpause_physics", [])
         else:
-            self.call_service("/unpause_physics","std_srvs/srv/Empty")
+            self.call_service("/unpause_physics", "std_srvs/srv/Empty")
 
     def reset_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/reset_world", [])
         else:
-            self.call_service("/reset_world","std_srvs/srv/Empty")
+            self.call_service("/reset_world", "std_srvs/srv/Empty")
 
     def call_service(self, service, service_type):
         command = f"ros2 service call {service} {service_type}"
-        subprocess.call(f"{command}", shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT, bufsize=1024,
-                                   universal_newlines=True)
+        subprocess.call(
+            f"{command}",
+            shell=True,
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+        )
 
     def start(self):
         """
@@ -376,7 +460,8 @@ ideal_cycle = 20
         RAM must be run in main thread to be able to handle signaling other processes, for instance ROS launcher.
         """
         LogManager.logger.info(
-            f"Starting RAM consumer in {self.consumer.server}:{self.consumer.port}")
+            f"Starting RAM consumer in {self.consumer.server}:{self.consumer.port}"
+        )
 
         self.consumer.start()
 
@@ -398,20 +483,23 @@ ideal_cycle = 20
                     stop_process_and_children(self.application_process)
                     self.application_process = None
                 except Exception as e:
-                    LogManager.logger.exception("Exception stopping application process")
+                    LogManager.logger.exception(
+                        "Exception stopping application process"
+                    )
 
             if self.visualization_launcher:
                 try:
                     self.visualization_launcher.terminate()
                 except Exception as e:
-                    LogManager.logger.exception("Exception terminating visualization launcher")
+                    LogManager.logger.exception(
+                        "Exception terminating visualization launcher"
+                    )
 
             if self.world_launcher:
                 try:
                     self.world_launcher.terminate()
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating world launcher")
-
 
         signal.signal(signal.SIGINT, signal_handler)
 
@@ -425,19 +513,22 @@ ideal_cycle = 20
                     self.process_messsage(message)
             except Exception as e:
                 if message is not None:
-                    ex = ManagerConsumerMessageException(
-                        id=message.id, message=str(e))
+                    ex = ManagerConsumerMessageException(id=message.id, message=str(e))
                 else:
                     ex = ManagerConsumerMessageException(
-                        id=str(uuid4()), message=str(e))
+                        id=str(uuid4()), message=str(e)
+                    )
                 self.consumer.send_message(ex)
                 LogManager.logger.error(e, exc_info=True)
 
+
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "host", type=str, help="Host to listen to  (0.0.0.0 or all hosts)")
+        "host", type=str, help="Host to listen to  (0.0.0.0 or all hosts)"
+    )
     parser.add_argument("port", type=int, help="Port to listen to")
     args = parser.parse_args()
 
