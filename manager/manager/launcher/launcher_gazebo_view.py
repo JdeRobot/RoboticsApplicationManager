@@ -1,7 +1,10 @@
 from src.manager.manager.launcher.launcher_interface import ILauncher
 from src.manager.manager.docker_thread.docker_thread import DockerThread
 from src.manager.manager.vnc.vnc_server import Vnc_server
-from src.manager.libs.process_utils import wait_for_process_to_start, check_gpu_acceleration
+from src.manager.libs.process_utils import (
+    wait_for_process_to_start,
+    check_gpu_acceleration,
+)
 import subprocess
 import time
 import os
@@ -29,17 +32,15 @@ class LauncherGazeboView(ILauncher):
         if ACCELERATION_ENABLED:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc_gpu(
-                self.display, self.internal_port, self.external_port, DRI_PATH)
+                self.display, self.internal_port, self.external_port, DRI_PATH
+            )
             # Write display config and start gzclient
-            gzclient_cmd = (
-                f"export DISPLAY={self.display}; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun gzclient --verbose")
+            gzclient_cmd = f"export DISPLAY={self.display}; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun gzclient --verbose"
         else:
             # Starts xserver, x11vnc and novnc
-            self.gz_vnc.start_vnc(
-                self.display, self.internal_port, self.external_port)
+            self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config and start gzclient
-            gzclient_cmd = (
-                f"export DISPLAY={self.display}; {gzclient_config_cmds} gzclient --verbose")
+            gzclient_cmd = f"export DISPLAY={self.display}; {gzclient_config_cmds} gzclient --verbose"
 
         gzclient_thread = DockerThread(gzclient_cmd)
         gzclient_thread.start()
@@ -70,14 +71,12 @@ class LauncherGazeboView(ILauncher):
         pass
 
     def get_dri_path(self):
-        directory_path = '/dev/dri'
+        directory_path = "/dev/dri"
         dri_path = ""
         if os.path.exists(directory_path) and os.path.isdir(directory_path):
             files = os.listdir(directory_path)
-            if ("card1" in files):
-                dri_path = os.path.join(
-                    "/dev/dri", os.environ.get("DRI_NAME", "card1"))
+            if "card1" in files:
+                dri_path = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card1"))
             else:
-                dri_path = os.path.join(
-                    "/dev/dri", os.environ.get("DRI_NAME", "card0"))
+                dri_path = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
         return dri_path

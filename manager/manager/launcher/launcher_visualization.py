@@ -10,80 +10,98 @@ from src.manager.manager.launcher.launcher_interface import ILauncher
 
 visualization = {
     "none": [],
-    "console": [{"module": "console",
-                 "display": ":1",
-                 "external_port": 1108,
-                 "internal_port": 5901}],
-    "gazebo_gra": [{
-        "type": "module",
-        "module": "console",
-        "display": ":1",
-        "external_port": 1108,
-        "internal_port": 5901},
+    "console": [
         {
-        "type": "module",
-        "width": 1024,
-        "height": 768,
-        "module": "gazebo_view",
-        "display": ":2",
-        "external_port": 6080,
-        "internal_port": 5900
-    },
-        {
-        "type": "module",
-        "width": 1024,
-        "height": 768,
-        "module": "robot_display_view",
-        "display": ":3",
-        "external_port": 2303,
-        "internal_port": 5902
-    }
+            "module": "console",
+            "display": ":1",
+            "external_port": 1108,
+            "internal_port": 5901,
+        }
     ],
-    "gazebo_rae": [{"type": "module",
-                            "module": "console",
-                            "display": ":1",
-                            "external_port": 1108,
-                            "internal_port": 5901},
-                   {
-        "type": "module",
-        "width": 1024,
-        "height": 768,
-        "module": "gazebo_view",
-        "display": ":2",
-        "external_port": 6080,
-        "internal_port": 5900
-    }],
-    "physic_gra": [{"module": "console",
-                    "display": ":1",
-                    "external_port": 1108,
-                    "internal_port": 5901},
-                   {
-        "type": "module",
-                "width": 1024,
-        "height": 768,
-        "module": "robot_display_view",
-        "display": ":2",
-        "external_port": 2303,
-        "internal_port": 5902
-    }],
-    "physic_rae": [{"module": "console",
-                    "display": ":1",
-                    "external_port": 1108,
-                    "internal_port": 5901},
-                   {
-        "type": "module",
-        "width": 1024,
-        "height": 768,
-        "module": "robot_display_view",
-        "display": ":2",
-        "external_port": 2303,
-        "internal_port": 5902
-    }]
+    "gazebo_gra": [
+        {
+            "type": "module",
+            "module": "console",
+            "display": ":1",
+            "external_port": 1108,
+            "internal_port": 5901,
+        },
+        {
+            "type": "module",
+            "width": 1024,
+            "height": 768,
+            "module": "gazebo_view",
+            "display": ":2",
+            "external_port": 6080,
+            "internal_port": 5900,
+        },
+        {
+            "type": "module",
+            "width": 1024,
+            "height": 768,
+            "module": "robot_display_view",
+            "display": ":3",
+            "external_port": 2303,
+            "internal_port": 5902,
+        },
+    ],
+    "gazebo_rae": [
+        {
+            "type": "module",
+            "module": "console",
+            "display": ":1",
+            "external_port": 1108,
+            "internal_port": 5901,
+        },
+        {
+            "type": "module",
+            "width": 1024,
+            "height": 768,
+            "module": "gazebo_view",
+            "display": ":2",
+            "external_port": 6080,
+            "internal_port": 5900,
+        },
+    ],
+    "physic_gra": [
+        {
+            "module": "console",
+            "display": ":1",
+            "external_port": 1108,
+            "internal_port": 5901,
+        },
+        {
+            "type": "module",
+            "width": 1024,
+            "height": 768,
+            "module": "robot_display_view",
+            "display": ":2",
+            "external_port": 2303,
+            "internal_port": 5902,
+        },
+    ],
+    "physic_rae": [
+        {
+            "module": "console",
+            "display": ":1",
+            "external_port": 1108,
+            "internal_port": 5901,
+        },
+        {
+            "type": "module",
+            "width": 1024,
+            "height": 768,
+            "module": "robot_display_view",
+            "display": ":2",
+            "external_port": 2303,
+            "internal_port": 5902,
+        },
+    ],
 }
 
 
 class LauncherVisualization(BaseModel):
-    module: str = '.'.join(__name__.split('.')[:-1])
+    module: str = ".".join(__name__.split(".")[:-1])
     visualization: str
     launchers: Optional[ILauncher] = []
 
@@ -102,7 +120,8 @@ class LauncherVisualization(BaseModel):
     def launch_module(self, configuration):
         def process_terminated(name, exit_code):
             LogManager.logger.info(
-                f"LauncherEngine: {name} exited with code {exit_code}")
+                f"LauncherEngine: {name} exited with code {exit_code}"
+            )
             if self.terminated_callback is not None:
                 self.terminated_callback(name, exit_code)
 
