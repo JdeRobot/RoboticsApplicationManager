@@ -66,16 +66,16 @@ class Vnc_server:
     def wait_for_port(self, host, port, timeout=30):
         start_time = time.time()
         while True:
-            if time.time() - start_time > timeout:
-                raise TimeoutError(f"Port {port} on {host} didn't become available within {timeout} seconds.")
-            # try http connection
-            try:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                    sock.settimeout(1)
-                    sock.connect((host, port))
-                break
-            except (ConnectionRefusedError, TimeoutError):
-                time.sleep(1)
+            # if time.time() - start_time > timeout:
+            #     raise TimeoutError(f"Port {port} on {host} didn't become available within {timeout} seconds.")
+            # # try http connection
+            # try:
+            #     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            #         sock.settimeout(1)
+            #         sock.connect((host, port))
+            #     break
+            # except (ConnectionRefusedError, TimeoutError):
+            #     time.sleep(1)
             # try https connection
             try:
                 context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
