@@ -273,6 +273,10 @@ ideal_cycle = 20
         if not os.path.isfile(application_folder + "exercise.py"):
             superthin = True
 
+        # Make code backwards compatible
+        code = code.replace("from GUI import GUI","import GUI")
+        code = code.replace("from HAL import HAL","import HAL")
+
         # Create executable app
         errors = self.linter.evaluate_code(code, exercise_id)
         if errors == "":
