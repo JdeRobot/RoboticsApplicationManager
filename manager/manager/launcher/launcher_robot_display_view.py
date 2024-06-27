@@ -17,7 +17,8 @@ class LauncherRobotDisplayView(ILauncher):
 
     def run(self, callback):
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
-        ACCELERATION_ENABLED = self.check_device(DRI_PATH)
+        ACCELERATION_ENABLED = False
+        print("LauncherRobotDisplayView: ", self.display)
 
         robot_display_vnc = Vnc_server()
         
