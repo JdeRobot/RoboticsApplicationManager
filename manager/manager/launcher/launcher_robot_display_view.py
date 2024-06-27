@@ -16,6 +16,7 @@ class LauncherRobotDisplayView(ILauncher):
     threads = []
 
     def run(self, callback):
+        self.display = ":1"
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
         ACCELERATION_ENABLED = False
         print("LauncherRobotDisplayView: ", self.display)

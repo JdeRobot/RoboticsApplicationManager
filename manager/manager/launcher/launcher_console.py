@@ -16,6 +16,7 @@ class LauncherConsole(ILauncher):
     console_vnc: Any = Vnc_server()
 
     def run(self, callback):
+        self.display = ":1"
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
         ACCELERATION_ENABLED = False
         print("LauncherConsole: ", self.display)
