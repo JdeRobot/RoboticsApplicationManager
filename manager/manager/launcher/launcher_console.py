@@ -19,7 +19,7 @@ class LauncherConsole(ILauncher):
         self.display = ":1"
         DRI_PATH = os.path.join("/dev/dri", os.environ.get("DRI_NAME", "card0"))
         ACCELERATION_ENABLED = False
-        print("LauncherConsole: ", self.display)
+        print("LauncherConsole, internal, external: ", self.display, self.internal_port, self.external_port)
 
         if ACCELERATION_ENABLED:
             self.console_vnc.start_vnc_gpu(

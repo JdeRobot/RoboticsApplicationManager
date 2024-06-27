@@ -23,9 +23,10 @@ class LauncherGazeboView(ILauncher):
     gz_vnc: Any = Vnc_server()
 
     def run(self, callback):
+        self.display = ":1"
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = False
-        print("LauncherGazeboView: ", self.display)
+        print("LauncherGazeboView, internal, external: ", self.display, self.internal_port, self.external_port)
 
         # Configure browser screen width and height for gzclient
         gzclient_config_cmds = f"echo [geometry] > ~/.gazebo/gui.ini; echo x=0 >> ~/.gazebo/gui.ini; echo y=0 >> ~/.gazebo/gui.ini; echo width={self.width} >> ~/.gazebo/gui.ini; echo height={self.height} >> ~/.gazebo/gui.ini;"
