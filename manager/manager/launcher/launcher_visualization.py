@@ -1,6 +1,6 @@
 from src.manager.libs.process_utils import get_class, class_from_module
-from typing import Optional
-from pydantic import BaseModel
+from typing import Optional, ClassVar
+from pydantic import BaseModel, ConfigDict
 
 
 from src.manager.libs.process_utils import get_class, class_from_module, get_ros_version
@@ -82,6 +82,7 @@ visualization = {
     ],
     "physic_rae": [
         {
+            "type": "module",
             "module": "console",
             "display": ":1",
             "external_port": 1108,
@@ -101,6 +102,7 @@ visualization = {
 
 
 class LauncherVisualization(BaseModel):
+    running: ClassVar[bool]
     module: str = ".".join(__name__.split(".")[:-1])
     visualization: str
     launchers: Optional[ILauncher] = []

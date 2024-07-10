@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, ClassVar
 from pydantic import BaseModel
 
 from src.manager.libs.process_utils import get_class, class_from_module, get_ros_version
@@ -48,11 +48,27 @@ worlds = {
             }
         ],
     },
-    "physical": {},
+    "physical": {"1": [
+            {
+                "type": "module",
+                "module": "ros_api",
+                "parameters": [],
+                "launch_file": [],
+            }
+        ],
+        "2": [
+            {
+                "type": "module",
+                "module": "ros2_api",
+                "parameters": [],
+                "launch_file": [],
+            }
+        ],},
 }
 
 
 class LauncherWorld(BaseModel):
+    running: ClassVar[bool]
     world: str
     launch_file_path: str
     module: str = ".".join(__name__.split(".")[:-1])
