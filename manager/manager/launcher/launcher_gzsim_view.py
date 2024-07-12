@@ -12,7 +12,7 @@ import stat
 from typing import List, Any
 
 
-class LauncherGzSimView(ILauncher):
+class LauncherGzsimView(ILauncher):
     display: str
     internal_port: int
     external_port: int
