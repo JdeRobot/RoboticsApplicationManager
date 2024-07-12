@@ -22,19 +22,19 @@ class LauncherDronesRos2(ILauncher):
         # expand variables in configuration paths
         world_file = os.path.expandvars(self.launch_file)
 
-        # Launching MicroXRCE and Aerostack2 nodes
-        as2_launch_cmd = f"ros2 launch jderobot_drones as2_default_classic_gazebo.launch.py world_file:={world_file}"
+        # Launching Aerostack2 nodes
+        as2_launch_cmd = f"ros2 launch jderobot_drones as2_default_gazebo_sim.launch.py world_file:={world_file}"
 
         as2_launch_thread = DockerThread(as2_launch_cmd)
         as2_launch_thread.start()
         self.threads.append(as2_launch_thread)
 
         # Launching gzserver and PX4
-        px4_launch_cmd = f"$AS2_GZ_ASSETS_SCRIPT_PATH/default_run.sh {world_file}"
+        # px4_launch_cmd = f"$AS2_GZ_ASSETS_SCRIPT_PATH/default_run.sh {world_file}"
 
-        px4_launch_thread = DockerThread(px4_launch_cmd)
-        px4_launch_thread.start()
-        self.threads.append(px4_launch_thread)
+        # px4_launch_thread = DockerThread(px4_launch_cmd)
+        # px4_launch_thread.start()
+        # self.threads.append(px4_launch_thread)
 
         
 
