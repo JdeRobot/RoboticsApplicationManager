@@ -7,6 +7,7 @@ class Lint:
 
     def evaluate_code(self, code, exercise_id, warnings=False):
         try:
+            print("EVAL::::")
             code = re.sub(r'from HAL import HAL', 'from hal import HAL', code)
             code = re.sub(r'from GUI import GUI', 'from gui import GUI', code)
             code = re.sub(r'from MAP import MAP', 'from map import MAP', code)
@@ -39,6 +40,13 @@ class Lint:
             ret = subprocess.run(command, capture_output=True, shell=True)
             result = ret.stdout.decode()
             result = result + "\n"
+
+            # Adjust line numbers in the result by subtracting 4
+            def adjust_line_number(match):
+                line_number = int(match.group(1)) - 4
+                return f':{line_number}:'
+
+            result = re.sub(r':(\d+):', adjust_line_number, result)
 
             # Removes convention, refactor and warning messages
             if not warnings:
