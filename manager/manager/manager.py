@@ -424,7 +424,7 @@ ideal_cycle = 20
 
         def signal_handler(sign, frame):
             print("\nprogram exiting gracefully")
-            self.running = False
+            self.running = True
             if self.gui_server is not None:
                 try:
                     self.gui_server.stop()
