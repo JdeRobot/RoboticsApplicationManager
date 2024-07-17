@@ -257,7 +257,19 @@ ideal_cycle = 20
 
     def on_run_application(self, event):
 
-        superthin = False
+        # Line error adjustment
+        def adjust_line_numbers(error_output):
+            pattern = re.compile(r'line (\d+)')
+            adjusted_output = error_output
+
+            for match in pattern.finditer(error_output):
+                line_number = int(match.group(1))
+                adjusted_line_number = max(line_number - 6, 1)
+                adjusted_output = adjusted_output.replace(f'line {line_number}', f'line {adjusted_line_number}', 1)
+            
+            return adjusted_output
+
+        aux_path = "/workspace/code/exercise.py"
         # Extract app config
         application_configuration = event.kwargs.get("data", {})
         application_file_path = application_configuration["template"]
@@ -271,7 +283,7 @@ ideal_cycle = 20
             application_folder = application_file_path + "/ros2_humble/"
 
         if not os.path.isfile(application_folder + "exercise.py"):
-            superthin = True
+            aux_path = "/workspace/code/academy.py"
 
         # Make code backwards compatible
         code = code.replace("from GUI import GUI","import GUI")
@@ -280,6 +292,7 @@ ideal_cycle = 20
         # Create executable app
         errors = self.linter.evaluate_code(code, exercise_id)
         if errors == "":
+            print("SIN ERRORES")
 
             code = self.add_frequency_control(code)
             f = open("/workspace/code/academy.py", "w")
@@ -287,22 +300,29 @@ ideal_cycle = 20
             f.close()
 
             shutil.copytree(application_folder, "/workspace/code", dirs_exist_ok=True)
-            if superthin:
+
+            stderr_file = "/workspace/code/stderr.log"
+
+            with open(stderr_file, "w") as stderr:
                 self.application_process = subprocess.Popen(
-                    ["python3", "/workspace/code/academy.py"],
+                    ["python3", aux_path],
                     stdout=sys.stdout,
-                    stderr=subprocess.STDOUT,
+                    stderr=stderr,
                     bufsize=1024,
                     universal_newlines=True,
                 )
-            else:
-                self.application_process = subprocess.Popen(
-                    ["python3", "/workspace/code/exercise.py"],
-                    stdout=sys.stdout,
-                    stderr=subprocess.STDOUT,
-                    bufsize=1024,
-                    universal_newlines=True,
-                )
+                # Brokes with this line
+                # self.application_process.wait()
+
+            with open(stderr_file, "r") as f:
+                stderr_out = f.read()
+
+            adjusted_stderr = adjust_line_numbers(stderr_out)
+
+            sys.stdout.write(adjusted_stderr)
+
+            os.remove(stderr_file)
+
             self.unpause_sim()
         else:
             print("errors")
