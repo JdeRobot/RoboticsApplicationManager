@@ -1,22 +1,40 @@
 import tempfile
-from pylint import epylint as lint
+import subprocess
+import os
 
-
+# Read user code
 code = open('user_code.py')
 python_code = code.read()
 code.close()
 
+# Create temp file
 code_file = tempfile.NamedTemporaryFile(delete=False)
 code_file.write(python_code.encode())
 code_file.seek(0)
-options = code_file.name + ' --enable=similarities' + " --disable=C0114,C0116"
-(stdout, stderr) = lint.py_run(options, return_std=True)
-code_file.seek(0)
 code_file.close()
-result = stdout.getvalue()
-name = code_file.name.split('/')[-1]
-result = result[(result.find(name) + len(name) - 1):result.find('---')]
-result = result.replace(code_file.name, '')
-result = result[result.find('\n'):]
 
-print(result)
+options = f"{code_file.name} --enable=similarities --disable=C0114,C0116"
+
+# Run pylint using subprocess
+result = subprocess.run(['pylint'] + options.split(), capture_output=True, text=True)
+
+stdout = result.stdout
+
+# Process pylint exit
+name = os.path.basename(code_file.name)
+start = stdout.find(name)
+end = stdout.find('---', start)
+if start != -1 and end != -1:
+    result_output = stdout[start + len(name):end]
+    result_output = result_output.replace(code_file.name, '')
+    result_output = result_output[result_output.find('\n'):]
+else:
+    # Empty exit if there's no errors
+    result_output = ""
+
+
+# Clean temp files
+if os.path.exists(code_file.name):
+    os.remove(code_file.name)
+
+print(result_output)
