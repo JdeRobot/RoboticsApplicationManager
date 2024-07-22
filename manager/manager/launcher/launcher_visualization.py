@@ -57,7 +57,7 @@ visualization = {
             "type": "module",
             "width": 1024,
             "height": 768,
-            "module": "gazebo_view",
+            "module": "robot_display_view",
             "display": ":2",
             "external_port": 6080,
             "internal_port": 5900,
@@ -87,16 +87,7 @@ visualization = {
             "display": ":1",
             "external_port": 1108,
             "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "robot_display_view",
-            "display": ":2",
-            "external_port": 2303,
-            "internal_port": 5902,
-        },
+        }
     ],
 }
 
