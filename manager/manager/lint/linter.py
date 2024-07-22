@@ -29,27 +29,24 @@ class Lint:
         for pattern in patterns[3:]:
             result = re.sub(r"^[^:]*" + pattern, '', result, flags=re.MULTILINE)
 
-        # Remove extra new line
+        
         result = re.sub(r"^\s*$\n", '', result, flags=re.MULTILINE)
 
         # Transform the remaining error messages
         result = re.sub(r"^[^:]+:(\d+):\d+: \w*:\s*(.*)", r"line \1: \2", result, flags=re.MULTILINE)
 
-        # Add standard error message
         if result.strip() and re.search(r"line", result):
             result = "Traceback (most recent call last):\n" + result.strip()
 
         return result
 
-    # Create rate with big errors
     def append_rating_if_missing(self, result):
         rating_message = "-----------------------------------\nYour code has been rated at 0.00/10"
         
         # Check if the rating message already exists
         if not re.search(r"Your code has been rated", result):
             result += "\n" + rating_message
-        # Check if there are errors
-        if not re.search(r"line", result):
+        if not re.search(r"error", result) and not re.search(r"undefined", result):
             result = ''
 
         return result
@@ -92,6 +89,6 @@ class Lint:
             cleaned_result = self.clean_pylint_output(result)
             final_result = self.append_rating_if_missing(cleaned_result)
 
-            return final_result
+            return final_result.strip()
         except Exception as ex:
             print(ex)
