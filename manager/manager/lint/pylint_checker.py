@@ -18,23 +18,11 @@ options = f"{code_file.name} --enable=similarities --disable=C0114,C0116"
 # Run pylint using subprocess
 result = subprocess.run(['pylint'] + options.split(), capture_output=True, text=True)
 
-stdout = result.stdout
-
 # Process pylint exit
-name = os.path.basename(code_file.name)
-start = stdout.find(name)
-end = stdout.find('---', start)
-if start != -1 and end != -1:
-    result_output = stdout[start + len(name):end]
-    result_output = result_output.replace(code_file.name, '')
-    result_output = result_output[result_output.find('\n'):]
-else:
-    # Empty exit if there's no errors
-    result_output = ""
-
+stdout = result.stdout
 
 # Clean temp files
 if os.path.exists(code_file.name):
     os.remove(code_file.name)
 
-print(result_output)
+print(stdout)
