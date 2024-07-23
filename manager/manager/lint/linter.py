@@ -82,8 +82,8 @@ class Lint:
                 command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
             else:
                 command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
-            ret = subprocess.run(command, capture_output=True, shell=True)
-            result = ret.stdout.decode()
+            ret = subprocess.run(command, capture_output=True, text=True, shell=True)
+            result = ret.stdout
             result = result + "\n"
 
             cleaned_result = self.clean_pylint_output(result)
