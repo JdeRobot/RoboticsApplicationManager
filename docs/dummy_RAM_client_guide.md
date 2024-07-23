@@ -12,7 +12,6 @@ During the `launch_world` step of the dummy client, the file executed is `simple
    ```
    git clone https://github.com/JdeRobot/RoboticsApplicationManager.git -b <src-branch>
    ```
-   You can ignore the -b argument if you want to start working from the main branch. 
 
 2. Start a new Docker container using the RoboticsBackend image and keep it running in the background:
    ```
