@@ -1,6 +1,8 @@
 import re
 import os
 import subprocess
+import shutil
+import sys
 
 
 class Lint:
@@ -51,7 +53,7 @@ class Lint:
 
         return result
 
-    def evaluate_code(self, code, exercise_id, warnings=False):
+    def evaluate_code(self, code, exercise_id, ros_version, warnings=False):
         try:
             code = re.sub(r'from HAL import HAL', 'from hal import HAL', code)
             code = re.sub(r'from GUI import GUI', 'from gui import GUI', code)
@@ -68,6 +70,8 @@ class Lint:
             iterative_code = re.sub(r'^[ ]{4}', '', iterative_code, flags=re.M)
             code = sequential_code + iterative_code
 
+            shutil.copy("RoboticsAcademy/src/manager/manager/lint/pylint_checker.py", "/workspace/code/pylint_checker.py")
+            
             f = open("user_code.py", "w")
             f.write(code)
             f.close()
@@ -75,14 +79,17 @@ class Lint:
             open("user_code.py", "r")
 
             command = ""
-            output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
-            output_str = output.decode('utf-8')
-            version = int(output_str[0])
-            if (version == 2):                
-                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
+            if "humble" in str(ros_version):                
+                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros2_humble; python3 /workspace/code/pylint_checker.py"
             else:
-                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
-            ret = subprocess.run(command, capture_output=True, text=True, shell=True)
+                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros1_noetic; python3 /workspace/code/pylint_checker.py"
+            ret = subprocess.run(
+                command,
+                capture_output=True, 
+                text=True,
+                shell=True
+            )
+            
             result = ret.stdout
             result = result + "\n"
 

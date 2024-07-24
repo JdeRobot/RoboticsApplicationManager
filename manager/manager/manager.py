@@ -172,9 +172,7 @@ class Manager:
                 "radi_version": subprocess.check_output(
                     ["bash", "-c", "echo $IMAGE_TAG"]
                 ),
-                "ros_version": subprocess.check_output(
-                    ["bash", "-c", "echo $ROS_DISTRO"]
-                ),
+                "ros_version": self.ros_version,
                 "gpu_avaliable": check_gpu_acceleration(),
             },
             command="introspection",
@@ -205,7 +203,7 @@ class Manager:
             config_dict = event.kwargs.get("data", {})
             configuration = ConfigurationManager.validate(config_dict)
         except ValueError as e:
-            LogManager.logger.error(f"Configuration validotion failed: {e}")
+            LogManager.logger.error(f"Configuration validation failed: {e}")
 
         self.world_launcher = LauncherWorld(**configuration.model_dump())
         self.world_launcher.run()
@@ -278,7 +276,7 @@ ideal_cycle = 20
         code = code.replace("from HAL import HAL","import HAL")
 
         # Create executable app
-        errors = self.linter.evaluate_code(code, exercise_id)
+        errors = self.linter.evaluate_code(code, exercise_id, self.ros_version)
         if errors == "":
 
             code = self.add_frequency_control(code)
@@ -354,7 +352,7 @@ ideal_cycle = 20
         python = sys.executable
         os.execl(python, python, *sys.argv)
 
-    def process_messsage(self, message):
+    def process_message(self, message):
         if message.command == "gui":
             self.gui_server.send(message.data)
             return
@@ -458,7 +456,7 @@ ideal_cycle = 20
                     time.sleep(0.1)
                 else:
                     message = self.queue.get()
-                    self.process_messsage(message)
+                    self.process_message(message)
             except Exception as e:
                 if message is not None:
                     ex = ManagerConsumerMessageException(id=message.id, message=str(e))
