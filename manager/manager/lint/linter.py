@@ -1,7 +1,6 @@
 import re
 import os
 import subprocess
-import shutil
 import sys
 
 
@@ -69,20 +68,17 @@ class Lint:
                 r'[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:', '\n', iterative_code, 1)
             iterative_code = re.sub(r'^[ ]{4}', '', iterative_code, flags=re.M)
             code = sequential_code + iterative_code
-
-            shutil.copy("RoboticsAcademy/src/manager/manager/lint/pylint_checker.py", "/workspace/code/pylint_checker.py")
             
             f = open("user_code.py", "w")
             f.write(code)
             f.close()
 
-            open("user_code.py", "r")
-
             command = ""
             if "humble" in str(ros_version):                
-                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros2_humble; python3 /workspace/code/pylint_checker.py"
+                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
             else:
-                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros1_noetic; python3 /workspace/code/pylint_checker.py"
+                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
+            
             ret = subprocess.run(
                 command,
                 capture_output=True, 

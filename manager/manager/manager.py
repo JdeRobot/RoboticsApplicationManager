@@ -286,7 +286,7 @@ ideal_cycle = 20
 
             shutil.copytree(application_folder, "/workspace/code", dirs_exist_ok=True)
             self.application_process = subprocess.Popen(
-                ["python3", "/workspace/code/academy.py"],
+                ["python3", code_path],
                 stdout=sys.stdout,
                 stderr=subprocess.STDOUT,
                 bufsize=1024,
