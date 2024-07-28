@@ -294,7 +294,9 @@ ideal_cycle = 20
             )
             self.unpause_sim()
         else:
-            print("errors")
+            with open('/dev/pts/1', 'w') as console:
+                console.write(errors + "\n\n")
+
             raise Exception(errors)
 
         LogManager.logger.info("Run application transition finished")
