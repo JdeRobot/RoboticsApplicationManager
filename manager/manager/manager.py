@@ -8,6 +8,8 @@ import re
 import psutil
 import shutil
 import time
+import base64
+import zipfile
 
 if "noetic" in str(subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])):
     import rosservice
@@ -31,7 +33,6 @@ from src.manager.manager.application.robotics_python_application_interface impor
 )
 from src.manager.libs.process_utils import stop_process_and_children
 from src.manager.manager.lint.linter import Lint
-
 
 class Manager:
     states = [
@@ -198,9 +199,13 @@ class Manager:
         Note:
             The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
-
         try:
             config_dict = event.kwargs.get("data", {})
+            try:
+                if (config_dict["type"] == "zip"):
+                    return self.on_launch_world_zip(config_dict)
+            except Exception:
+                pass
             configuration = ConfigurationManager.validate(config_dict)
         except ValueError as e:
             LogManager.logger.error(f"Configuration validation failed: {e}")
@@ -208,6 +213,18 @@ class Manager:
         self.world_launcher = LauncherWorld(**configuration.model_dump())
         self.world_launcher.run()
         LogManager.logger.info("Launch transition finished")
+
+    def on_launch_world_zip(self, data):
+        print("BT Studio application")
+
+        # Unzip the app
+        if data["code"].startswith('data:'):
+            _, _, code = data["code"].partition('base64,')
+        with open('/workspace/worlds/universe.zip', 'wb') as result:
+            result.write(base64.b64decode(code))
+        zip_ref = zipfile.ZipFile("/workspace/worlds/universe.zip", 'r')
+        zip_ref.extractall("/workspace/worlds")
+        zip_ref.close()
 
     def on_prepare_visualization(self, event):
         LogManager.logger.info("Visualization transition started")
@@ -258,6 +275,12 @@ ideal_cycle = 20
         code_path = "/workspace/code/exercise.py"
         # Extract app config
         application_configuration = event.kwargs.get("data", {})
+        try:
+            if (application_configuration["type"] == "bt-studio"):
+                return self.on_run_bt_studio_application(application_configuration)
+        except Exception:
+            pass
+
         application_file_path = application_configuration["template"]
         exercise_id = application_configuration["exercise_id"]
         code = application_configuration["code"]
@@ -298,6 +321,29 @@ ideal_cycle = 20
                 console.write(errors + "\n\n")
 
             raise Exception(errors)
+
+        LogManager.logger.info("Run application transition finished")
+
+    def on_run_bt_studio_application(self, data):
+        print("BT Studio application")
+
+        # Unzip the app
+        if data["code"].startswith('data:'):
+            _, _, code = data["code"].partition('base64,')
+        with open('/workspace/code/app.zip', 'wb') as result:
+            result.write(base64.b64decode(code))
+        zip_ref = zipfile.ZipFile("/workspace/code/app.zip", 'r')
+        zip_ref.extractall("/workspace/code")
+        zip_ref.close()
+
+        self.application_process = subprocess.Popen(
+            ["python3", "/workspace/code/execute_docker.py"],
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+        )
+        self.unpause_sim()
 
         LogManager.logger.info("Run application transition finished")
 
