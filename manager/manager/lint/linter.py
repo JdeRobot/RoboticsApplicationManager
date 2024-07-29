@@ -1,8 +1,6 @@
 import re
 import os
 import subprocess
-import sys
-
 
 class Lint:
 
@@ -62,6 +60,9 @@ class Lint:
             # Avoids EOF error when iterative code is empty (which prevents other errors from showing)
             while_position = re.search(
                 r'[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:', code)
+            if while_position is None:
+                while_error = "ERROR: While loop is required and was not found.\n"
+                return while_error.strip()
             sequential_code = code[:while_position.start()]
             iterative_code = code[while_position.start():]
             iterative_code = re.sub(
