@@ -20,7 +20,7 @@ class Vnc_server:
         wait_for_xserver(display)
 
         # Start VNC server without password, forever running in background
-        x11vnc_cmd = f"x11vnc -quiet -display {display} -nopw -forever -xkb -bg -rfbport {internal_port}"
+        x11vnc_cmd = f"x11vnc -repeat -quiet -display {display} -nopw -forever -xkb -bg -rfbport {internal_port}"
         x11vnc_thread = DockerThread(x11vnc_cmd)
         x11vnc_thread.start()
         self.threads.append(x11vnc_thread)
