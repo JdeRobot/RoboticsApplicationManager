@@ -206,10 +206,10 @@ class Manager:
             cfg_dict = event.kwargs.get("data", {})
             cfg = ConfigurationManager.validate(cfg_dict)
             if "zip" in cfg_dict:
-                LogManager.logger.info("There is a zip in the msg!")
+                LogManager.logger.info("Launching universe from received zip")
                 self.prepare_custom_universe(cfg_dict)
             else:
-                LogManager.logger.info("Normal, no zip")
+                LogManager.logger.info("Launching universe from the RB")
 
             LogManager.logger.info(cfg)
         except ValueError as e:
@@ -217,22 +217,22 @@ class Manager:
 
         self.world_launcher = LauncherWorld(**cfg.model_dump())
         LogManager.logger.info(str(self.world_launcher))
-        self.world_launcher.run()
+        self.world_launcher.run()   
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
-        print("Custom universe")
 
         # Unzip the app
         if cfg_dict["zip"].startswith("data:"):
             _, _, zip_file = cfg_dict["zip"].partition("base64,")
 
-        zip_destination = "/workspace/worlds/" + cfg_dict["name"] + ".zip"
+        universe_ref = "/workspace/worlds/" + cfg_dict["name"]
+        zip_destination = universe_ref + ".zip"
         with open(zip_destination, "wb") as result:
             result.write(base64.b64decode(zip_file))
 
         # Create the folder if it doesn't exist
-        universe_folder = "/workspace/worlds/" + cfg_dict["name"] + "/"
+        universe_folder = universe_ref + "/"
         if not os.path.exists(universe_folder):
             os.makedirs(universe_folder)
 
@@ -241,6 +241,7 @@ class Manager:
         zip_ref.close()
 
     def on_prepare_visualization(self, event):
+
         LogManager.logger.info("Visualization transition started")
 
         visualization_type = event.kwargs.get("data", {})
@@ -252,6 +253,7 @@ class Manager:
         if visualization_type == "gazebo_rae":
             self.gui_server = Server(2303, self.update)
             self.gui_server.start()
+
         LogManager.logger.info("Visualization transition finished")
 
     def add_frequency_control(self, code):
