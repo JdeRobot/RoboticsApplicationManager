@@ -1,22 +1,28 @@
 import tempfile
-from pylint import epylint as lint
+import subprocess
+import os
 
-
+# Read user code
 code = open('user_code.py')
 python_code = code.read()
 code.close()
 
+# Create temp file
 code_file = tempfile.NamedTemporaryFile(delete=False)
 code_file.write(python_code.encode())
 code_file.seek(0)
-options = code_file.name + ' --enable=similarities' + " --disable=C0114,C0116"
-(stdout, stderr) = lint.py_run(options, return_std=True)
-code_file.seek(0)
 code_file.close()
-result = stdout.getvalue()
-name = code_file.name.split('/')[-1]
-result = result[(result.find(name) + len(name) - 1):result.find('---')]
-result = result.replace(code_file.name, '')
-result = result[result.find('\n'):]
 
-print(result)
+options = f"{code_file.name} --enable=similarities --disable=C0114,C0116"
+
+# Run pylint using subprocess
+result = subprocess.run(['pylint'] + options.split(), capture_output=True, text=True)
+
+# Process pylint exit
+stdout = result.stdout
+
+# Clean temp files
+if os.path.exists(code_file.name):
+    os.remove(code_file.name)
+
+print(stdout)

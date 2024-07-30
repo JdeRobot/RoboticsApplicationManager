@@ -2,10 +2,55 @@ import re
 import os
 import subprocess
 
-
 class Lint:
 
-    def evaluate_code(self, code, exercise_id, warnings=False):
+    def clean_pylint_output(self, result, warnings=False):
+
+        # result = result.replace(os.path.basename(code_file_name), 'user_code')
+        # Define the patterns to remove
+        patterns = [
+            r":[0-9]+:[0-9]+: C[0-9]{4}:.*",  # Convention messages
+            r":[0-9]+:[0-9]+: W[0-9]{4}:.*",  # Warning messages
+            r":[0-9]+:[0-9]+: R[0-9]{4}:.*",  # Refactor messages
+            r":[0-9]+:[0-9]+: error.*EOF.*",  # Unexpected EOF error
+            r":[0-9]+:[0-9]+: E1101:.*Module 'ompl.*",  # ompl E1101 error
+            r":[0-9]+:[0-9]+:.*value.*argument.*unbound.*method.*",  # No value for argument 'self' error
+            r":[0-9]+:[0-9]+: E1111:.*",  # Assignment from no return error
+            r":[0-9]+:[0-9]+: E1136:.*"  # E1136 until issue is resolved
+        ]
+
+        if not warnings:
+            # Remove convention, refactor, and warning messages if warnings are not desired
+            for pattern in patterns[:3]:
+                result = re.sub(r"^[^:]*" + pattern, '', result, flags=re.MULTILINE)
+        
+        # Remove specific errors
+        for pattern in patterns[3:]:
+            result = re.sub(r"^[^:]*" + pattern, '', result, flags=re.MULTILINE)
+
+        
+        result = re.sub(r"^\s*$\n", '', result, flags=re.MULTILINE)
+
+        # Transform the remaining error messages
+        result = re.sub(r"^[^:]+:(\d+):\d+: \w*:\s*(.*)", r"line \1: \2", result, flags=re.MULTILINE)
+
+        if result.strip() and re.search(r"line", result):
+            result = "Traceback (most recent call last):\n" + result.strip()
+
+        return result
+
+    def append_rating_if_missing(self, result):
+        rating_message = "-----------------------------------\nYour code has been rated at 0.00/10"
+        
+        # Check if the rating message already exists
+        if not re.search(r"Your code has been rated", result):
+            result += "\n" + rating_message
+        if not re.search(r"error", result) and not re.search(r"undefined", result):
+            result = ''
+
+        return result
+
+    def evaluate_code(self, code, exercise_id, ros_version, warnings=False):
         try:
             code = re.sub(r'from HAL import HAL', 'from hal import HAL', code)
             code = re.sub(r'from GUI import GUI', 'from gui import GUI', code)
@@ -15,93 +60,39 @@ class Lint:
             # Avoids EOF error when iterative code is empty (which prevents other errors from showing)
             while_position = re.search(
                 r'[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:', code)
+            if while_position is None:
+                while_error = "ERROR: While loop is required and was not found.\n"
+                return while_error.strip()
             sequential_code = code[:while_position.start()]
             iterative_code = code[while_position.start():]
             iterative_code = re.sub(
                 r'[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:', '\n', iterative_code, 1)
             iterative_code = re.sub(r'^[ ]{4}', '', iterative_code, flags=re.M)
             code = sequential_code + iterative_code
-
+            
             f = open("user_code.py", "w")
             f.write(code)
             f.close()
 
-            open("user_code.py", "r")
-
             command = ""
-            output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
-            output_str = output.decode('utf-8')
-            version = int(output_str[0])
-            if (version == 2):                
+            if "humble" in str(ros_version):                
                 command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
             else:
                 command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
-            ret = subprocess.run(command, capture_output=True, shell=True)
-            result = ret.stdout.decode()
+            
+            ret = subprocess.run(
+                command,
+                capture_output=True, 
+                text=True,
+                shell=True
+            )
+            
+            result = ret.stdout
             result = result + "\n"
 
-            # Removes convention, refactor and warning messages
-            if not warnings:
-                convention_messages = re.search(
-                    ":[0-9]+: convention.*\n", result)
-                while (convention_messages != None):
-                    result = result[:convention_messages.start(
-                    )] + result[convention_messages.end():]
-                    convention_messages = re.search(
-                        ":[0-9]+: convention.*\n", result)
-                warning_messages = re.search(":[0-9]+: warning.*\n", result)
-                while (warning_messages != None):
-                    result = result[:warning_messages.start()] + \
-                        result[warning_messages.end():]
-                    warning_messages = re.search(
-                        ":[0-9]+: warning.*\n", result)
-                refactor_messages = re.search(":[0-9]+: refactor.*\n", result)
-                while (refactor_messages != None):
-                    result = result[:refactor_messages.start()] + \
-                        result[refactor_messages.end():]
-                    refactor_messages = re.search(
-                        ":[0-9]+: refactor.*\n", result)
+            cleaned_result = self.clean_pylint_output(result)
+            final_result = self.append_rating_if_missing(cleaned_result)
 
-            # Removes unexpected EOF error
-            eof_exception = re.search(":[0-9]+: error.*EOF.*\n", result)
-            if (eof_exception != None):
-                result = result[:eof_exception.start()] + \
-                    result[eof_exception.end():]
-
-            # Removes ompl E1101 error
-            ompl_error = re.search(r":[0-9]+: error \(E1101, no-member, \) Module 'ompl.*\n", result)
-            if (ompl_error != None):
-                result = result[:ompl_error.start()] + \
-                    result[ompl_error.end():]
-
-            # Removes no value for argument 'self' error
-            self_exception = re.search(
-                ":[0-9]+:.*value.*argument.*unbound.*method.*\n", result)
-            while (self_exception != None):
-                result = result[:self_exception.start()] + \
-                    result[self_exception.end():]
-                self_exception = re.search(
-                    ":[0-9]+:.*value.*argument.*unbound.*method.*\n", result)
-
-            # Removes assignment from no return error
-            self_exception = re.search(":[0-9]+:.*E1111.*\n", result)
-            while (self_exception != None):
-                result = result[:self_exception.start()] + \
-                    result[self_exception.end():]
-                self_exception = re.search(":[0-9]+:.*E1111.*\n", result)
-
-            # Removes E1136 until issue https://github.com/PyCQA/pylint/issues/1498 is closed
-            self_exception = re.search(":[0-9]+:.*E1136.*\n", result)
-            while (self_exception != None):
-                result = result[:self_exception.start()] + \
-                    result[self_exception.end():]
-                self_exception = re.search(":[0-9]+:.*E1136.*\n", result)
-
-            # Returns an empty string if there are no errors
-            error = re.search("error", result)
-            if (error == None and not warnings):
-                return ""
-            else:
-                return result.strip()
+            return final_result.strip()
         except Exception as ex:
             print(ex)
