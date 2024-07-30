@@ -217,7 +217,7 @@ class Manager:
 
         self.world_launcher = LauncherWorld(**cfg.model_dump())
         LogManager.logger.info(str(self.world_launcher))
-        self.world_launcher.run()   
+        self.world_launcher.run()
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
@@ -386,8 +386,9 @@ ideal_cycle = 20
     def on_terminate_visualization(self, event):
 
         self.visualization_launcher.terminate()
-        self.gui_server.stop()
-        self.gui_server = None
+        if self.gui_server != None:
+            self.gui_server.stop()
+            self.gui_server = None
 
     def on_terminate_universe(self, event):
 
