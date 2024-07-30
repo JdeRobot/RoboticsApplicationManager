@@ -8,6 +8,8 @@ import re
 import psutil
 import shutil
 import time
+import base64
+import zipfile
 
 if "noetic" in str(subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])):
     import rosservice
@@ -31,7 +33,6 @@ from src.manager.manager.application.robotics_python_application_interface impor
 )
 from src.manager.libs.process_utils import stop_process_and_children
 from src.manager.manager.lint.linter import Lint
-
 
 class Manager:
     states = [
@@ -172,9 +173,7 @@ class Manager:
                 "radi_version": subprocess.check_output(
                     ["bash", "-c", "echo $IMAGE_TAG"]
                 ),
-                "ros_version": subprocess.check_output(
-                    ["bash", "-c", "echo $ROS_DISTRO"]
-                ),
+                "ros_version": self.ros_version,
                 "gpu_avaliable": check_gpu_acceleration(),
             },
             command="introspection",
@@ -200,16 +199,32 @@ class Manager:
         Note:
             The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
-
         try:
             config_dict = event.kwargs.get("data", {})
+            try:
+                if (config_dict["type"] == "zip"):
+                    return self.on_launch_world_zip(config_dict)
+            except Exception:
+                pass
             configuration = ConfigurationManager.validate(config_dict)
         except ValueError as e:
-            LogManager.logger.error(f"Configuration validotion failed: {e}")
+            LogManager.logger.error(f"Configuration validation failed: {e}")
 
         self.world_launcher = LauncherWorld(**configuration.model_dump())
         self.world_launcher.run()
         LogManager.logger.info("Launch transition finished")
+
+    def on_launch_world_zip(self, data):
+        print("BT Studio application")
+
+        # Unzip the app
+        if data["code"].startswith('data:'):
+            _, _, code = data["code"].partition('base64,')
+        with open('/workspace/worlds/universe.zip', 'wb') as result:
+            result.write(base64.b64decode(code))
+        zip_ref = zipfile.ZipFile("/workspace/worlds/universe.zip", 'r')
+        zip_ref.extractall("/workspace/worlds")
+        zip_ref.close()
 
     def on_prepare_visualization(self, event):
         LogManager.logger.info("Visualization transition started")
@@ -220,7 +235,7 @@ class Manager:
         )
         self.visualization_launcher.run()
 
-        if visualization_type == "physic_rae" or visualization_type == "gazebo_rae":
+        if visualization_type == "gazebo_rae" or visualization_type == "physic_rae":
             self.gui_server = Server(2303, self.update)
             self.gui_server.start()
         LogManager.logger.info("Visualization transition finished")
@@ -257,9 +272,15 @@ ideal_cycle = 20
 
     def on_run_application(self, event):
 
-        superthin = False
+        code_path = "/workspace/code/exercise.py"
         # Extract app config
         application_configuration = event.kwargs.get("data", {})
+        try:
+            if (application_configuration["type"] == "bt-studio"):
+                return self.on_run_bt_studio_application(application_configuration)
+        except Exception:
+            pass
+
         application_file_path = application_configuration["template"]
         exercise_id = application_configuration["exercise_id"]
         code = application_configuration["code"]
@@ -271,14 +292,14 @@ ideal_cycle = 20
             application_folder = application_file_path + "/ros2_humble/"
 
         if not os.path.isfile(application_folder + "exercise.py"):
-            superthin = True
+            code_path = "/workspace/code/academy.py"
 
         # Make code backwards compatible
         code = code.replace("from GUI import GUI","import GUI")
         code = code.replace("from HAL import HAL","import HAL")
 
         # Create executable app
-        errors = self.linter.evaluate_code(code, exercise_id)
+        errors = self.linter.evaluate_code(code, exercise_id, self.ros_version)
         if errors == "":
 
             code = self.add_frequency_control(code)
@@ -287,26 +308,42 @@ ideal_cycle = 20
             f.close()
 
             shutil.copytree(application_folder, "/workspace/code", dirs_exist_ok=True)
-            if superthin:
-                self.application_process = subprocess.Popen(
-                    ["python3", "/workspace/code/academy.py"],
-                    stdout=sys.stdout,
-                    stderr=subprocess.STDOUT,
-                    bufsize=1024,
-                    universal_newlines=True,
-                )
-            else:
-                self.application_process = subprocess.Popen(
-                    ["python3", "/workspace/code/exercise.py"],
-                    stdout=sys.stdout,
-                    stderr=subprocess.STDOUT,
-                    bufsize=1024,
-                    universal_newlines=True,
-                )
+            self.application_process = subprocess.Popen(
+                ["python3", code_path],
+                stdout=sys.stdout,
+                stderr=subprocess.STDOUT,
+                bufsize=1024,
+                universal_newlines=True,
+            )
             self.unpause_sim()
         else:
-            print("errors")
+            with open('/dev/pts/1', 'w') as console:
+                console.write(errors + "\n\n")
+
             raise Exception(errors)
+
+        LogManager.logger.info("Run application transition finished")
+
+    def on_run_bt_studio_application(self, data):
+        print("BT Studio application")
+
+        # Unzip the app
+        if data["code"].startswith('data:'):
+            _, _, code = data["code"].partition('base64,')
+        with open('/workspace/code/app.zip', 'wb') as result:
+            result.write(base64.b64decode(code))
+        zip_ref = zipfile.ZipFile("/workspace/code/app.zip", 'r')
+        zip_ref.extractall("/workspace/code")
+        zip_ref.close()
+
+        self.application_process = subprocess.Popen(
+            ["python3", "/workspace/code/execute_docker.py"],
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+        )
+        self.unpause_sim()
 
         LogManager.logger.info("Run application transition finished")
 
@@ -363,7 +400,7 @@ ideal_cycle = 20
         python = sys.executable
         os.execl(python, python, *sys.argv)
 
-    def process_messsage(self, message):
+    def process_message(self, message):
         if message.command == "gui":
             self.gui_server.send(message.data)
             return
@@ -424,7 +461,7 @@ ideal_cycle = 20
 
         def signal_handler(sign, frame):
             print("\nprogram exiting gracefully")
-            self.running = True
+            self.running = False
             if self.gui_server is not None:
                 try:
                     self.gui_server.stop()
@@ -467,7 +504,7 @@ ideal_cycle = 20
                     time.sleep(0.1)
                 else:
                     message = self.queue.get()
-                    self.process_messsage(message)
+                    self.process_message(message)
             except Exception as e:
                 if message is not None:
                     ex = ManagerConsumerMessageException(id=message.id, message=str(e))
