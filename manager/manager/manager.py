@@ -34,6 +34,7 @@ from src.manager.manager.application.robotics_python_application_interface impor
 from src.manager.libs.process_utils import stop_process_and_children
 from src.manager.manager.lint.linter import Lint
 
+
 class Manager:
     states = [
         "idle",
@@ -200,33 +201,45 @@ class Manager:
             The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
         try:
-            config_dict = event.kwargs.get("data", {})
-            try:
-                if (config_dict["type"] == "zip"):
-                    return self.on_launch_world_zip(config_dict)
-            except Exception:
-                pass
-            configuration = ConfigurationManager.validate(config_dict)
+            cfg_dict = event.kwargs.get("data", {})
+            cfg = ConfigurationManager.validate(cfg_dict)
+            if "zip" in cfg_dict:
+                LogManager.logger.info("Launching universe from received zip")
+                self.prepare_custom_universe(cfg_dict)
+            else:
+                LogManager.logger.info("Launching universe from the RB")
+
+            LogManager.logger.info(cfg)
         except ValueError as e:
             LogManager.logger.error(f"Configuration validation failed: {e}")
 
-        self.world_launcher = LauncherWorld(**configuration.model_dump())
+        self.world_launcher = LauncherWorld(**cfg.model_dump())
+        LogManager.logger.info(str(self.world_launcher))
         self.world_launcher.run()
         LogManager.logger.info("Launch transition finished")
 
-    def on_launch_world_zip(self, data):
-        print("BT Studio application")
+    def prepare_custom_universe(self, cfg_dict):
 
         # Unzip the app
-        if data["code"].startswith('data:'):
-            _, _, code = data["code"].partition('base64,')
-        with open('/workspace/worlds/universe.zip', 'wb') as result:
-            result.write(base64.b64decode(code))
-        zip_ref = zipfile.ZipFile("/workspace/worlds/universe.zip", 'r')
-        zip_ref.extractall("/workspace/worlds")
+        if cfg_dict["zip"].startswith("data:"):
+            _, _, zip_file = cfg_dict["zip"].partition("base64,")
+
+        universe_ref = "/workspace/worlds/" + cfg_dict["name"]
+        zip_destination = universe_ref + ".zip"
+        with open(zip_destination, "wb") as result:
+            result.write(base64.b64decode(zip_file))
+
+        # Create the folder if it doesn't exist
+        universe_folder = universe_ref + "/"
+        if not os.path.exists(universe_folder):
+            os.makedirs(universe_folder)
+
+        zip_ref = zipfile.ZipFile(zip_destination, "r")
+        zip_ref.extractall(universe_folder + "/")
         zip_ref.close()
 
     def on_prepare_visualization(self, event):
+
         LogManager.logger.info("Visualization transition started")
 
         visualization_type = event.kwargs.get("data", {})
@@ -238,6 +251,7 @@ class Manager:
         if visualization_type == "gazebo_rae":
             self.gui_server = Server(2303, self.update)
             self.gui_server.start()
+
         LogManager.logger.info("Visualization transition finished")
 
     def add_frequency_control(self, code):
@@ -274,16 +288,16 @@ ideal_cycle = 20
 
         code_path = "/workspace/code/exercise.py"
         # Extract app config
-        application_configuration = event.kwargs.get("data", {})
+        app_cfg = event.kwargs.get("data", {})
         try:
-            if (application_configuration["type"] == "bt-studio"):
-                return self.on_run_bt_studio_application(application_configuration)
+            if app_cfg["type"] == "bt-studio":
+                return self.run_bt_studio_application(app_cfg)
         except Exception:
             pass
 
-        application_file_path = application_configuration["template"]
-        exercise_id = application_configuration["exercise_id"]
-        code = application_configuration["code"]
+        application_file_path = app_cfg["template"]
+        exercise_id = app_cfg["exercise_id"]
+        code = app_cfg["code"]
 
         # Template version
         if "noetic" in str(self.ros_version):
@@ -295,8 +309,8 @@ ideal_cycle = 20
             code_path = "/workspace/code/academy.py"
 
         # Make code backwards compatible
-        code = code.replace("from GUI import GUI","import GUI")
-        code = code.replace("from HAL import HAL","import HAL")
+        code = code.replace("from GUI import GUI", "import GUI")
+        code = code.replace("from HAL import HAL", "import HAL")
 
         # Create executable app
         errors = self.linter.evaluate_code(code, exercise_id, self.ros_version)
@@ -324,15 +338,16 @@ ideal_cycle = 20
 
         LogManager.logger.info("Run application transition finished")
 
-    def on_run_bt_studio_application(self, data):
+    def run_bt_studio_application(self, data):
+
         print("BT Studio application")
 
         # Unzip the app
-        if data["code"].startswith('data:'):
-            _, _, code = data["code"].partition('base64,')
-        with open('/workspace/code/app.zip', 'wb') as result:
+        if data["code"].startswith("data:"):
+            _, _, code = data["code"].partition("base64,")
+        with open("/workspace/code/app.zip", "wb") as result:
             result.write(base64.b64decode(code))
-        zip_ref = zipfile.ZipFile("/workspace/code/app.zip", 'r')
+        zip_ref = zipfile.ZipFile("/workspace/code/app.zip", "r")
         zip_ref.extractall("/workspace/code")
         zip_ref.close()
 
@@ -362,8 +377,9 @@ ideal_cycle = 20
     def on_terminate_visualization(self, event):
 
         self.visualization_launcher.terminate()
-        self.gui_server.stop()
-        self.gui_server = None
+        if self.gui_server != None:
+            self.gui_server.stop()
+            self.gui_server = None
 
     def on_terminate_universe(self, event):
 
