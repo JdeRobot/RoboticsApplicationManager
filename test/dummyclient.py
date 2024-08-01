@@ -1,4 +1,7 @@
 import websocket
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from manager.comms.consumer_message import ManagerConsumerMessage
 from manager.libs.launch_world_model import ConfigurationModel
 
