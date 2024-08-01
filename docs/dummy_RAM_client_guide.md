@@ -18,9 +18,9 @@ During the `launch_world` step of the dummy client, the file executed is `simple
    docker run --rm -it -p 7164:7164 -p 6080:6080 -p 1108:1108 -p 7163:7163 jderobot/robotics-backend
    ```
 
-3. Navigate to the cloned RAM repository and run the dummy client file:
+3. Navigate to the test directory in the cloned RAM repository and run the dummy client file:
    ```
-   cd RoboticsApplicationManager/
+   cd RoboticsApplicationManager/test/
    python3 dummyclient.py
    ```
 
