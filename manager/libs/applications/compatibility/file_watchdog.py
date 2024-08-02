@@ -1,5 +1,4 @@
 import threading
-import json
 import time
 import os
 from watchdog.events import FileSystemEventHandler
@@ -8,13 +7,14 @@ import watchdog.observers
 from src.manager.ram_logging.log_manager import LogManager
 
 class MyHandler(FileSystemEventHandler):
-    def __init__(self, callback):
+    def __init__(self, file, callback):
         self.update_callback = callback
+        self.file = file
 
     def on_modified(self, event):
-        self.update_callback("Hola")
-        LogManager.logger.debug(f'event type: {event.event_type}  path : {event.src_path}')
-
+        with open(self.file, 'r') as f: 
+            data = f.read() 
+        self.update_callback(data)
 class FileWatchdog(threading.Thread):
     def __init__(
         self,
@@ -26,7 +26,7 @@ class FileWatchdog(threading.Thread):
         if not os.path.exists(file): 
             with open(file, 'w') as f: 
                 f.write("") 
-        event_handler = MyHandler(callback)
+        event_handler = MyHandler(file, callback)
         self.observer = watchdog.observers.Observer()
         self.observer.schedule(event_handler, path=file)
         self.observer.start()
