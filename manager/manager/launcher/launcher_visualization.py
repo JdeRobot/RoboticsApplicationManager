@@ -1,6 +1,6 @@
 from src.manager.libs.process_utils import get_class, class_from_module
-from typing import Optional
-from pydantic import BaseModel
+from typing import Optional, ClassVar
+from pydantic import BaseModel, ConfigDict
 
 
 from src.manager.libs.process_utils import get_class, class_from_module, get_ros_version
@@ -17,24 +17,6 @@ visualization = {
             "external_port": 1108,
             "internal_port": 5901,
         }
-    ],
-    "bt_studio": [
-        {
-            "type": "module",
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "gazebo_view",
-            "display": ":2",
-            "external_port": 6080,
-            "internal_port": 5900,
-        },
     ],
     "gazebo_gra": [
         {
@@ -75,7 +57,7 @@ visualization = {
             "type": "module",
             "width": 1024,
             "height": 768,
-            "module": "gazebo_view",
+            "module": "robot_display_view",
             "display": ":2",
             "external_port": 6080,
             "internal_port": 5900,
@@ -100,25 +82,18 @@ visualization = {
     ],
     "physic_rae": [
         {
+            "type": "module",
             "module": "console",
             "display": ":1",
             "external_port": 1108,
             "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "robot_display_view",
-            "display": ":2",
-            "external_port": 2303,
-            "internal_port": 5902,
-        },
+        }
     ],
 }
 
 
 class LauncherVisualization(BaseModel):
+    running: ClassVar[bool]
     module: str = ".".join(__name__.split(".")[:-1])
     visualization: str
     launchers: Optional[ILauncher] = []
