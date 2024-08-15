@@ -264,7 +264,6 @@ class Manager:
         LogManager.logger.info("Visualization transition started")
 
         self.visualization_type = event.kwargs.get("data", {})
-
         self.visualization_launcher = LauncherVisualization(
             visualization=self.visualization_type
         )
@@ -622,6 +621,17 @@ ideal_cycle = 20
             universal_newlines=True,
         )
     
+    def call_gzservice(self, service, reqtype, reptype, timeout, req):
+        command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
+        subprocess.call(
+            f"{command}",
+            shell=True,
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+        )
+
     def call_gzservice(self, service, reqtype, reptype, timeout, req):
         command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
         subprocess.call(
