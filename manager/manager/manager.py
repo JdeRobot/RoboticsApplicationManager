@@ -220,7 +220,7 @@ class Manager:
         )
         self.visualization_launcher.run()
 
-        if visualization_type == "gazebo_rae":
+        if visualization_type in ["gazebo_rae", "gzsim_rae"]:
             self.gui_server = Server(2303, self.update)
             self.gui_server.start()
         LogManager.logger.info("Visualization transition finished")
