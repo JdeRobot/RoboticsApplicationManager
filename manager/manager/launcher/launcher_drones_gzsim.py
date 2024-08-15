@@ -1,11 +1,11 @@
 import os
-from manager.manager.launcher.launcher_interface import ILauncher
-from manager.manager.docker_thread.docker_thread import DockerThread
-from manager.libs.process_utils import wait_for_xserver
+from src.manager.manager.launcher.launcher_interface import ILauncher
+from src.manager.manager.docker_thread.docker_thread import DockerThread
+from src.manager.libs.process_utils import wait_for_xserver
 from typing import List, Any
 
 
-class LauncherDronesRos2(ILauncher):
+class LauncherDronesGzsim(ILauncher):
     type: str
     module: str
     launch_file: str
@@ -22,21 +22,12 @@ class LauncherDronesRos2(ILauncher):
         # expand variables in configuration paths
         world_file = os.path.expandvars(self.launch_file)
 
-        # Launching MicroXRCE and Aerostack2 nodes
-        as2_launch_cmd = f"ros2 launch jderobot_drones as2_default_classic_gazebo.launch.py world_file:={world_file}"
+        # Launching gzserver and Aerostack2 nodes
+        as2_launch_cmd = f"ros2 launch jderobot_drones as2_default_gazebo_sim.launch.py world_file:={world_file}"
 
         as2_launch_thread = DockerThread(as2_launch_cmd)
         as2_launch_thread.start()
         self.threads.append(as2_launch_thread)
-
-        # Launching gzserver and PX4
-        px4_launch_cmd = f"$AS2_GZ_ASSETS_SCRIPT_PATH/default_run.sh {world_file}"
-
-        px4_launch_thread = DockerThread(px4_launch_cmd)
-        px4_launch_thread.start()
-        self.threads.append(px4_launch_thread)
-
-        
 
     def is_running(self):
         return True
@@ -44,8 +35,6 @@ class LauncherDronesRos2(ILauncher):
     def terminate(self):
         if self.is_running():
             for thread in self.threads:
-                if thread.is_alive():
-                    thread.terminate()
-                    thread.join()
-                self.threads.remove(thread)
+                thread.terminate()
+                thread.join()
            

@@ -61,7 +61,6 @@ worlds = {
             }
         ],
     },
-
     "physical": {},
 }
 
