@@ -386,18 +386,25 @@ ideal_cycle = 20
     def pause_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/pause_physics", [])
+        elif self.visualization_type == "gzsim_rae":
+            self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: true")
         else:
             self.call_service("/pause_physics", "std_srvs/srv/Empty")
 
     def unpause_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/unpause_physics", [])
+        elif self.visualization_type == "gzsim_rae":
+            self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: false")
         else:
             self.call_service("/unpause_physics", "std_srvs/srv/Empty")
 
     def reset_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/reset_world", [])
+        elif self.visualization_type == "gzsim_rae":
+            # self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
+            self.call_gzservice("$(gz service -l | grep '^/world/\w*/set_pose$')","gz.msgs.Pose","gz.msgs.Boolean","3000","name: \"drone0\", position: {x: 0, y: 0, z: 1.375}")
         else:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
 
