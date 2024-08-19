@@ -63,6 +63,51 @@ visualization = {
             "internal_port": 5900,
         },
     ],
+    "gzsim_gra": [
+        {
+            "type": "module",
+            "module": "console",
+            "display": ":1",
+            "external_port": 1108,
+            "internal_port": 5901,
+        },
+        {
+            "type": "module",
+            "width": 1024,
+            "height": 768,
+            "module": "gzsim_view",
+            "display": ":2",
+            "external_port": 6080,
+            "internal_port": 5900,
+        },
+        {
+            "type": "module",
+            "width": 1024,
+            "height": 768,
+            "module": "robot_display_view",
+            "display": ":3",
+            "external_port": 2303,
+            "internal_port": 5902,
+        },
+    ],
+    "gzsim_rae": [
+        {
+            "type": "module",
+            "module": "console",
+            "display": ":1",
+            "external_port": 1108,
+            "internal_port": 5901,
+        },
+        {
+            "type": "module",
+            "width": 1024,
+            "height": 768,
+            "module": "gzsim_view",
+            "display": ":2",
+            "external_port": 6080,
+            "internal_port": 5900,
+        },
+    ],
     "physic_gra": [
         {
             "module": "console",

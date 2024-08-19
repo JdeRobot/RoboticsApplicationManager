@@ -48,6 +48,19 @@ worlds = {
             }
         ],
     },
+    "gzsimdrones": {
+        "2": [
+            {
+                "type": "module",
+                "module": "drones_gzsim",
+                "resource_folders": [],
+                "model_folders": [],
+                "plugin_folders": [],
+                "parameters": [],
+                "launch_file": [],
+            }
+        ],
+    },
     "physical": {},
 }
 
