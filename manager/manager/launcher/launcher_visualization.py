@@ -132,7 +132,7 @@ class LauncherVisualization(BaseModel):
         LogManager.logger.info("Terminating visualization launcher")
         for launcher in self.launchers:
             if launcher.is_running():
-                launcher.terminate()
+                launcher.terminate()  #BUG: Process already terminated [Errno 3] No such process
         self.launchers = []
 
     def launch_module(self, configuration):
