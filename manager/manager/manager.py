@@ -331,7 +331,18 @@ ideal_cycle = 20
             )
             self.unpause_sim()
         else:
-            with open('/dev/pts/1', 'w') as console:
+            # Temporal solution
+            # TODO: Need to check console pty num after launching the console and then pass the error to that pty
+            # Right now, it just send error description to the last pty at /dev/pts/. If user opens a new console (access docker through terminal),
+            # then this solution stops working
+            check_pty = ['ls', '/dev/pts/']
+            proc = subprocess.Popen(check_pty, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            o, e = proc.communicate()
+            print('Output: ' + o.decode('ascii'))
+            result = ''.join(c for c in o.decode('ascii') if c.isdigit())
+            devNum = result[-1]
+
+            with open('/dev/pts/' + devNum, 'w') as console:
                 console.write(errors + "\n\n")
 
             raise Exception(errors)
