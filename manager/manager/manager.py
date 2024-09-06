@@ -165,7 +165,7 @@ class Manager:
             event (Event): The event object containing data related to the 'connect' event.
 
         The message sent to the consumer includes:
-        - `robotics_backend_version`: The current RADI (Robotics Application Docker Image) version.
+        - `robotics_backend_version`: The current Robotics Backend version.
         - `ros_version`: The current ROS (Robot Operating System) distribution version.
         - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
         """
