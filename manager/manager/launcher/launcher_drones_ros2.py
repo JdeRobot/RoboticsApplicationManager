@@ -44,6 +44,8 @@ class LauncherDronesRos2(ILauncher):
     def terminate(self):
         if self.is_running():
             for thread in self.threads:
-                thread.terminate()
-                thread.join()
+                if thread.is_alive():
+                    thread.terminate()
+                    thread.join()
+                self.threads.remove(thread)
            
