@@ -71,8 +71,10 @@ class LauncherRosApi(ILauncher):
     def terminate(self):
         try:
             for thread in self.threads:
-                thread.terminate()
-                thread.join()
+                if thread.is_alive():
+                    thread.terminate()
+                    thread.join()
+                self.threads.remove(thread)
             self.launch.shutdown()
             self.wait_for_shutdown()
         except Exception as e:

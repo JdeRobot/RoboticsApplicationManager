@@ -35,8 +35,10 @@ class LauncherTeleoperatorRos2(ILauncher):
 
     def terminate(self):
         for thread in self.threads:
-            thread.terminate()
-            thread.join()
+            if thread.is_alive():
+                thread.terminate()
+                thread.join()
+            self.threads.remove(thread)
         self.running = False
 
     def died(self):

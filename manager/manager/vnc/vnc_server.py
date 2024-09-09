@@ -84,9 +84,11 @@ class Vnc_server:
 
     def terminate(self):
         for thread in self.threads:
-            thread.terminate()
-            thread.join()
-            self.running = False
+            if thread.is_alive():
+                thread.terminate()
+                thread.join()
+            self.threads.remove(thread)
+        self.running = False
 
     def get_ros_version(self):
         output = subprocess.check_output(["bash", "-c", "echo $ROS_VERSION"])

@@ -46,8 +46,10 @@ class LauncherRos2Api(ILauncher):
     def terminate(self):
         if self.threads is not None:
             for thread in self.threads:
-                thread.terminate()
-                thread.join()
+                if thread.is_alive():
+                    thread.terminate()
+                    thread.join()
+                self.threads.remove(thread)
 
         kill_cmd = "pkill -9 -f "
         cmd = kill_cmd + "gzserver"

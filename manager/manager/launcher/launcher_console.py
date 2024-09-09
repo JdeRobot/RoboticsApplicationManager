@@ -50,8 +50,10 @@ class LauncherConsole(ILauncher):
     def terminate(self):
         self.console_vnc.terminate()
         for thread in self.threads:
-            thread.terminate()
-            thread.join()
+            if thread.is_alive():
+                thread.terminate()
+                thread.join()
+            self.threads.remove(thread)
         self.running = False
 
     def died(self):
