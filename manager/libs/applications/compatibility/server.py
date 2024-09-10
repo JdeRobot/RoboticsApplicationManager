@@ -19,14 +19,14 @@ class Server(threading.Thread):
         self.server.set_fn_client_left(self.on_close)
         self.server.set_fn_message_received(self.on_message)
         self.current_client = None
+        self.client_lock = threading.Lock()
         self._stop = threading.Event()
         LogManager.logger.info("Server Launched")
 
     def run(self) -> None:
         try:
-            self.server.run_forever()
-            if self._stop.isSet():
-                return
+            while not self._stop.is_set():
+                self.server.run_forever()
         except Exception as ex:
             LogManager.logger.exception(ex)
 
@@ -35,21 +35,23 @@ class Server(threading.Thread):
         self.server.shutdown_gracefully()
 
     def send(self, data):
-        self.sleep(0.1)
-        print("Check de la condición: ", self.current_client is not None and (self._stop.isSet() is not True or self._clientConnected is not True))
-        if self.current_client is not None and (self._stop.isSet() is not True or self._clientConnected is not True):
-            self.server.send_message(self.current_client, data)
-        else:
-            LogManager.logger.error("No client is connected.")
+        with self.client_lock:
+            if self.current_client is not None:
+                self.server.send_message(self.current_client, data)
 
     def on_message(self, client, server, message):
         payload = json.loads(message)
         self.update_callback(payload)
-        LogManager.logger.debug(f"Message received from template: {message[:30]}")
+        LogManager.logger.debug(f"Message received from client: {message[:30]}")
+        
 
     def on_close(self, client, server):
         LogManager.logger.info("Connection with client closed")
+        with self.client_lock:
+            if client == self.current_client:
+                self.current_client = None
 
     def on_open(self, client, server):
         LogManager.logger.info(f"New client connected {client}")
-        self.current_client = client
+        with self.client_lock:
+            self.current_client = client
