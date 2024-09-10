@@ -19,7 +19,7 @@ class Server(threading.Thread):
         self.server.set_fn_client_left(self.on_close)
         self.server.set_fn_message_received(self.on_message)
         self.current_client = None
-        self.client_lock = threading.Lock()
+        self.client_lock = threading.Lock() # Used to avoid concurrency problems
         self._stop = threading.Event()
         LogManager.logger.info("Server Launched")
 
@@ -42,7 +42,7 @@ class Server(threading.Thread):
     def on_message(self, client, server, message):
         payload = json.loads(message)
         self.update_callback(payload)
-        LogManager.logger.debug(f"Message received from client: {message[:30]}")
+        LogManager.logger.debug(f"Message received from template: {message[:30]}")
         
 
     def on_close(self, client, server):
