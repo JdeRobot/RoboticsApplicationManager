@@ -35,7 +35,9 @@ class Server(threading.Thread):
         self.server.shutdown_gracefully()
 
     def send(self, data):
-        if self.current_client is not None:
+        self.sleep(0.1)
+        print("Check de la condición: ", self.current_client is not None and (self._stop.isSet() is not True or self._clientConnected is not True))
+        if self.current_client is not None and (self._stop.isSet() is not True or self._clientConnected is not True):
             self.server.send_message(self.current_client, data)
         else:
             LogManager.logger.error("No client is connected.")
