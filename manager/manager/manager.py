@@ -165,13 +165,13 @@ class Manager:
             event (Event): The event object containing data related to the 'connect' event.
 
         The message sent to the consumer includes:
-        - `radi_version`: The current RADI (Robotics Application Docker Image) version.
+        - `robotics_backend_version`: The current Robotics Backend version.
         - `ros_version`: The current ROS (Robot Operating System) distribution version.
         - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
         """
         self.consumer.send_message(
             {
-                "radi_version": subprocess.check_output(
+                "robotics_backend_version": subprocess.check_output(
                     ["bash", "-c", "echo $IMAGE_TAG"]
                 ),
                 "ros_version": self.ros_version,
@@ -284,7 +284,25 @@ ideal_cycle = 20
         code = code + frequency_control_code_post
         return code
 
+
     def on_run_application(self, event):
+        def find_docker_console():
+            """Search console in docker different of /dev/pts/0"""
+            pts_consoles = [f"/dev/pts/{dev}" for dev in os.listdir('/dev/pts/') if dev.isdigit()]
+            
+            for console in pts_consoles:
+                if console != "/dev/pts/0":
+                    try:
+                        # Search if it's a console
+                        with open(console, 'w') as f:
+                            f.write("")
+                        return console
+                    except Exception:
+                        # Continue searching
+                        continue
+            
+            raise Exception("No active console other than /dev/pts/0")
+
 
         code_path = "/workspace/code/exercise.py"
         # Extract app config
@@ -331,21 +349,14 @@ ideal_cycle = 20
             )
             self.unpause_sim()
         else:
-            # Temporal solution
-            # TODO: Need to check console pty num after launching the console and then pass the error to that pty
-            # Right now, it just send error description to the last pty at /dev/pts/. If user opens a new console (access docker through terminal),
-            # then this solution stops working
-            check_pty = ['ls', '/dev/pts/']
-            proc = subprocess.Popen(check_pty, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            o, e = proc.communicate()
-            print('Output: ' + o.decode('ascii'))
-            result = ''.join(c for c in o.decode('ascii') if c.isdigit())
-            devNum = result[-1]
+            console_path = find_docker_console()
+            # print(f"Consola encontrada: {console_path}")
 
-            with open('/dev/pts/' + devNum, 'w') as console:
+            with open(console_path, 'w') as console:
                 console.write(errors + "\n\n")
 
             raise Exception(errors)
+
 
         LogManager.logger.info("Run application transition finished")
 
