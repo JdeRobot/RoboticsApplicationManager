@@ -289,20 +289,20 @@ ideal_cycle = 20
         def find_docker_console():
             """Search console in docker different of /dev/pts/0"""
             pts_consoles = [f"/dev/pts/{dev}" for dev in os.listdir('/dev/pts/') if dev.isdigit()]
-            
+            consoles = []
             for console in pts_consoles:
                 if console != "/dev/pts/0":
                     try:
                         # Search if it's a console
                         with open(console, 'w') as f:
                             f.write("")
-                        return console
+                        consoles.append(console)
                     except Exception:
                         # Continue searching
                         continue
             
-            raise Exception("No active console other than /dev/pts/0")
-
+            # raise Exception("No active console other than /dev/pts/0")
+            return consoles
 
         code_path = "/workspace/code/exercise.py"
         # Extract app config
@@ -350,10 +350,9 @@ ideal_cycle = 20
             self.unpause_sim()
         else:
             console_path = find_docker_console()
-            # print(f"Consola encontrada: {console_path}")
-
-            with open(console_path, 'w') as console:
-                console.write(errors + "\n\n")
+            for i in console_path:
+                with open(i, 'w') as console:
+                    console.write(errors + "\n\n")
 
             raise Exception(errors)
 
