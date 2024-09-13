@@ -6,15 +6,21 @@ import watchdog.observers
 
 from src.manager.ram_logging.log_manager import LogManager
 
-class MyHandler(FileSystemEventHandler):
+class Handler(FileSystemEventHandler):
+    
     def __init__(self, file, callback):
         self.update_callback = callback
         self.file = file
-
+        self.hash = None
+ 
     def on_modified(self, event):
-        with open(self.file, 'r') as f: 
-            data = f.read() 
-        self.update_callback(data)
+        if event.event_type == 'modified':
+            with open(self.file, 'r') as f: 
+                data = f.read() 
+            if self.hash is None or self.hash != hash(data):
+                self.hash = hash(data)
+                self.update_callback(data)
+
 class FileWatchdog(threading.Thread):
     def __init__(
         self,
@@ -26,7 +32,7 @@ class FileWatchdog(threading.Thread):
         if not os.path.exists(file): 
             with open(file, 'w') as f: 
                 f.write("") 
-        event_handler = MyHandler(file, callback)
+        event_handler = Handler(file, callback)
         self.observer = watchdog.observers.Observer()
         self.observer.schedule(event_handler, path=file)
         self.observer.start()
