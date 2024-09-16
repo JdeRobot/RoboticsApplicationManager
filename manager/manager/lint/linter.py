@@ -50,7 +50,7 @@ class Lint:
 
         return result
 
-    def evaluate_code(self, code, exercise_id, ros_version, warnings=False):
+    def evaluate_code(self, code, exercise_id, ros_version, warnings=False, py_lint_source="pylint_checker.py"):
         try:
             code = re.sub(r'from HAL import HAL', 'from hal import HAL', code)
             code = re.sub(r'from GUI import GUI', 'from gui import GUI', code)
@@ -76,9 +76,9 @@ class Lint:
 
             command = ""
             if "humble" in str(ros_version):                
-                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
+                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros2_humble; python3 RoboticsAcademy/src/manager/manager/lint/{py_lint_source}"
             else:
-                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/pylint_checker.py"
+                command = f"export PYTHONPATH=$PYTHONPATH:/RoboticsAcademy/exercises/static/exercises/{exercise_id}/python_template/ros1_noetic; python3 RoboticsAcademy/src/manager/manager/lint/{py_lint_source}"
             
             ret = subprocess.run(
                 command,
