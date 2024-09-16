@@ -113,6 +113,13 @@ class Manager:
             "dest": "idle",
             "before": "on_disconnect",
         },
+        # Style check 
+        {
+            "trigger": "style_check",
+            "source": "*",
+            "dest": "*",
+            "before": "on_style_check_application",
+        },
     ]
 
     def __init__(self, host: str, port: int):
