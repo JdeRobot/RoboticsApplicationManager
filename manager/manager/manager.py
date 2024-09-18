@@ -310,7 +310,6 @@ ideal_cycle = 20
             # raise Exception("No active console other than /dev/pts/0")
             return consoles
 
-        code_path = "/workspace/code/exercise.py"
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         try:

@@ -13,7 +13,7 @@ code_file.write(python_code.encode())
 code_file.seek(0)
 code_file.close()
 
-options = f"{code_file.name} --enable=similarities --disable=C0114,C0116,C0411,E0401,R0022,W0012 --max-line-length 80 --reports=y"
+options = f"{code_file.name} --enable=similarities --disable=C0114,C0116,C0411,E0401,R0022,W0012 --max-line-length=80 --reports=y"
 
 # Run pylint using subprocess
 result = subprocess.run(['pylint'] + options.split(), capture_output=True, text=True)
