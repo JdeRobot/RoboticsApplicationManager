@@ -273,7 +273,7 @@ ideal_cycle = 20
             code,
         )
         frequency_control_code_pre = """
-    start_time = datetime.now()
+    start_time_internal_freq_control = datetime.now()
             """
         code = (
             code[: infinite_loop.end()]
@@ -281,8 +281,8 @@ ideal_cycle = 20
             + code[infinite_loop.end() :]
         )
         frequency_control_code_post = """
-    finish_time = datetime.now()
-    dt = finish_time - start_time
+    finish_time_internal_freq_control = datetime.now()
+    dt = finish_time_internal_freq_control - start_time_internal_freq_control
     ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
 
     if (ms < ideal_cycle):
