@@ -136,6 +136,7 @@ class Manager:
         self.queue = Queue()
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.world_launcher = None
+        self.visualization_type = None
         self.visualization_launcher = None
         self.application_process = None
         self.running = True
@@ -249,13 +250,13 @@ class Manager:
 
         LogManager.logger.info("Visualization transition started")
 
-        visualization_type = event.kwargs.get("data", {})
+        self.visualization_type = event.kwargs.get("data", {})
         self.visualization_launcher = LauncherVisualization(
-            visualization=visualization_type
+            visualization=self.visualization_type
         )
         self.visualization_launcher.run()
 
-        if visualization_type == "gazebo_rae":
+        if self.visualization_type in ["gazebo_rae", "gzsim_rae"]:
             self.gui_server = Server(2303, self.update)
             self.gui_server.start()
 
@@ -512,23 +513,40 @@ ideal_cycle = 20
     def pause_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/pause_physics", [])
+        elif self.visualization_type == "gzsim_rae":
+            self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: true")
         else:
             self.call_service("/pause_physics", "std_srvs/srv/Empty")
 
     def unpause_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/unpause_physics", [])
+        elif self.visualization_type == "gzsim_rae":
+            self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: false")
         else:
             self.call_service("/unpause_physics", "std_srvs/srv/Empty")
 
     def reset_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/reset_world", [])
+        elif self.visualization_type == "gzsim_rae":
+            self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
         else:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
 
     def call_service(self, service, service_type):
         command = f"ros2 service call {service} {service_type}"
+        subprocess.call(
+            f"{command}",
+            shell=True,
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+        )
+    
+    def call_gzservice(self, service, reqtype, reptype, timeout, req):
+        command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
         subprocess.call(
             f"{command}",
             shell=True,
