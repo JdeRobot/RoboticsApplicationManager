@@ -130,6 +130,20 @@ def wait_for_process_to_start(process_name, timeout=60):
 
 def check_gpu_acceleration():
     try:
+        # Verifica si /dev/dri existe
+        if not os.path.exists("/dev/dri"):
+            LogManager.logger.error(
+                "/dev/dri does not exist. No direct GPU access.")
+            return "OFF"
+
+        # # Obtiene la salida de glxinfo
+        # result = subprocess.check_output(
+        #     "glxinfo | grep direct", shell=True).decode('utf-8')
+        # print(result)
+
+        # # Verifica si la aceleración directa está habilitada
+        # return "direct rendering: Yes" in result        
+
         vendor_name = os.environ['DRI_VENDOR']
         return vendor_name.upper()
     except Exception as e:
