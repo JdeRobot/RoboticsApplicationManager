@@ -28,6 +28,7 @@ from src.manager.manager.launcher.launcher_world import LauncherWorld
 from src.manager.manager.launcher.launcher_visualization import LauncherVisualization
 from src.manager.ram_logging.log_manager import LogManager
 from src.manager.libs.applications.compatibility.server import Server
+from src.manager.libs.applications.compatibility.file_watchdog import FileWatchdog
 from src.manager.manager.application.robotics_python_application_interface import (
     IRoboticsPythonApplication,
 )
@@ -163,6 +164,11 @@ class Manager:
         if self.consumer is not None:
             self.consumer.send_message({"update": data}, command="update")
 
+    def update_bt_studio(self, data):
+        LogManager.logger.debug(f"Sending update to client")
+        if self.consumer is not None:
+            self.consumer.send_message({"update": data}, command="update")
+
     def on_connect(self, event):
         """
         This method is triggered when the application transitions to the 'connected' state.
@@ -257,6 +263,9 @@ class Manager:
 
         if visualization_type == "gazebo_rae":
             self.gui_server = Server(2303, self.update)
+            self.gui_server.start()
+        elif visualization_type == "bt_studio":
+            self.gui_server = FileWatchdog('/tmp/tree_state', self.update_bt_studio) # TODO: change if type bt
             self.gui_server.start()
 
         LogManager.logger.info("Visualization transition finished")

@@ -21,13 +21,6 @@ visualization = {
     "bt_studio": [
         {
             "type": "module",
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        },
-        {
-            "type": "module",
             "width": 1024,
             "height": 768,
             "module": "gazebo_view",
