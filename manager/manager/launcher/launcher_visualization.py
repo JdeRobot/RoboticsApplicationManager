@@ -81,7 +81,7 @@ visualization = {
             "internal_port": 5900,
         },
     ],
-        "gzsim_gra": [
+    "gzsim_gra": [
         {
             "type": "module",
             "module": "console",
