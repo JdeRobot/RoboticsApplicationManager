@@ -606,12 +606,7 @@ ideal_cycle = 20
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/reset_world", [])
         elif self.visualization_type == "gzsim_rae":
-<<<<<<< HEAD
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
-=======
-            # self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
-            self.call_gzservice("$(gz service -l | grep '^/world/\w*/set_pose$')","gz.msgs.Pose","gz.msgs.Boolean","3000","name: \"drone0\", position: {x: 0, y: 0, z: 1.375}")
->>>>>>> 22d1a22 (updatedt the functions for pause, unpause and reset for gz sim)
         else:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
 
