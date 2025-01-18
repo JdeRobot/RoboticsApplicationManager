@@ -1,5 +1,9 @@
 from __future__ import annotations
+import json
 import sys
+import tempfile
+
+import black
 
 sys.path.insert(0, '/RoboticsApplicationManager')
 
@@ -19,7 +23,6 @@ if "noetic" in str(subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])):
 import traceback
 from queue import Queue
 from uuid import uuid4
-
 
 from transitions import Machine
 
@@ -120,10 +123,24 @@ class Manager:
         # Style check 
         {
             "trigger": "style_check",
-            "source": "*",
-            "dest": "*",
+            "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
+            "dest": "=",
             "before": "on_style_check_application",
         },
+        # Code analysis 
+        {
+            "trigger": "code_analysis",
+            "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
+            "dest": "=",
+            "before": "on_code_analysis",
+        },
+        # Code analysis 
+        {
+            "trigger": "code_format",
+            "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
+            "dest": "=",
+            "before": "on_code_format",
+        }
     ]
 
     def __init__(self, host: str, port: int):
@@ -355,6 +372,111 @@ ideal_cycle = 20
                 console.write(errors + "\n\n")
 
         raise Exception(errors)
+
+    def on_code_analysis(self, event):
+        """
+        This method is triggered when the application transitions to the 'connected' state.
+        It sends an introspection message to a consumer with key information.
+
+        Parameters:
+            event (Event): The event object containing data related to the 'connect' event.
+
+        The message sent to the consumer includes:
+        - `robotics_backend_version`: The current Robotics Backend version.
+        - `ros_version`: The current ROS (Robot Operating System) distribution version.
+        - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
+        """
+
+        # Extract app config
+        app_cfg = event.kwargs.get("data", {})
+        code_string = app_cfg["code"]
+        disable_error_ids = app_cfg["disable_errors"]
+
+        # if code string is empty
+        if not code_string:
+            LogManager.logger.info("User code not found")
+            return
+
+
+        # Save the code string to a temporary file
+        with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_file:
+            temp_file.write(code_string.encode('utf-8'))
+            temp_file_path = temp_file.name
+            
+        
+        # terminal command
+        command = ['pylint', '--output-format=json',] + [temp_file_path]
+        # '--extension-pkg-whitelist=cv2'
+        
+        # Add the disable option for specific error IDs
+        if disable_error_ids:
+            disable_str = ','.join(disable_error_ids)
+            command.append(f'--disable={disable_str}')
+        
+        # run the command
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Decode the results
+        pylint_output = result.stdout.decode('utf-8')
+        pylint_errors = result.stderr.decode('utf-8')
+        
+        # Parse the JSON output if pylint output is not empty
+        try:
+            pylint_json = json.loads(pylint_output) if pylint_output else []
+        except json.JSONDecodeError as e:
+            LogManager.logger.info(f"Failed to parse JSON: {str(e)}")
+
+        
+        # Clean up the temporary file after Pylint run
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+        
+        if pylint_errors:
+            LogManager.logger.info("Found errors in code")
+        
+        self.consumer.send_message(
+            {
+                "pylint_output": pylint_json,
+                "pylint_errors": pylint_errors
+            },
+            command="code-analysis",
+        )
+
+    def on_code_format(self, event):
+        """
+        This method is triggered when the application transitions to the 'connected' state.
+        It sends an introspection message to a consumer with key information.
+
+        Parameters:
+            event (Event): The event object containing data related to the 'connect' event.
+
+        The message sent to the consumer includes:
+        - `robotics_backend_version`: The current Robotics Backend version.
+        - `ros_version`: The current ROS (Robot Operating System) distribution version.
+        - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
+        """
+
+        # Extract app config
+        app_cfg = event.kwargs.get("data", {})
+        code = app_cfg["code"]
+
+        # if code string is empty
+        if not code:
+            LogManager.logger.info("User code not found")
+            return
+        
+        try:
+            # Format the code with Black
+            formatted_code = black.format_str(code, mode=black.Mode())
+            self.consumer.send_message(
+                {
+                    "formatted_code": formatted_code,
+                },
+                command="code-format",
+            )
+        except Exception as e:
+            LogManager.logger.info('Error formating code' + str(e))
+        
 
     def on_run_application(self, event):
         def find_docker_console():
