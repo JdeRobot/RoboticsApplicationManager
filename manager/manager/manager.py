@@ -607,6 +607,9 @@ ideal_cycle = 20
             rosservice.call_service("/gazebo/reset_world", [])
         elif self.visualization_type == "gzsim_rae":
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
+
+            # if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
+            #     self.call_service()
         else:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
 
@@ -632,6 +635,14 @@ ideal_cycle = 20
             universal_newlines=True,
         )
 
+    def is_ros_service_available(self, service_name):
+        try:
+            result = subprocess.run(['ros2', 'service', 'list', '--include-hidden-services'], capture_output=True, text=True, check=True)
+            return service_name in result.stdout
+        except subprocess.CalledProcessError as e:
+            LogManager.logger.exception(f"Error checking service availability: {e}")
+            return False
+    
     def start(self):
         """
         Starts the RAM
