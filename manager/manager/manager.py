@@ -281,7 +281,6 @@ class Manager:
         LogManager.logger.info("Visualization transition started")
 
         self.visualization_type = event.kwargs.get("data", {})
-
         self.visualization_launcher = LauncherVisualization(
             visualization=self.visualization_type
         )
@@ -290,7 +289,7 @@ class Manager:
         if self.visualization_type in ["gazebo_rae", "gzsim_rae"]:
             self.gui_server = Server(2303, self.update)
             self.gui_server.start()
-        elif self.visualization_type == "bt_studio":
+        elif self.visualization_type in ["bt_studio", "bt_studio_gz"]:
             self.gui_server = FileWatchdog('/tmp/tree_state', self.update_bt_studio) # TODO: change if type bt
             self.gui_server.start()
 
@@ -713,7 +712,7 @@ ideal_cycle = 20
     def pause_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/pause_physics", [])
-        elif self.visualization_type == "gzsim_rae":
+        elif self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: true")
         else:
             self.call_service("/pause_physics", "std_srvs/srv/Empty")
@@ -721,7 +720,7 @@ ideal_cycle = 20
     def unpause_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/unpause_physics", [])
-        elif self.visualization_type == "gzsim_rae":
+        elif self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: false")
         else:
             self.call_service("/unpause_physics", "std_srvs/srv/Empty")
@@ -729,13 +728,15 @@ ideal_cycle = 20
     def reset_sim(self):
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/reset_world", [])
-        elif self.visualization_type == "gzsim_rae":
+        elif self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
+            if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
+                self.call_service("/drone0/platform/state_machine/_reset", "std_srvs/srv/Trigger", "{}")
         else:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
 
-    def call_service(self, service, service_type):
-        command = f"ros2 service call {service} {service_type}"
+    def call_service(self, service, service_type, request_data="{}"):
+        command = f"ros2 service call {service} {service_type} '{request_data}'"
         subprocess.call(
             f"{command}",
             shell=True,
@@ -756,6 +757,14 @@ ideal_cycle = 20
             universal_newlines=True,
         )
 
+    def is_ros_service_available(self, service_name):
+        try:
+            result = subprocess.run(['ros2', 'service', 'list', '--include-hidden-services'], capture_output=True, text=True, check=True)
+            return service_name in result.stdout
+        except subprocess.CalledProcessError as e:
+            LogManager.logger.exception(f"Error checking service availability: {e}")
+            return False
+    
     def start(self):
         """
         Starts the RAM

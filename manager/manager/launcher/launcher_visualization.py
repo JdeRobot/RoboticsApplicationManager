@@ -36,6 +36,24 @@ visualization = {
             "internal_port": 5900,
         },
     ],
+    "bt_studio_gz": [
+        {
+            "type": "module",
+            "module": "console",
+            "display": ":1",
+            "external_port": 1108,
+            "internal_port": 5901,
+        },
+        {
+            "type": "module",
+            "width": 1024,
+            "height": 768,
+            "module": "gzsim_view",
+            "display": ":2",
+            "external_port": 6080,
+            "internal_port": 5900,
+        },
+    ],
     "gazebo_gra": [
         {
             "type": "module",
