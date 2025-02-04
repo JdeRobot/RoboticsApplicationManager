@@ -17,6 +17,7 @@ import shutil
 import time
 import base64
 import zipfile
+import jedi
 
 if "noetic" in str(subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])):
     import rosservice
@@ -40,7 +41,7 @@ from manager.manager.application.robotics_python_application_interface import (
 )
 from manager.libs.process_utils import stop_process_and_children
 from manager.manager.lint.linter import Lint
-
+from manager.manager.editor.serializers import serialize_completions
 
 class Manager:
     states = [
@@ -140,6 +141,13 @@ class Manager:
             "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
             "dest": "=",
             "before": "on_code_format",
+        },
+        # Code analysis 
+        {
+            "trigger": "code_autocomplete",
+            "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
+            "dest": "=",
+            "before": "on_code_autocomplete",
         }
     ]
 
@@ -373,19 +381,6 @@ ideal_cycle = 20
         raise Exception(errors)
 
     def on_code_analysis(self, event):
-        """
-        This method is triggered when the application transitions to the 'connected' state.
-        It sends an introspection message to a consumer with key information.
-
-        Parameters:
-            event (Event): The event object containing data related to the 'connect' event.
-
-        The message sent to the consumer includes:
-        - `robotics_backend_version`: The current Robotics Backend version.
-        - `ros_version`: The current ROS (Robot Operating System) distribution version.
-        - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
-        """
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code_string = app_cfg["code"]
@@ -442,19 +437,6 @@ ideal_cycle = 20
         )
 
     def on_code_format(self, event):
-        """
-        This method is triggered when the application transitions to the 'connected' state.
-        It sends an introspection message to a consumer with key information.
-
-        Parameters:
-            event (Event): The event object containing data related to the 'connect' event.
-
-        The message sent to the consumer includes:
-        - `robotics_backend_version`: The current Robotics Backend version.
-        - `ros_version`: The current ROS (Robot Operating System) distribution version.
-        - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
-        """
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code = app_cfg["code"]
@@ -472,6 +454,39 @@ ideal_cycle = 20
                     "formatted_code": formatted_code,
                 },
                 command="code-format",
+            )
+        except Exception as e:
+            LogManager.logger.info('Error formating code' + str(e))
+
+    def on_code_autocomplete(self, event):
+        # Extract app config
+        app_cfg = event.kwargs.get("data", {})
+        code = app_cfg["code"]
+        line = app_cfg["line"]
+        col = app_cfg["col"]
+
+        jedi.settings.add_bracket_after_function= True
+
+        # if code string is empty
+        if not code:
+            LogManager.logger.info("User code not found")
+            return
+        
+        if not line or not col:
+            LogManager.logger.info("User code position not found")
+            return
+        
+        script = jedi.Script(code, path='/workspace/code/academy.py')
+
+        try:
+            completions = script.complete(line, col)
+            serialized_completions = serialize_completions(completions)
+
+            self.consumer.send_message(
+                {
+                    "completions": serialized_completions,
+                },
+                command="code-autocomplete",
             )
         except Exception as e:
             LogManager.logger.info('Error formating code' + str(e))
