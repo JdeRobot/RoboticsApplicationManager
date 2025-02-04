@@ -466,7 +466,7 @@ ideal_cycle = 20
         col = app_cfg["col"]
 
         jedi.settings.add_bracket_after_function= True
-
+        
         # if code string is empty
         if not code:
             LogManager.logger.info("User code not found")
