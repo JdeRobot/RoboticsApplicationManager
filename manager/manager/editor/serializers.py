@@ -6,7 +6,7 @@ class Completion:
     def __init__(self,completion):
         self.label = completion.name
         self.name_with_symbols = completion.name_with_symbols
-        self.docstring = completion.docstring()
+        self.docstring = completion.docstring(raw=True)
         self.type = completion.type
         if completion.parent() is None:
             self.detail = self.type
