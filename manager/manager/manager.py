@@ -17,6 +17,7 @@ import shutil
 import time
 import base64
 import zipfile
+import jedi
 
 if "noetic" in str(subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])):
     import rosservice
@@ -40,7 +41,7 @@ from manager.manager.application.robotics_python_application_interface import (
 )
 from manager.libs.process_utils import stop_process_and_children
 from manager.manager.lint.linter import Lint
-
+from manager.manager.editor.serializers import serialize_completions
 
 class Manager:
     states = [
@@ -140,6 +141,13 @@ class Manager:
             "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
             "dest": "=",
             "before": "on_code_format",
+        },
+        # Code analysis 
+        {
+            "trigger": "code_autocomplete",
+            "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
+            "dest": "=",
+            "before": "on_code_autocomplete",
         }
     ]
 
@@ -373,19 +381,6 @@ ideal_cycle = 20
         raise Exception(errors)
 
     def on_code_analysis(self, event):
-        """
-        This method is triggered when the application transitions to the 'connected' state.
-        It sends an introspection message to a consumer with key information.
-
-        Parameters:
-            event (Event): The event object containing data related to the 'connect' event.
-
-        The message sent to the consumer includes:
-        - `robotics_backend_version`: The current Robotics Backend version.
-        - `ros_version`: The current ROS (Robot Operating System) distribution version.
-        - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
-        """
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code_string = app_cfg["code"]
@@ -442,19 +437,6 @@ ideal_cycle = 20
         )
 
     def on_code_format(self, event):
-        """
-        This method is triggered when the application transitions to the 'connected' state.
-        It sends an introspection message to a consumer with key information.
-
-        Parameters:
-            event (Event): The event object containing data related to the 'connect' event.
-
-        The message sent to the consumer includes:
-        - `robotics_backend_version`: The current Robotics Backend version.
-        - `ros_version`: The current ROS (Robot Operating System) distribution version.
-        - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
-        """
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code = app_cfg["code"]
@@ -472,6 +454,39 @@ ideal_cycle = 20
                     "formatted_code": formatted_code,
                 },
                 command="code-format",
+            )
+        except Exception as e:
+            LogManager.logger.info('Error formating code' + str(e))
+
+    def on_code_autocomplete(self, event):
+        # Extract app config
+        app_cfg = event.kwargs.get("data", {})
+        code = app_cfg["code"]
+        line = app_cfg["line"]
+        col = app_cfg["col"]
+
+        jedi.settings.add_bracket_after_function= True
+        
+        # if code string is empty
+        if not code:
+            LogManager.logger.info("User code not found")
+            return
+        
+        if not line or not col:
+            LogManager.logger.info("User code position not found")
+            return
+        
+        script = jedi.Script(code, path='/workspace/code/academy.py')
+
+        try:
+            completions = script.complete(line, col)
+            serialized_completions = serialize_completions(completions)
+
+            self.consumer.send_message(
+                {
+                    "completions": serialized_completions,
+                },
+                command="code-autocomplete",
             )
         except Exception as e:
             LogManager.logger.info('Error formating code' + str(e))
@@ -496,6 +511,32 @@ ideal_cycle = 20
             # raise Exception("No active console other than /dev/pts/0")
             return consoles
         
+        def prepare_RA_code(code_path):
+            f = open(code_path, "r")
+            code = f.read()
+            f.close()
+
+            # Make code backwards compatible
+            code = code.replace("from GUI import GUI", "import GUI")
+            code = code.replace("from HAL import HAL", "import HAL")
+
+            # Create executable app
+            errors = self.linter.evaluate_code(code, self.ros_version)
+            if errors == "":
+
+                code = self.add_frequency_control(code)
+                f = open(code_path, "w")
+                f.write(code)
+                f.close()
+
+            else:
+                console_path = find_docker_console()
+                for i in console_path:
+                    with open(i, 'w') as console:
+                        console.write(errors + "\n\n")
+
+                raise Exception(errors)
+
         # Kill already running code
         try:
             proc = psutil.Process(self.application_process.pid)
@@ -504,8 +545,6 @@ ideal_cycle = 20
         except Exception:
             pass
 
-        code_path = "/workspace/code/academy.py"
-        
         # Delete old files
         if os.path.exists("/workspace/code"):
             shutil.rmtree("/workspace/code")
@@ -513,12 +552,13 @@ ideal_cycle = 20
 
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
-        try:
-            if app_cfg["type"] == "bt-studio":
-                return self.run_bt_studio_application(app_cfg)
-        except Exception:
-            pass
-    
+        type = app_cfg["type"]
+
+        if type == "robotics-academy":
+            code_path = "/workspace/code/academy.py"
+        elif type == "bt-studio":
+            code_path = "/workspace/code/execute_docker.py"
+
         # Unzip the app
         if app_cfg["code"].startswith("data:"):
             _, _, code = app_cfg["code"].partition("base64,")
@@ -532,67 +572,25 @@ ideal_cycle = 20
             LogManager.logger.info("User code not found")
             raise Exception("User code not found")
         
-        f = open(code_path, "r")
-        code = f.read()
-        f.close()
+        try:
+            if (type == "robotics-academy"):
+                prepare_RA_code(code_path)
 
-        # Make code backwards compatible
-        code = code.replace("from GUI import GUI", "import GUI")
-        code = code.replace("from HAL import HAL", "import HAL")
-
-        # Create executable app
-        errors = self.linter.evaluate_code(code, self.ros_version)
-        if errors == "":
-
-            code = self.add_frequency_control(code)
-            f = open(code_path, "w")
-            f.write(code)
-            f.close()
+            fds = os.listdir("/dev/pts/")
+            console_fd = str(max(map(int, fds[:-1])))
 
             self.application_process = subprocess.Popen(
                 ["python3", code_path],
+                stdin=open('/dev/pts/' + console_fd, 'r'),
                 stdout=sys.stdout,
                 stderr=subprocess.STDOUT,
                 bufsize=1024,
                 universal_newlines=True,
             )
             self.unpause_sim()
-        else:
-            console_path = find_docker_console()
-            for i in console_path:
-                with open(i, 'w') as console:
-                    console.write(errors + "\n\n")
-
-            raise Exception(errors)
-
-        LogManager.logger.info("Run application transition finished")
-
-    def run_bt_studio_application(self, data):
-
-        print("BT Studio application")
-
-        # Unzip the app
-        if data["code"].startswith("data:"):
-            _, _, code = data["code"].partition("base64,")
-        with open("/workspace/code/app.zip", "wb") as result:
-            result.write(base64.b64decode(code))
-        zip_ref = zipfile.ZipFile("/workspace/code/app.zip", "r")
-        zip_ref.extractall("/workspace/code")
-        zip_ref.close()
-
-        fds = os.listdir("/dev/pts/")
-        console_fd = str(max(map(int, fds[:-1])))
-
-        self.application_process = subprocess.Popen(
-            ["python3", "/workspace/code/execute_docker.py"],
-            stdin=open('/dev/pts/' + console_fd, 'r'),
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-        self.unpause_sim()
-
+        except:
+            LogManager.logger.info("Run application failed")
+        
         LogManager.logger.info("Run application transition finished")
     
     def terminate_harmonic_processes(self):
@@ -729,9 +727,9 @@ ideal_cycle = 20
         if "noetic" in str(self.ros_version):
             rosservice.call_service("/gazebo/reset_world", [])
         elif self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
-            self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
             if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
                 self.call_service("/drone0/platform/state_machine/_reset", "std_srvs/srv/Trigger", "{}")
+            self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
         else:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
 
