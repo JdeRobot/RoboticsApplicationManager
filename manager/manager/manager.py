@@ -33,7 +33,6 @@ from manager.comms.consumer_message import ManagerConsumerMessageException
 from manager.comms.new_consumer import ManagerConsumer
 from manager.libs.process_utils import check_gpu_acceleration, get_class_from_file
 from manager.libs.launch_world_model import ConfigurationManager
-from manager.libs.launch_robot_model import ConfigurationManagerRobot
 from manager.manager.launcher.launcher_world import LauncherWorld
 from manager.manager.launcher.launcher_robot import LauncherRobot
 from manager.manager.launcher.launcher_visualization import LauncherVisualization
@@ -52,7 +51,6 @@ class Manager:
         "idle",
         "connected",
         "world_ready",
-        "robot_ready",
         "visualization_ready",
         "application_running",
         "paused",
@@ -75,15 +73,8 @@ class Manager:
         },
         # Transitions for state world ready
         {
-            "trigger": "launch_robot",
-            "source": "world_ready",
-            "dest": "robot_ready",
-            "before": "on_launch_robot",
-        },
-        # Transitions for state robot ready
-        {
             "trigger": "prepare_visualization",
-            "source": "robot_ready",
+            "source": "world_ready",
             "dest": "visualization_ready",
             "before": "on_prepare_visualization",
         },
@@ -117,14 +108,8 @@ class Manager:
         {
             "trigger": "terminate_visualization",
             "source": "visualization_ready",
-            "dest": "robot_ready",
-            "before": "on_terminate_visualization",
-        },
-        {
-            "trigger": "terminate_robot",
-            "source": "robot_ready",
             "dest": "world_ready",
-            "before": "on_terminate_robot",
+            "before": "on_terminate_visualization",
         },
         {
             "trigger": "terminate_universe",
@@ -261,16 +246,21 @@ class Manager:
         Note:
             The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
+
+        cfg_dict = event.kwargs.get("data", {})
+        world_cfg = cfg_dict['world']
+        robot_cfg = cfg_dict['robot']
+
+        # Launch world
         try:
-            cfg_dict = event.kwargs.get("data", {})
-            if cfg_dict['world'] == None:
+            if world_cfg['world'] == None:
                 self.world_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
-            cfg = ConfigurationManager.validate(cfg_dict)
-            if "zip" in cfg_dict:
+            cfg = ConfigurationManager.validate(world_cfg)
+            if "zip" in world_cfg:
                 LogManager.logger.info("Launching universe from received zip")
-                self.prepare_custom_universe(cfg_dict)
+                self.prepare_custom_universe(world_cfg)
             else:
                 LogManager.logger.info("Launching world from the RB")
 
@@ -283,38 +273,14 @@ class Manager:
         self.world_launcher.run()
         LogManager.logger.info("Launch transition finished")
 
-    def on_launch_robot(self, event):
-        """
-        Handles the 'launch' event, transitioning the application from 'connected' to 'ready' state.
-        This method initializes the launch process based on the provided configuration.
-
-        During the launch process, it validates and processes the configuration data received from the event.
-        It then creates and starts a LauncherWorld instance with the validated configuration.
-        This setup is crucial for preparing the environment and resources necessary for the application's execution.
-
-        Parameters:
-            event (Event): The event object containing data related to the 'launch' event.
-                        This data includes configuration information necessary for initializing the launch process.
-
-        Raises:
-            ValueError: If the configuration data is invalid or incomplete, a ValueError is raised,
-                        indicating the issue with the provided configuration.
-
-        Note:
-            The method logs the start of the launch transition and the configuration details for debugging and traceability.
-        """
+        # Launch robot
         try:
-            cfg_dict = event.kwargs.get("data", {})
-            if cfg_dict['type'] == None:
+            if robot_cfg['world'] == None:
                 self.robot_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
-            cfg = ConfigurationManagerRobot.validate(cfg_dict)
-            if "zip" in cfg_dict:
-                LogManager.logger.info("Launching universe from received zip")
-                self.prepare_custom_universe(cfg_dict)
-            else:
-                LogManager.logger.info("Launching robot from the RB")
+            cfg = ConfigurationManager.validate(robot_cfg)
+            LogManager.logger.info("Launching robot from the RB")
 
             LogManager.logger.info(cfg)
         except ValueError as e:
@@ -712,13 +678,11 @@ ideal_cycle = 20
             self.gui_server.stop()
             self.gui_server = None
 
-    def on_terminate_robot(self, event):
-        if self.robot_launcher != None:
-            self.robot_launcher.terminate()
-
     def on_terminate_universe(self, event):
         if self.world_launcher != None:
             self.world_launcher.terminate()
+        if self.robot_launcher != None:
+            self.robot_launcher.terminate()
 
     def on_disconnect(self, event):
         self.terminate_harmonic_processes()
@@ -887,7 +851,6 @@ ideal_cycle = 20
                     self.robot_launcher.terminate()
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating world launcher")
-
 
             if self.world_launcher:
                 try:
