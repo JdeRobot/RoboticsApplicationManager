@@ -21,8 +21,6 @@ import base64
 import zipfile
 import jedi
 
-if "noetic" in str(subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])):
-    import rosservice
 import traceback
 from queue import Queue
 from uuid import uuid4
@@ -743,25 +741,19 @@ ideal_cycle = 20
         self.unpause_sim()
 
     def pause_sim(self):
-        if "noetic" in str(self.ros_version):
-            rosservice.call_service("/gazebo/pause_physics", [])
-        elif self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
+        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: true")
         else:
             self.call_service("/pause_physics", "std_srvs/srv/Empty")
 
     def unpause_sim(self):
-        if "noetic" in str(self.ros_version):
-            rosservice.call_service("/gazebo/unpause_physics", [])
-        elif self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
+        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: false")
         else:
             self.call_service("/unpause_physics", "std_srvs/srv/Empty")
 
     def reset_sim(self):
-        if "noetic" in str(self.ros_version):
-            rosservice.call_service("/gazebo/reset_world", [])
-        elif self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
+        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
                 self.call_service("/drone0/platform/state_machine/_reset", "std_srvs/srv/Trigger", "{}")
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")

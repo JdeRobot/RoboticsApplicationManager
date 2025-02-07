@@ -7,14 +7,6 @@ from manager.manager.launcher.launcher_interface import ILauncher
 
 worlds = {
     "gazebo": {
-        "1": [
-            {
-                "type": "module",
-                "module": "ros_api",
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
         "2": [
             {
                 "type": "module",
@@ -25,17 +17,6 @@ worlds = {
         ],
     },
     "drones": {
-        "1": [
-            {
-                "type": "module",
-                "module": "drones",
-                "resource_folders": [],
-                "model_folders": [],
-                "plugin_folders": [],
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
         "2": [
             {
                 "type": "module",
