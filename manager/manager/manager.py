@@ -577,12 +577,12 @@ ideal_cycle = 20
 
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
-        # type = app_cfg["type"]
+        type = app_cfg["type"]
 
-        # if type == "robotics-academy":
-        code_path = "/workspace/code/academy.py"
-        # elif type == "bt-studio":
-            # code_path = "/workspace/code/execute_docker.py"
+        if type == "robotics-academy":
+            code_path = "/workspace/code/academy.py"
+        elif type == "bt-studio":
+            code_path = "/workspace/code/execute_docker.py"
 
         # Unzip the app
         if app_cfg["code"].startswith("data:"):
@@ -598,8 +598,8 @@ ideal_cycle = 20
             raise Exception("User code not found")
         
         try:
-            # if (type == "robotics-academy"):
-            prepare_RA_code(code_path)
+            if (type == "robotics-academy"):
+                prepare_RA_code(code_path)
 
             fds = os.listdir("/dev/pts/")
             console_fd = str(max(map(int, fds[:-1])))
