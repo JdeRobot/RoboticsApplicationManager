@@ -5,6 +5,8 @@ import tempfile
 
 import black
 
+
+
 sys.path.insert(0, '/RoboticsApplicationManager')
 
 import os
@@ -19,8 +21,6 @@ import base64
 import zipfile
 import jedi
 
-if "noetic" in str(subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])):
-    import rosservice
 import traceback
 from queue import Queue
 from uuid import uuid4
@@ -32,6 +32,7 @@ from manager.comms.new_consumer import ManagerConsumer
 from manager.libs.process_utils import check_gpu_acceleration, get_class_from_file
 from manager.libs.launch_world_model import ConfigurationManager
 from manager.manager.launcher.launcher_world import LauncherWorld
+from manager.manager.launcher.launcher_robot import LauncherRobot
 from manager.manager.launcher.launcher_visualization import LauncherVisualization
 from manager.ram_logging.log_manager import LogManager
 from manager.libs.applications.compatibility.server import Server
@@ -165,6 +166,7 @@ class Manager:
         self.queue = Queue()
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.world_launcher = None
+        self.robot_launcher = None
         self.visualization_launcher = None
         self.visualization_type = None
         self.application_process = None
@@ -242,18 +244,23 @@ class Manager:
         Note:
             The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
+
+        cfg_dict = event.kwargs.get("data", {})
+        world_cfg = cfg_dict['world']
+        robot_cfg = cfg_dict['robot']
+
+        # Launch world
         try:
-            cfg_dict = event.kwargs.get("data", {})
-            if cfg_dict['world'] == None:
+            if world_cfg['world'] == None:
                 self.world_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
-            cfg = ConfigurationManager.validate(cfg_dict)
-            if "zip" in cfg_dict:
+            cfg = ConfigurationManager.validate(world_cfg)
+            if "zip" in world_cfg:
                 LogManager.logger.info("Launching universe from received zip")
-                self.prepare_custom_universe(cfg_dict)
+                self.prepare_custom_universe(world_cfg)
             else:
-                LogManager.logger.info("Launching universe from the RB")
+                LogManager.logger.info("Launching world from the RB")
 
             LogManager.logger.info(cfg)
         except ValueError as e:
@@ -262,6 +269,24 @@ class Manager:
         self.world_launcher = LauncherWorld(**cfg.model_dump())
         LogManager.logger.info(str(self.world_launcher))
         self.world_launcher.run()
+        LogManager.logger.info("Launch transition finished")
+
+        # Launch robot
+        try:
+            if robot_cfg['world'] == None:
+                self.robot_launcher = None
+                LogManager.logger.info("Launch transition finished")
+                return
+            cfg = ConfigurationManager.validate(robot_cfg)
+            LogManager.logger.info("Launching robot from the RB")
+
+            LogManager.logger.info(cfg)
+        except ValueError as e:
+            LogManager.logger.error(f"Configuration validation failed: {e}")
+
+        self.robot_launcher = LauncherRobot(**cfg.model_dump())
+        LogManager.logger.info(str(self.robot_launcher))
+        self.robot_launcher.run()
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
@@ -654,6 +679,8 @@ ideal_cycle = 20
     def on_terminate_universe(self, event):
         if self.world_launcher != None:
             self.world_launcher.terminate()
+        if self.robot_launcher != None:
+            self.robot_launcher.terminate()
 
     def on_disconnect(self, event):
         self.terminate_harmonic_processes()
@@ -677,6 +704,12 @@ ideal_cycle = 20
                 LogManager.logger.exception(
                     "Exception terminating visualization launcher"
                 )
+
+        if self.robot_launcher:
+            try:
+                self.robot_launcher.terminate()
+            except Exception as e:
+                LogManager.logger.exception("Exception terminating robot launcher")
 
         if self.world_launcher:
             try:
@@ -708,30 +741,31 @@ ideal_cycle = 20
         self.unpause_sim()
 
     def pause_sim(self):
-        if "noetic" in str(self.ros_version):
-            rosservice.call_service("/gazebo/pause_physics", [])
-        elif self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
+        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: true")
         else:
             self.call_service("/pause_physics", "std_srvs/srv/Empty")
 
     def unpause_sim(self):
-        if "noetic" in str(self.ros_version):
-            rosservice.call_service("/gazebo/unpause_physics", [])
-        elif self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
+        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: false")
         else:
             self.call_service("/unpause_physics", "std_srvs/srv/Empty")
 
     def reset_sim(self):
-        if "noetic" in str(self.ros_version):
-            rosservice.call_service("/gazebo/reset_world", [])
-        elif self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
+        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
                 self.call_service("/drone0/platform/state_machine/_reset", "std_srvs/srv/Trigger", "{}")
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
         else:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
+            
+        if self.robot_launcher:
+            try:
+                self.robot_launcher.terminate()
+                self.robot_launcher.run()
+            except Exception as e:
+                LogManager.logger.exception("Exception terminating world launcher")
 
     def call_service(self, service, service_type, request_data="{}"):
         command = f"ros2 service call {service} {service_type} '{request_data}'"
@@ -803,6 +837,12 @@ ideal_cycle = 20
                     LogManager.logger.exception(
                         "Exception terminating visualization launcher"
                     )
+
+            if self.robot_launcher:
+                try:
+                    self.robot_launcher.terminate()
+                except Exception as e:
+                    LogManager.logger.exception("Exception terminating world launcher")
 
             if self.world_launcher:
                 try:

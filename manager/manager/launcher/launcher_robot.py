@@ -7,6 +7,14 @@ from manager.manager.launcher.launcher_interface import ILauncher
 
 worlds = {
     "gazebo": {
+        "1": [
+            {
+                "type": "module",
+                "module": "ros_api",
+                "parameters": [],
+                "launch_file": [],
+            }
+        ],
         "2": [
             {
                 "type": "module",
@@ -17,6 +25,17 @@ worlds = {
         ],
     },
     "drones": {
+        "1": [
+            {
+                "type": "module",
+                "module": "drones",
+                "resource_folders": [],
+                "model_folders": [],
+                "plugin_folders": [],
+                "parameters": [],
+                "launch_file": [],
+            }
+        ],
         "2": [
             {
                 "type": "module",
@@ -46,7 +65,7 @@ worlds = {
 }
 
 
-class LauncherWorld(BaseModel):
+class LauncherRobot(BaseModel):
     world: str
     launch_file_path: str
     module: str = ".".join(__name__.split(".")[:-1])
@@ -58,9 +77,10 @@ class LauncherWorld(BaseModel):
             module["launch_file"] = self.launch_file_path
             launcher = self.launch_module(module)
             self.launchers.append(launcher)
+        LogManager.logger.info(self.launchers)
 
     def terminate(self):
-        LogManager.logger.info("Terminating world launcher")
+        LogManager.logger.info("Terminating robot launcher")
         if self.launchers:
             for launcher in self.launchers:
                 launcher.terminate()
@@ -85,6 +105,6 @@ class LauncherWorld(BaseModel):
         pass
 
 
-class LauncherWorldException(Exception):
+class LauncherRobotException(Exception):
     def __init__(self, message):
-        super(LauncherWorldException, self).__init__(message)
+        super(LauncherRobotException, self).__init__(message)
