@@ -757,6 +757,8 @@ ideal_cycle = 20
             if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
                 self.call_service("/drone0/platform/state_machine/_reset", "std_srvs/srv/Trigger", "{}")
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
+            if self.is_ros_service_available("/drone0/controller/_reset"):
+                self.call_service("/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}")
         else:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
             
