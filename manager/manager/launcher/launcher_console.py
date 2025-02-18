@@ -15,7 +15,7 @@ class LauncherConsole(ILauncher):
     threads: List[Any] = []
     console_vnc: Any = Vnc_server()
 
-    def run(self, callback):
+    def run(self, config_file, callback):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = False
 

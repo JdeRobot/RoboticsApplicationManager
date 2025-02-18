@@ -184,6 +184,7 @@ visualization = {
 class LauncherVisualization(BaseModel):
     module: str = ".".join(__name__.split(".")[:-1])
     visualization: str
+    visualization_config_path: str
     launchers: Optional[ILauncher] = []
 
     def run(self):
@@ -210,7 +211,7 @@ class LauncherVisualization(BaseModel):
         launcher_module = f"{self.module}.launcher_{launcher_module_name}.Launcher{class_from_module(launcher_module_name)}"
         launcher_class = get_class(launcher_module)
         launcher = launcher_class.from_config(launcher_class, configuration)
-        launcher.run(process_terminated)
+        launcher.run(self.visualization_config_path, process_terminated)
         return launcher
 
     def launch_command(self, configuration):

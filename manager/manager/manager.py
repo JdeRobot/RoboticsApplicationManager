@@ -313,10 +313,15 @@ class Manager:
 
         LogManager.logger.info("Visualization transition started")
 
-        self.visualization_type = event.kwargs.get("data", {})
+        cfg_dict = event.kwargs.get("data", {})
+        self.visualization_type = cfg_dict['type']
+        config_file = cfg_dict['file']
+
         self.visualization_launcher = LauncherVisualization(
-            visualization=self.visualization_type
+            visualization=self.visualization_type,
+            visualization_config_path = config_file
         )
+        
         self.visualization_launcher.run()
 
         if self.visualization_type in ["gazebo_rae", "gzsim_rae"]:
