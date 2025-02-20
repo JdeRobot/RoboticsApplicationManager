@@ -18,7 +18,7 @@ worlds = {
         "2": [
             {
                 "type": "module",
-                "module": "ros2_api",
+                "module": "robot_ros2_api",
                 "parameters": [],
                 "launch_file": [],
             }

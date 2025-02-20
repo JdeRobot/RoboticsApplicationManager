@@ -758,6 +758,9 @@ ideal_cycle = 20
             self.call_service("/unpause_physics", "std_srvs/srv/Empty")
 
     def reset_sim(self):
+        if self.robot_launcher:
+            self.robot_launcher.terminate()
+
         if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
                 self.call_service("/drone0/platform/state_machine/_reset", "std_srvs/srv/Trigger", "{}")
@@ -766,10 +769,9 @@ ideal_cycle = 20
                 self.call_service("/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}")
         else:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
-            
+
         if self.robot_launcher:
             try:
-                self.robot_launcher.terminate()
                 self.robot_launcher.run()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")
