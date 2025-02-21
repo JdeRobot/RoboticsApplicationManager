@@ -18,7 +18,7 @@ worlds = {
         "2": [
             {
                 "type": "module",
-                "module": "ros2_api",
+                "module": "robot_ros2_api",
                 "parameters": [],
                 "launch_file": [],
             }
@@ -71,8 +71,11 @@ class LauncherRobot(BaseModel):
     module: str = ".".join(__name__.split(".")[:-1])
     ros_version: int = get_ros_version()
     launchers: Optional[ILauncher] = []
+    start_pose: Optional[list] = []
 
-    def run(self):
+    def run(self, start_pose = None):
+        if (start_pose != None):
+            self.start_pose = start_pose
         for module in worlds[self.world][str(self.ros_version)]:
             module["launch_file"] = self.launch_file_path
             launcher = self.launch_module(module)
@@ -98,7 +101,8 @@ class LauncherRobot(BaseModel):
         launcher_module = f"{self.module}.launcher_{launcher_module_name}.Launcher{class_from_module(launcher_module_name)}"
         launcher_class = get_class(launcher_module)
         launcher = launcher_class.from_config(launcher_class, configuration)
-        launcher.run(process_terminated)
+
+        launcher.run(self.start_pose, process_terminated)
         return launcher
 
     def launch_command(self, configuration):

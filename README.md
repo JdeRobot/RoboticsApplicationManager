@@ -39,6 +39,11 @@ The `Manager` class is the core of RAM, orchestrating operations and managing tr
   - `terminate`: Stops the application and goes back to `visualization_ready`.
   - `stop`: Completely stops the application.
   - `disconnect`: Disconnects from the current session and returns to `idle`.
+- **Stateless Transitions**:
+  - `style_check`: Triggers on_style_check.
+  - `code_analysis`: Triggers on_code_analysis.
+  - `code_format`: Triggers on_code_format.
+  - `code_autocomplete`: Triggers on_code_autocomplete.
 
 ### Key Methods
 
@@ -50,6 +55,10 @@ The `Manager` class is the core of RAM, orchestrating operations and managing tr
 - `on_resume(self, msg)`: Resumes the paused application.
 - `on_terminate(self, event)`: Terminates the running application.
 - `on_disconnect(self, event)`: Handles disconnection and cleanup.
+- `on_style_check(self, event)`: Check the style of the user code.
+- `on_code_analysis(self, event)`: Analyzes the style and format of the user code using pylint.
+- `on_code_format(self, event)`: Formats the user code using black.
+- `on_code_autocomplete(self, event)`: Searches for all available code completions using Jedi.
 - **Exception Handling**: Details how specific errors are managed in each method.
 
 ### Interactions with Other Components

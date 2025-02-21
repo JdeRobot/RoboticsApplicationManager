@@ -286,7 +286,7 @@ class Manager:
 
         self.robot_launcher = LauncherRobot(**cfg.model_dump())
         LogManager.logger.info(str(self.robot_launcher))
-        self.robot_launcher.run()
+        self.robot_launcher.run(robot_cfg['start_pose'])
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
@@ -313,10 +313,15 @@ class Manager:
 
         LogManager.logger.info("Visualization transition started")
 
-        self.visualization_type = event.kwargs.get("data", {})
+        cfg_dict = event.kwargs.get("data", {})
+        self.visualization_type = cfg_dict['type']
+        config_file = cfg_dict['file']
+
         self.visualization_launcher = LauncherVisualization(
-            visualization=self.visualization_type
+            visualization=self.visualization_type,
+            visualization_config_path = config_file
         )
+        
         self.visualization_launcher.run()
 
         if self.visualization_type in ["gazebo_rae", "gzsim_rae"]:
@@ -801,6 +806,9 @@ ideal_cycle = 20
             self.call_service("/unpause_physics", "std_srvs/srv/Empty")
 
     def reset_sim(self):
+        if self.robot_launcher:
+            self.robot_launcher.terminate()
+            
         if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
                 self.call_service("/drone0/platform/state_machine/_reset", "std_srvs/srv/Trigger", "{}")
@@ -809,10 +817,9 @@ ideal_cycle = 20
                 self.call_service("/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}")
         else:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
-            
+
         if self.robot_launcher:
             try:
-                self.robot_launcher.terminate()
                 self.robot_launcher.run()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")

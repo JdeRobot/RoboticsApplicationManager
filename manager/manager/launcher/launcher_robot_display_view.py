@@ -15,7 +15,7 @@ class LauncherRobotDisplayView(ILauncher):
     running = False
     threads = []
 
-    def run(self, callback):
+    def run(self, config_file, callback):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
