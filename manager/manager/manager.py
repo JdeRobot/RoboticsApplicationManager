@@ -286,7 +286,7 @@ class Manager:
 
         self.robot_launcher = LauncherRobot(**cfg.model_dump())
         LogManager.logger.info(str(self.robot_launcher))
-        self.robot_launcher.run()
+        self.robot_launcher.run(robot_cfg['start_pose'])
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
@@ -760,7 +760,7 @@ ideal_cycle = 20
     def reset_sim(self):
         if self.robot_launcher:
             self.robot_launcher.terminate()
-
+            
         if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
                 self.call_service("/drone0/platform/state_machine/_reset", "std_srvs/srv/Trigger", "{}")
