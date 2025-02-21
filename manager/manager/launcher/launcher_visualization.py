@@ -184,7 +184,7 @@ visualization = {
 class LauncherVisualization(BaseModel):
     module: str = ".".join(__name__.split(".")[:-1])
     visualization: str
-    visualization_config_path: str
+    visualization_config_path: Optional[str] = None
     launchers: Optional[ILauncher] = []
 
     def run(self):
