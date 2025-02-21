@@ -359,6 +359,18 @@ ideal_cycle = 20
         return code
 
     def on_style_check_application(self, event):
+        """
+        Handles the 'style_check' event, does not change the state and returns the current state.
+
+        It uses the linter to check if the style of the code is correct, if there 
+        are errors it writes them in all the consoles and raises the errors.
+
+        Parameters:
+            event (Event): Has the fields code (user code), exercise_id and type (bt-studio or robotics-academy) .
+
+        Raises:
+            Exception: with the errors found in the linter
+        """
         def find_docker_console():
             """Search console in docker different of /dev/pts/0"""
             pts_consoles = [f"/dev/pts/{dev}" for dev in os.listdir('/dev/pts/') if dev.isdigit()]
@@ -405,7 +417,19 @@ ideal_cycle = 20
 
         raise Exception(errors)
 
-    def on_code_analysis(self, event):
+    def on_code_analysis(self, event):    
+        """
+        Handles the 'code_analysis' event, does not change the state and returns the current state.
+
+        It uses pylint to check for the errors and warnings in the code.
+
+        Parameters:
+            event (Event): Has the fields code (user code) and disable_errors (disable errors id for pylint) .
+
+        Returns:
+            Sends the output of the pylint command in the code-analysis event for the frontend.
+        """
+
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code_string = app_cfg["code"]
@@ -462,6 +486,18 @@ ideal_cycle = 20
         )
 
     def on_code_format(self, event):
+        """
+        Handles the 'code_format' event, does not change the state and returns the current state.
+
+        It uses the black formatter to format the user code.
+
+        Parameters:
+            event (Event): Has the fields code (user code).
+
+        Returns:
+            Sends the output of the black format in the code-format event for the frontend.
+        """
+
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code = app_cfg["code"]
@@ -484,6 +520,18 @@ ideal_cycle = 20
             LogManager.logger.info('Error formating code' + str(e))
 
     def on_code_autocomplete(self, event):
+        """
+        Handles the 'code_autocomplete' event, does not change the state and returns the current state.
+
+        It uses jedi to find the possible autocompletions in the user code give the cursor position.
+
+        Parameters:
+            event (Event): Has the fields code (user code), line and col .
+
+        Returns:
+            Sends the possible completions in the code-autocomplete event for the frontend.
+        """
+
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code = app_cfg["code"]
