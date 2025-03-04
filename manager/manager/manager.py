@@ -675,6 +675,7 @@ ideal_cycle = 20
         """
         Terminate all processes within the Docker container whose command line contains 'gz' or 'launch'.
         """
+        LogManager.logger.info("Terminate Harmonic process")
         keywords = ['gz', 'launch']
         for keyword in keywords:
             try:
@@ -734,6 +735,7 @@ ideal_cycle = 20
             self.world_launcher.terminate()
         if self.robot_launcher != None:
             self.robot_launcher.terminate()
+        self.terminate_harmonic_processes()
 
     def on_disconnect(self, event):
         self.terminate_harmonic_processes()
