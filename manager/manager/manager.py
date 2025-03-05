@@ -324,7 +324,7 @@ class Manager:
         
         self.visualization_launcher.run()
 
-        if self.visualization_type in ["gazebo_rae", "gzsim_rae"]:
+        if self.visualization_type in ["gazebo_rae", "gzsim_rae", "console"]:
             self.gui_server = Server(2303, self.update)
             self.gui_server.start()
         elif self.visualization_type in ["bt_studio", "bt_studio_gz"]:
@@ -675,6 +675,7 @@ ideal_cycle = 20
         """
         Terminate all processes within the Docker container whose command line contains 'gz' or 'launch'.
         """
+        LogManager.logger.info("Terminate Harmonic process")
         keywords = ['gz', 'launch']
         for keyword in keywords:
             try:
@@ -734,6 +735,7 @@ ideal_cycle = 20
             self.world_launcher.terminate()
         if self.robot_launcher != None:
             self.robot_launcher.terminate()
+        self.terminate_harmonic_processes()
 
     def on_disconnect(self, event):
         self.terminate_harmonic_processes()
@@ -796,13 +798,13 @@ ideal_cycle = 20
     def pause_sim(self):
         if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: true")
-        else:
+        elif not self.visualization_type in ["console"]:
             self.call_service("/pause_physics", "std_srvs/srv/Empty")
 
     def unpause_sim(self):
         if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: false")
-        else:
+        elif not self.visualization_type in ["console"]:
             self.call_service("/unpause_physics", "std_srvs/srv/Empty")
 
     def reset_sim(self):
@@ -815,7 +817,7 @@ ideal_cycle = 20
             self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
             if self.is_ros_service_available("/drone0/controller/_reset"):
                 self.call_service("/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}")
-        else:
+        elif not self.visualization_type in ["console"]:
             self.call_service("/reset_world", "std_srvs/srv/Empty")
 
         if self.robot_launcher:
