@@ -245,12 +245,6 @@ class Manager:
             The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
 
-        try:
-            self.terminate_harmonic_processes()
-            LogManager.logger.info("Removing old processes")
-        except:
-            pass
-
         cfg_dict = event.kwargs.get("data", {})
         world_cfg = cfg_dict['world']
         robot_cfg = cfg_dict['robot']
