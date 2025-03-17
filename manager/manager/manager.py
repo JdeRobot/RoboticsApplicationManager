@@ -744,7 +744,6 @@ ideal_cycle = 20
         self.terminate_harmonic_processes()
 
     def on_disconnect(self, event):
-        self.terminate_harmonic_processes()
 
         try:
             self.consumer.stop()
@@ -777,6 +776,8 @@ ideal_cycle = 20
                 self.world_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")
+        
+        self.terminate_harmonic_processes()
 
         # Reiniciar el script
         python = sys.executable
