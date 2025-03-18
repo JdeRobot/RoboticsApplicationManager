@@ -878,6 +878,7 @@ ideal_cycle = 20
                     LogManager.logger.exception("Exception stopping GUI server")
 
             self.on_disconnect(None)
+            exit()
 
         signal.signal(signal.SIGINT, signal_handler)
 
