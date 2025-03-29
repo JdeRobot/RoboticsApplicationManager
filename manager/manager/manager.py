@@ -876,6 +876,7 @@ ideal_cycle = 20
                     self.gui_server.stop()
                 except Exception as e:
                     LogManager.logger.exception("Exception stopping GUI server")
+
             try:
                 self.consumer.stop()
             except Exception as e:
@@ -886,9 +887,7 @@ ideal_cycle = 20
                     stop_process_and_children(self.application_process)
                     self.application_process = None
                 except Exception as e:
-                    LogManager.logger.exception(
-                        "Exception stopping application process"
-                    )
+                    LogManager.logger.exception("Exception stopping application process")
 
             if self.visualization_launcher:
                 try:
@@ -902,13 +901,16 @@ ideal_cycle = 20
                 try:
                     self.robot_launcher.terminate()
                 except Exception as e:
-                    LogManager.logger.exception("Exception terminating world launcher")
+                    LogManager.logger.exception("Exception terminating robot launcher")
 
             if self.world_launcher:
                 try:
                     self.world_launcher.terminate()
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating world launcher")
+            
+            self.terminate_harmonic_processes()
+            exit()
 
         signal.signal(signal.SIGINT, signal_handler)
 
