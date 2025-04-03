@@ -15,14 +15,27 @@ class LaunchWorldCmd(ManagerConsumerMessage):
     id: str = '2'
     command: str = 'launch_world'
     data: ConfigurationModel = ConfigurationModel(
-        world='gazebo',
+        world = {
+            "world": "gazebo",
+            "robot": "rae",
+            "launch_file_path":'/opt/jderobot/Launchers/simple_circuit_followingcam.launch.py'
+            },
+        robot = {
+            "world": "gazebo",
+            "robot": "rae",
+            "start_pose": [0.0, 0.0, 0.05, 0.0, 0.0, 0.0],  # [x, y, z, roll, pitch, yaw],
+            "launch_file_path":'/opt/jderobot/Launchers/simple_circuit_followingcam.launch.py'
+            },
         launch_file_path='/opt/jderobot/Launchers/simple_circuit_followingcam.launch.py')
 
 
 class LaunchPrepareViz(ManagerConsumerMessage):
     id: str = '3'
     command: str = 'prepare_visualization'
-    data: str = 'gazebo_rae'
+    data: str = {
+        "type": 'gazebo_rae',
+        "file": None
+    }
 
 websocket.enableTrace(True)
 ws = websocket.create_connection("ws://localhost:7163")

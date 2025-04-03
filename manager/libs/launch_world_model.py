@@ -1,12 +1,13 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel, ValidationError
 
 # Clase de configuración utilizando Pydantic para validación
 
 
 class ConfigurationModel(BaseModel):
-    world: str
+    world: Union[str, dict]
+    robot: Optional[Union[str, dict]] = None
     launch_file_path: str
 
 # Definición de la clase de datos
