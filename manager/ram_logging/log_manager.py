@@ -23,6 +23,28 @@ class ColorFormatter(logging.Formatter):
         return message
 
 
+class MaxLengthColorFormatter(logging.Formatter):
+    # Diccionario de colores para diferentes niveles de log
+    COLORS = {
+        logging.ERROR: "\033[91m",  # Rojo para errores
+        logging.WARNING: "\033[93m",  # Amarillo para warnings
+        logging.INFO: "\033[0m",  # Verde para info
+        logging.DEBUG: "\033[96m",  # Cyan para debug
+    }
+    RESET = "\033[0m"  # Resetear a color por defecto
+    MAX_LENGTH = 1000
+
+    def format(self, record):
+        color = self.COLORS.get(record.levelno)
+        msg = super().format(record)
+        if color:
+            msg = f"{color}{msg}{self.RESET}"
+        if len(msg) > self.MAX_LENGTH:
+            final_msg = msg[:self.MAX_LENGTH] + "....." + msg[len(msg)-self.MAX_LENGTH:]
+            return final_msg
+        else:
+            return msg
+
 @singleton
 class LogManager:
     def __init__(self):
@@ -36,6 +58,8 @@ class LogManager:
         self.log_formatter = logging.Formatter(log_format, date_format)
         self.color_formatter = ColorFormatter(
             log_format, date_format)  # Formatter con color
+        self.max_color_formatter = MaxLengthColorFormatter(
+            log_format, date_format)  # Formatter con color
 
         self.logger = logging.getLogger('my_app_logger')
         self.logger.setLevel(log_level)
@@ -48,5 +72,5 @@ class LogManager:
         if log_to_console:
             self.console_handler = logging.StreamHandler()
             # Usar formatter con color para la consola
-            self.console_handler.setFormatter(self.color_formatter)
+            self.console_handler.setFormatter(self.max_color_formatter)
             self.logger.addHandler(self.console_handler)
