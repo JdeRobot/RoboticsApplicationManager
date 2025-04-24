@@ -244,6 +244,8 @@ class Manager:
         Note:
             The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
+        # clean harmonic cache
+        self.terminate_harmonic_processes()
 
         cfg_dict = event.kwargs.get("data", {})
         world_cfg = cfg_dict['world']
@@ -731,6 +733,7 @@ ideal_cycle = 20
             self.gui_server = None
 
     def on_terminate_universe(self, event):
+
         if self.world_launcher != None:
             self.world_launcher.terminate()
         if self.robot_launcher != None:
