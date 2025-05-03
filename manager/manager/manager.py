@@ -244,9 +244,6 @@ class Manager:
         Note:
             The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
-        # clean harmonic cache
-        self.terminate_harmonic_processes()
-
         cfg_dict = event.kwargs.get("data", {})
         world_cfg = cfg_dict['world']
         robot_cfg = cfg_dict['robot']
@@ -724,6 +721,7 @@ ideal_cycle = 20
             except Exception:
                 LogManager.logger.exception("No application running")
                 print(traceback.format_exc())
+        self.terminate_harmonic_processes()
 
     def on_terminate_visualization(self, event):
 
@@ -731,6 +729,7 @@ ideal_cycle = 20
         if self.gui_server != None:
             self.gui_server.stop()
             self.gui_server = None
+        self.terminate_harmonic_processes()
 
     def on_terminate_universe(self, event):
 
