@@ -308,16 +308,8 @@ class Manager:
         zip_ref = zipfile.ZipFile(zip_destination, "r")
         zip_ref.extractall(universe_folder + "/")
         zip_ref.close()
-        #TODO: compile workspace RUN /bin/bash -c "source /opt/ros/humble/setup.bash; colcon build --symlink-install"
-        os.system("cd /workspace/worlds && colcon build --symlink-install && cd ../..")
-        # subprocess.Popen(
-        #     "cd /workspace/worlds && colcon build --symlink-install && cd ../..",
-        #     stdout=sys.stdout,
-        #     stderr=subprocess.STDOUT,
-        #     bufsize=1024,
-        #     universal_newlines=True,
-        # )
 
+        os.system("cd /workspace/worlds && colcon build --symlink-install && source install/setup.bash && cd ../..")
 
     def on_prepare_visualization(self, event):
 
