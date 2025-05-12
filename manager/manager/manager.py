@@ -296,14 +296,14 @@ class Manager:
             _, _, zip_file = cfg_dict["zip"].partition("base64,")
 
         universe_ref = "/workspace/worlds/src/" + cfg_dict["name"]
-        zip_destination = universe_ref + ".zip"
-        with open(zip_destination, "wb") as result:
-            result.write(base64.b64decode(zip_file))
-
         # Create the folder if it doesn't exist
         universe_folder = universe_ref + "/"
         if not os.path.exists(universe_folder):
             os.makedirs(universe_folder)
+
+        zip_destination = universe_ref + ".zip"
+        with open(zip_destination, "wb") as result:
+            result.write(base64.b64decode(zip_file))
 
         zip_ref = zipfile.ZipFile(zip_destination, "r")
         zip_ref.extractall(universe_folder + "/")
