@@ -310,7 +310,7 @@ class Manager:
         zip_ref.close()
         #TODO: compile workspace RUN /bin/bash -c "source /opt/ros/humble/setup.bash; colcon build --symlink-install"
         self.application_process = subprocess.Popen(
-            ["cd /workspace/worlds &&", "colcon build --symlink-install", "cd ../.."],
+            "cd /workspace/worlds && colcon build --symlink-install && cd ../..",
             stdout=sys.stdout,
             stderr=subprocess.STDOUT,
             bufsize=1024,
