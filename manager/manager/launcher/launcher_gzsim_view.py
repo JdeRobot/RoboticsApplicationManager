@@ -43,7 +43,7 @@ class LauncherGzsimView(ILauncher):
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config and start gzclient
-            gzclient_cmd = f"export DISPLAY={self.display}; {gzclient_config_cmds} gz sim -g -v4 --gui-config {config_file}"
+            gzclient_cmd = f"source workspace/worlds/install/setup.bash;export DISPLAY={self.display}; {gzclient_config_cmds} gz sim -g -v4 --gui-config {config_file}"
 
         gzclient_thread = DockerThread(gzclient_cmd)
         gzclient_thread.start()
