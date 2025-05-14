@@ -29,6 +29,7 @@ class LauncherGzsimView(ILauncher):
         if config_file is None:
             config_file = "/opt/jderobot/Launchers/visualization/default.config"
 
+        enviroment = "source /.env;"
         # Configure browser screen width and height for gz GUI
         gzclient_config_cmds = f"sed -i 's/<width>.*<\/width>/<width>{self.width}<\/width>/; s/<height>.*<\/height>/<height>{self.height}<\/height>/' {config_file};"
 
@@ -38,12 +39,12 @@ class LauncherGzsimView(ILauncher):
                 self.display, self.internal_port, self.external_port, DRI_PATH
             )
             # Write display config and start gzclient
-            gzclient_cmd = f"export DISPLAY={self.display}; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun gz sim -g -v4 --gui-config {config_file}"
+            gzclient_cmd = f"{enviroment}export DISPLAY={self.display}; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun gz sim -g -v4 --gui-config {config_file}"
         else:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config and start gzclient
-            gzclient_cmd = f"export DISPLAY={self.display}; {gzclient_config_cmds} gz sim -g -v4 --gui-config {config_file}"
+            gzclient_cmd = f"{enviroment}export DISPLAY={self.display}; {gzclient_config_cmds} gz sim -g -v4 --gui-config {config_file}"
 
         gzclient_thread = DockerThread(gzclient_cmd)
         gzclient_thread.start()
