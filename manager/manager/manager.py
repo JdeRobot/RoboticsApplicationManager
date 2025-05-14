@@ -309,7 +309,7 @@ class Manager:
         zip_ref.extractall(universe_folder + "/")
         zip_ref.close()
 
-        os.system('/bin/bash -c "cd /workspace/worlds;source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../..')
+        os.system('/bin/bash -c "cd /workspace/worlds; source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."')
 
     def on_prepare_visualization(self, event):
 
