@@ -22,6 +22,8 @@ class LauncherRobotRos2Api(ILauncher):
 
         logging.getLogger("roslaunch").setLevel(logging.CRITICAL)
 
+        enviroment = "source /.env;"
+
         xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf :0"
         xserver_thread = DockerThread(xserver_cmd)
         xserver_thread.start()
@@ -31,10 +33,10 @@ class LauncherRobotRos2Api(ILauncher):
 
         if ACCELERATION_ENABLED:
             exercise_launch_cmd = (
-                f"export VGL_DISPLAY={DRI_PATH}; vglrun {ROBOT_POSE} ros2 launch {self.launch_file}"
+                f"{enviroment}export VGL_DISPLAY={DRI_PATH}; vglrun {ROBOT_POSE} ros2 launch {self.launch_file}"
             )
         else:
-            exercise_launch_cmd = f"{ROBOT_POSE} ros2 launch {self.launch_file}"
+            exercise_launch_cmd = f"{enviroment}{ROBOT_POSE} ros2 launch {self.launch_file}"
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
