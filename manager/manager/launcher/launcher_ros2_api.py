@@ -32,7 +32,7 @@ class LauncherRos2Api(ILauncher):
                 f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file}"
             )
         else:
-            exercise_launch_cmd = f"ros2 launch {self.launch_file}"
+            exercise_launch_cmd = f"source workspace/worlds/install/setup.bash;ros2 launch {self.launch_file}"
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
