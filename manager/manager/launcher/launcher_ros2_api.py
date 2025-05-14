@@ -29,10 +29,10 @@ class LauncherRos2Api(ILauncher):
 
         if ACCELERATION_ENABLED:
             exercise_launch_cmd = (
-                f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file}"
+                f"echo AAAAA;source workspace/worlds/install/setup.bash;export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file}"
             )
         else:
-            exercise_launch_cmd = f"source workspace/worlds/install/setup.bash;ros2 launch {self.launch_file}"
+            exercise_launch_cmd = f"echo AAAAA;source workspace/worlds/install/setup.bash;ros2 launch {self.launch_file}"
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
