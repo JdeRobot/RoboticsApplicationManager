@@ -296,6 +296,10 @@ class Manager:
             _, _, zip_file = cfg_dict["zip"].partition("base64,")
 
         universe_ref = "/workspace/worlds/src/" + cfg_dict["name"]
+        # Remove old content
+        if os.path.exists("/workspace/worlds"):
+            shutil.rmtree("/workspace/worlds", ignore_errors=False)
+
         # Create the folder if it doesn't exist
         universe_folder = universe_ref + "/"
         if not os.path.exists(universe_folder):
