@@ -787,14 +787,28 @@ ideal_cycle = 20
         self.consumer.send_message(message.response(response))
 
     def on_pause(self, msg):
-        proc = psutil.Process(self.application_process.pid)
-        proc.suspend()
-        self.pause_sim()
+        if self.application_process is not None:
+            try:
+                proc = psutil.Process(self.application_process.pid)
+                proc.suspend()
+                self.pause_sim()
+            except Exception as e:
+                LogManager.logger.exception("Error suspending process")
+        else:
+            LogManager.logger.warning("Application process was None during pause. Calling termination.")
+            self.on_terminate_application(msg)
 
     def on_resume(self, msg):
-        proc = psutil.Process(self.application_process.pid)
-        proc.resume()
-        self.unpause_sim()
+        if self.application_process is not None:
+            try:
+                proc = psutil.Process(self.application_process.pid)
+                proc.resume()
+                self.unpause_sim()
+            except Exception as e:
+                LogManager.logger.exception("Error suspending process")
+        else:
+            LogManager.logger.warning("Application process was None during resume. Calling termination.")
+            self.on_terminate_application(msg) 
 
     def pause_sim(self):
         if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
