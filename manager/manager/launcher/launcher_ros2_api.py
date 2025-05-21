@@ -29,10 +29,10 @@ class LauncherRos2Api(ILauncher):
 
         if ACCELERATION_ENABLED:
             exercise_launch_cmd = (
-                f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file}"
+                f"source /.env;export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file}"
             )
         else:
-            exercise_launch_cmd = f"ros2 launch {self.launch_file}"
+            exercise_launch_cmd = f"source /.env;ros2 launch {self.launch_file}"
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()

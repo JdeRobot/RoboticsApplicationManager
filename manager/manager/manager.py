@@ -294,19 +294,25 @@ class Manager:
         if cfg_dict["zip"].startswith("data:"):
             _, _, zip_file = cfg_dict["zip"].partition("base64,")
 
-        universe_ref = "/workspace/worlds/" + cfg_dict["name"]
-        zip_destination = universe_ref + ".zip"
-        with open(zip_destination, "wb") as result:
-            result.write(base64.b64decode(zip_file))
+        universe_ref = "/workspace/worlds/src/" + cfg_dict["name"]
+        # Remove old content
+        if os.path.exists("/workspace/worlds"):
+            shutil.rmtree("/workspace/worlds", ignore_errors=False)
 
         # Create the folder if it doesn't exist
         universe_folder = universe_ref + "/"
         if not os.path.exists(universe_folder):
             os.makedirs(universe_folder)
 
+        zip_destination = universe_ref + ".zip"
+        with open(zip_destination, "wb") as result:
+            result.write(base64.b64decode(zip_file))
+
         zip_ref = zipfile.ZipFile(zip_destination, "r")
         zip_ref.extractall(universe_folder + "/")
         zip_ref.close()
+
+        os.system('/bin/bash -c "cd /workspace/worlds; source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."')
 
     def on_prepare_visualization(self, event):
 
@@ -327,7 +333,7 @@ class Manager:
             self.gui_server = Server(2303, self.update)
             self.gui_server.start()
         elif self.visualization_type in ["bt_studio", "bt_studio_gz"]:
-            self.gui_server = FileWatchdog('/tmp/tree_state', self.update_bt_studio) # TODO: change if type bt
+            self.gui_server = FileWatchdog('/tmp/tree_state', self.update_bt_studio)
             self.gui_server.start()
 
         LogManager.logger.info("Visualization transition finished")
@@ -568,7 +574,6 @@ ideal_cycle = 20
         except Exception as e:
             LogManager.logger.info('Error formating code' + str(e))
         
-
     def on_run_application(self, event):
         def find_docker_console():
             """Search console in docker different of /dev/pts/0"""

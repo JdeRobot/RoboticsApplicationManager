@@ -6,7 +6,6 @@ import signal
 
 
 
-
 class DockerThread(threading.Thread):
     """Threaded Docker Thread Class"""
     def __init__(self, cmd, shell=True):
@@ -17,7 +16,7 @@ class DockerThread(threading.Thread):
 
     def run(self):
         self.process = subprocess.Popen(self.cmd, shell=self.shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True,
-                         bufsize=1024, universal_newlines=True)
+                         bufsize=1024, universal_newlines=True, executable="/bin/bash")
         self.process.communicate()
 
     def terminate(self):
