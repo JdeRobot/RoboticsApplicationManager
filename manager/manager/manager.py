@@ -293,6 +293,8 @@ class Manager:
         # Unzip the app
         if cfg_dict["zip"].startswith("data:"):
             _, _, zip_file = cfg_dict["zip"].partition("base64,")
+        else:
+            zip_file = cfg_dict["zip"]
 
         universe_ref = "/workspace/worlds/src/" + cfg_dict["name"]
         # Remove old content
