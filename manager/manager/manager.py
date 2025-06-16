@@ -728,7 +728,6 @@ ideal_cycle = 20
             except Exception:
                 LogManager.logger.exception("No application running")
                 print(traceback.format_exc())
-        self.terminate_harmonic_processes()
 
     def on_terminate_visualization(self, event):
 
@@ -805,7 +804,8 @@ ideal_cycle = 20
                 LogManager.logger.exception("Error suspending process")
         else:
             LogManager.logger.warning("Application process was None during pause. Calling termination.")
-            self.on_terminate_application(msg)
+            self.pause_sim()
+            self.reset_sim()
 
     def on_resume(self, msg):
         if self.application_process is not None:
@@ -817,7 +817,7 @@ ideal_cycle = 20
                 LogManager.logger.exception("Error suspending process")
         else:
             LogManager.logger.warning("Application process was None during resume. Calling termination.")
-            self.on_terminate_application(msg) 
+            self.reset_sim()
 
     def pause_sim(self):
         if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
