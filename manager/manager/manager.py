@@ -5,8 +5,6 @@ import tempfile
 
 import black
 
-
-
 sys.path.insert(0, '/RoboticsApplicationManager')
 
 import os
@@ -608,7 +606,7 @@ ideal_cycle = 20
             errors = self.linter.evaluate_code(code, self.ros_version)
             if errors == "":
 
-                code = self.add_frequency_control(code)
+                # code = self.add_frequency_control(code)
                 f = open(code_path, "w")
                 f.write(code)
                 f.close()

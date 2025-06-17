@@ -58,21 +58,31 @@ class Lint:
             code = re.sub(r'\nimport cv2\n', '\nfrom cv2 import cv2\n', code)
 
             # Avoids EOF error when iterative code is empty (which prevents other errors from showing)
-            while_position = re.search(
-                r'[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:', code)
-            if while_position is None:
-                while_error = "ERROR: While loop is required and was not found.\n"
-                return while_error.strip()
-            sequential_code = code[:while_position.start()]
-            iterative_code = code[while_position.start():]
-            iterative_code = re.sub(
-                r'[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:', '\n', iterative_code, 1)
-            iterative_code = re.sub(r'^[ ]{4}', '', iterative_code, flags=re.M)
-            code = sequential_code + iterative_code
-            
-            f = open("user_code.py", "w")
-            f.write(code)
-            f.close()
+            loop_regex = (
+                r'[^ ]while\s*\(\s*True\s*\)\s*:|'
+                r'[^ ]while\s*True\s*:|'
+                r'[^ ]while\s*1\s*:|'
+                r'[^ ]while\s*\(\s*1\s*\)\s*:|'
+                r'rclpy\.spin\(\s*\w+\s*\)'
+            )
+            loop_match = re.search(loop_regex, code)
+
+            if loop_match is None:
+                return "ERROR: A loop is required — please use either 'while True:' or 'rclpy.spin(node)'."
+
+            if "rclpy.spin" in loop_match.group():
+                # Keep the code as-is; don't modify it
+                pass
+            else:
+                # Modify code for while True (add frequency control)
+                sequential_code = code[:loop_match.start()]
+                iterative_code = code[loop_match.start():]
+                iterative_code = re.sub(loop_regex, '\n', iterative_code, 1)
+                iterative_code = re.sub(r'^[ ]{4}', '', iterative_code, flags=re.M)
+                code = sequential_code + iterative_code
+
+            with open("user_code.py", "w") as f:
+                f.write(code)
 
             command = ""
             if "humble" in str(ros_version):                
