@@ -15,7 +15,7 @@ from manager.ram_logging.log_manager import LogManager
 
 
 def get_class(kls):
-    parts = kls.split('.')
+    parts = kls.split(".")
     module = ".".join(parts[:-1])
     m = __import__(module)
     for comp in parts[1:]:
@@ -35,7 +35,7 @@ def class_from_module(module: str):
     """
     Capitalizes a module name to create class name
     """
-    return ''.join([s.capitalize() for s in module.split('_')])
+    return "".join([s.capitalize() for s in module.split("_")])
 
 
 def stop_process_and_children(process: Popen, signal: int = 9, timeout: int = None):
@@ -81,7 +81,7 @@ def wait_for_xserver(display, timeout=30):
 
     This function continuously checks if the X server is running on the specified
     display by checking the existence of the Unix domain socket associated with the X server.
-    It waits until the X server is available or until the timeout is reached, 
+    It waits until the X server is available or until the timeout is reached,
     whichever comes first."""
     start_time = time.time()
     while time.time() - start_time < timeout:
@@ -89,8 +89,7 @@ def wait_for_xserver(display, timeout=30):
             print(f"Xserver on {display} is running!")
             return
         time.sleep(0.1)
-    print(
-        f"Timeout: Xserver on {display} is not available after {timeout} seconds.")
+    print(f"Timeout: Xserver on {display} is not available after {timeout} seconds.")
 
 
 def is_process_running(process_name):
@@ -102,10 +101,11 @@ def is_process_running(process_name):
     """
     try:
         process = subprocess.Popen(
-            ["pgrep", "-f", process_name], stdout=subprocess.PIPE)
+            ["pgrep", "-f", process_name], stdout=subprocess.PIPE
+        )
         # Este comando devuelve el PID si existe, o nada si no existe
         process_return = process.communicate()[0]
-        return process_return != b''
+        return process_return != b""
     except subprocess.CalledProcessError:
         # El proceso no está corriendo
         return False
@@ -132,8 +132,7 @@ def check_gpu_acceleration():
     try:
         # Verifica si /dev/dri existe
         if not os.path.exists("/dev/dri"):
-            LogManager.logger.error(
-                "/dev/dri does not exist. No direct GPU access.")
+            LogManager.logger.error("/dev/dri does not exist. No direct GPU access.")
             return "OFF"
 
         # # Obtiene la salida de glxinfo
@@ -142,9 +141,9 @@ def check_gpu_acceleration():
         # print(result)
 
         # # Verifica si la aceleración directa está habilitada
-        # return "direct rendering: Yes" in result        
+        # return "direct rendering: Yes" in result
 
-        vendor_name = os.environ['DRI_VENDOR']
+        vendor_name = os.environ["DRI_VENDOR"]
         return vendor_name.upper()
     except Exception as e:
         print(f"Error: {e}")
@@ -152,28 +151,28 @@ def check_gpu_acceleration():
 
 
 def get_ros_version():
-    output = subprocess.check_output(['bash', '-c', 'echo $ROS_VERSION'])
-    return output.decode('utf-8')[0]
+    output = subprocess.check_output(["bash", "-c", "echo $ROS_VERSION"])
+    return output.decode("utf-8")[0]
 
 
 def get_user_world(launch_file):
-    """"
-    Processes a provided base64 encoded string representing a zip file, decodes it, 
+    """ "
+    Processes a provided base64 encoded string representing a zip file, decodes it,
     saves it as a zip file, and then extracts its contents.
 
-    The function takes a base64 encoded string (`launch_file`) as input. It first decodes this 
-    string into binary format, then saves this binary content as a zip file in a predetermined 
-    directory ('workspace/binaries/'). After saving, it extracts the contents of the zip file into 
+    The function takes a base64 encoded string (`launch_file`) as input. It first decodes this
+    string into binary format, then saves this binary content as a zip file in a predetermined
+    directory ('workspace/binaries/'). After saving, it extracts the contents of the zip file into
     another specified directory ('workspace/worlds/').
     """
     try:
         # Convert base64 to binary
         binary_content = base64.b64decode(launch_file)
         # Save the binary content as a file
-        with open('workspace/binaries/user_worlds.zip', 'wb') as file:
+        with open("workspace/binaries/user_worlds.zip", "wb") as file:
             file.write(binary_content)
         # Unzip the file
-        with zipfile.ZipFile('workspace/binaries/user_worlds.zip', 'r') as zip_ref:
-            zip_ref.extractall('workspace/worlds/')
+        with zipfile.ZipFile("workspace/binaries/user_worlds.zip", "r") as zip_ref:
+            zip_ref.extractall("workspace/worlds/")
     except Exception as e:
         LogManager.logging.error(f"An error occurred getting user world: {e}")

@@ -6,10 +6,14 @@ from uuid import uuid4
 import websockets
 from websockets.server import WebSocketServerProtocol
 
-from manager.comms.consumer_message import ManagerConsumerMessage, ManagerConsumerMessageException
+from manager.comms.consumer_message import (
+    ManagerConsumerMessage,
+    ManagerConsumerMessageException,
+)
 from manager.ram_logging.log_manager import LogManager
 
 logger = LogManager.logger
+
 
 class ManagerConsumer:
     """
@@ -18,7 +22,6 @@ class ManagerConsumer:
 
     def __init__(self, host, port):
         from manager.manager import Manager
-
 
         """
         Initializes a new ManagerConsumer
@@ -36,7 +39,9 @@ class ManagerConsumer:
         Rejects a connection
         @param websocket: websocket
         """
-        await websocket.close(1008, "This RADI server can't accept more than one connection")
+        await websocket.close(
+            1008, "This RADI server can't accept more than one connection"
+        )
 
     async def handler(self, websocket: WebSocketServerProtocol):
         """
@@ -62,7 +67,9 @@ class ManagerConsumer:
                 s = json.loads(websocket_message)
                 message = ManagerConsumerMessage(**s)
                 await self.manager.trigger(message.command, data=message.data or None)
-                response = {"message": f"Exercise state changed to {self.manager.state}"}
+                response = {
+                    "message": f"Exercise state changed to {self.manager.state}"
+                }
                 await websocket.send(str(message.response(response)))
             except ManagerConsumerMessageException as e:
                 await websocket.send(str(e))
@@ -70,12 +77,16 @@ class ManagerConsumer:
                 if message is None:
                     ex = ManagerConsumerMessageException(message, str(e))
                 else:
-                    ex = ManagerConsumerMessageException(id=str(uuid4()), message=str(e))
+                    ex = ManagerConsumerMessageException(
+                        id=str(uuid4()), message=str(e)
+                    )
                 await websocket.send(str(ex))
 
     async def send_message(self, message_data):
         if self.client is not None and self.server is not None:
-            message = ManagerConsumerMessage(id=str(uuid4()), command="state-changed", data=message_data)
+            message = ManagerConsumerMessage(
+                id=str(uuid4()), command="state-changed", data=message_data
+            )
             await self.client.send(str(message))
 
     def start(self):
@@ -83,11 +94,13 @@ class ManagerConsumer:
         Starts the consumer and listens for connections
         """
         self.server = websockets.serve(self.handler, self.host, self.port)
-        LogManager.logger.debug(f"Websocket server listening in {self.host}:{self.port}")
+        LogManager.logger.debug(
+            f"Websocket server listening in {self.host}:{self.port}"
+        )
         asyncio.get_event_loop().run_until_complete(self.server)
         asyncio.get_event_loop().run_forever()
 
 
-if __name__ == '__main__':
-    consumer = ManagerConsumer('0.0.0.0', 7163)
+if __name__ == "__main__":
+    consumer = ManagerConsumer("0.0.0.0", 7163)
     consumer.start()
