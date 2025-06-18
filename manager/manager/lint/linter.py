@@ -63,14 +63,16 @@ class Lint:
                 r'[^ ]while\s*True\s*:|'
                 r'[^ ]while\s*1\s*:|'
                 r'[^ ]while\s*\(\s*1\s*\)\s*:|'
-                r'rclpy\.spin\(\s*\w+\s*\)'
+                r'rclpy\.spin\(\s*\w+\s*\)|'
+                r'rclpy\.spin_once\(\s*\w+\s*.*?\)'
+                
             )
             loop_match = re.search(loop_regex, code)
 
             if loop_match is None:
-                return "ERROR: A loop is required — please use either 'while True:' or 'rclpy.spin(node)'."
-
-            if "rclpy.spin" in loop_match.group():
+                return "ERROR: No event loop found. Add 'while True:', 'rclpy.spin(node)', or 'rclpy.spin_once(node)'"
+            
+            if "rclpy.spin" in loop_match.group() or "rclpy.spin_once" in loop_match.group():
                 # Keep the code as-is; don't modify it
                 pass
             else:
