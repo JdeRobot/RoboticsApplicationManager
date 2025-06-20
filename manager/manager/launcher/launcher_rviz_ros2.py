@@ -4,6 +4,7 @@ from manager.manager.vnc.vnc_server import Vnc_server
 import os
 import stat
 
+
 class LauncherRvizRos2(ILauncher):
     display: str
     internal_port: str
@@ -17,7 +18,9 @@ class LauncherRvizRos2(ILauncher):
         rviz_vnc = Vnc_server()
 
         if ACCELERATION_ENABLED:
-            rviz_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port, DRI_PATH)
+            rviz_vnc.start_vnc_gpu(
+                self.display, self.internal_port, self.external_port, DRI_PATH
+            )
             rviz_cmd = f"export DISPLAY={self.display}; export VGL_DISPLAY={DRI_PATH}; vglrun rviz2"
         else:
             rviz_vnc.start_vnc(self.display, self.internal_port, self.external_port)

@@ -15,7 +15,8 @@ class Client(threading.Thread):
             on_message=self.on_message,
             on_close=self.on_close,
             on_error=self.on_error,
-            on_open=self.on_open)
+            on_open=self.on_open,
+        )
 
     def run(self) -> None:
         try:
@@ -40,7 +41,9 @@ class Client(threading.Thread):
         LogManager.logger.error(error)
 
     def on_close(self, ws, status, msg):
-        LogManager.logger.info(f"Connection with {self.name} closed, status code: {status}, close message: {msg}")
+        LogManager.logger.info(
+            f"Connection with {self.name} closed, status code: {status}, close message: {msg}"
+        )
 
     def on_open(self, ws):
         LogManager.logger.info(f"Connection with {self.name} opened")

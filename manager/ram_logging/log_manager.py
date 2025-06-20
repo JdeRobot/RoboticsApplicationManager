@@ -40,10 +40,13 @@ class MaxLengthColorFormatter(logging.Formatter):
         if color:
             msg = f"{color}{msg}{self.RESET}"
         if len(msg) > self.MAX_LENGTH:
-            final_msg = msg[:self.MAX_LENGTH] + "....." + msg[len(msg)-self.MAX_LENGTH:]
+            final_msg = (
+                msg[: self.MAX_LENGTH] + "....." + msg[len(msg) - self.MAX_LENGTH :]
+            )
             return final_msg
         else:
             return msg
+
 
 @singleton
 class LogManager:
@@ -57,11 +60,13 @@ class LogManager:
         date_format = "%H:%M:%S"
         self.log_formatter = logging.Formatter(log_format, date_format)
         self.color_formatter = ColorFormatter(
-            log_format, date_format)  # Formatter con color
+            log_format, date_format
+        )  # Formatter con color
         self.max_color_formatter = MaxLengthColorFormatter(
-            log_format, date_format)  # Formatter con color
+            log_format, date_format
+        )  # Formatter con color
 
-        self.logger = logging.getLogger('my_app_logger')
+        self.logger = logging.getLogger("my_app_logger")
         self.logger.setLevel(log_level)
         self.logger.propagate = False
 

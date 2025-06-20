@@ -30,9 +30,7 @@ class LauncherRobotRos2Api(ILauncher):
         ROBOT_POSE = f"ROBOT_X={robot_pose[0]} ROBOT_Y={robot_pose[1]} ROBOT_Z={robot_pose[2]} ROBOT_ROLL={robot_pose[3]} ROBOT_PITCH={robot_pose[4]} ROBOT_YAW={robot_pose[5]}"
 
         if ACCELERATION_ENABLED:
-            exercise_launch_cmd = (
-                f"export VGL_DISPLAY={DRI_PATH}; vglrun {ROBOT_POSE} ros2 launch {self.launch_file}"
-            )
+            exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun {ROBOT_POSE} ros2 launch {self.launch_file}"
         else:
             exercise_launch_cmd = f"{ROBOT_POSE} ros2 launch {self.launch_file}"
 
@@ -75,4 +73,3 @@ class LauncherRobotRos2Api(ILauncher):
             bufsize=1024,
             universal_newlines=True,
         )
-

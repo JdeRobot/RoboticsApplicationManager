@@ -15,7 +15,7 @@ import logging
 
 class RosProcessListener(roslaunch.pmon.ProcessListener):
     def __init__(self, *args, **kwargs):
-        self.callback = kwargs.get('callback', None)
+        self.callback = kwargs.get("callback", None)
 
     def process_died(self, name, exit_code):
         print(f"ROS process {name} terminated with code {exit_code}")
@@ -47,7 +47,8 @@ class LauncherRosApi(ILauncher):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.launch = roslaunch.parent.ROSLaunchParent(
-            uuid, [self.launch_file], process_listeners=[self.listener])
+            uuid, [self.launch_file], process_listeners=[self.listener]
+        )
         self.launch.start()
 
         wait_for_process_to_start("rosmaster", timeout=60)
