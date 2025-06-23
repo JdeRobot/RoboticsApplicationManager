@@ -13,6 +13,7 @@ import stat
 from typing import List, Any
 from manager.ram_logging.log_manager import LogManager
 
+
 def call_gzservice(self, service, reqtype, reptype, timeout, req):
     command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
     subprocess.call(
@@ -24,6 +25,7 @@ def call_gzservice(self, service, reqtype, reptype, timeout, req):
         universal_newlines=True,
     )
 
+
 def call_service(self, service, service_type, request_data="{}"):
     command = f"ros2 service call {service} {service_type} '{request_data}'"
     subprocess.call(
@@ -34,6 +36,7 @@ def call_service(self, service, service_type, request_data="{}"):
         bufsize=1024,
         universal_newlines=True,
     )
+
 
 def is_ros_service_available(self, service_name):
     try:
@@ -47,6 +50,7 @@ def is_ros_service_available(self, service_name):
     except subprocess.CalledProcessError as e:
         LogManager.logger.exception(f"Error checking service availability: {e}")
         return False
+
 
 class LauncherGzsim(ILauncher):
     display: str

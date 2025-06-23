@@ -3,7 +3,8 @@ from manager.ram_logging.log_manager import LogManager
 from manager.comms.new_consumer import ManagerConsumer
 from typing import Optional
 
-class LauncherWebGui():
+
+class LauncherWebGui:
     internal_port: int
     consumer: ManagerConsumer
     running: bool = False
@@ -35,7 +36,7 @@ class LauncherWebGui():
 
     def pause(self):
         pass
-    
+
     def unpause(self):
         pass
 

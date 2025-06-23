@@ -12,6 +12,7 @@ import os
 import stat
 from typing import List, Any
 
+
 def call_service(self, service, service_type, request_data="{}"):
     command = f"ros2 service call {service} {service_type} '{request_data}'"
     subprocess.call(
@@ -22,6 +23,7 @@ def call_service(self, service, service_type, request_data="{}"):
         bufsize=1024,
         universal_newlines=True,
     )
+
 
 class LauncherGazebo(ILauncher):
     display: str
@@ -71,7 +73,7 @@ class LauncherGazebo(ILauncher):
 
     def reset(self):
         call_service("/reset_world", "std_srvs/srv/Empty")
-    
+
     def is_running(self):
         return self.running
 

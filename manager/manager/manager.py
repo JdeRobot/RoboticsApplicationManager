@@ -346,9 +346,7 @@ class Manager:
         tools = cfg_dict["tools"]
         config = cfg_dict["config"]
 
-        self.tools_launcher = LauncherTools(
-            tools=tools, tools_config=config
-        )
+        self.tools_launcher = LauncherTools(tools=tools, tools_config=config)
 
         self.tools_launcher.run(self.consumer)
         LogManager.logger.info("Tools transition finished")
@@ -782,9 +780,7 @@ ideal_cycle = 20
             try:
                 self.tools_launcher.terminate()
             except Exception as e:
-                LogManager.logger.exception(
-                    "Exception terminating tools launcher"
-                )
+                LogManager.logger.exception("Exception terminating tools launcher")
 
         if self.robot_launcher:
             try:
@@ -893,9 +889,7 @@ ideal_cycle = 20
                 try:
                     self.tools_launcher.terminate()
                 except Exception as e:
-                    LogManager.logger.exception(
-                        "Exception terminating tools launcher"
-                    )
+                    LogManager.logger.exception("Exception terminating tools launcher")
 
             if self.robot_launcher:
                 try:

@@ -41,7 +41,7 @@ class LauncherConsole(ILauncher):
 
     def pause(self):
         pass
-    
+
     def unpause(self):
         pass
 

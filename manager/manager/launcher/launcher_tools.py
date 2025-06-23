@@ -84,11 +84,11 @@ class LauncherTools(BaseModel):
         config = None
         if self.tools_config is not None and name in self.tools_config:
             config = self.tools_config[name]
-            
+
         launcher = launcher_class.from_config(launcher_class, configuration)
         launcher.run(config, process_terminated)
         return launcher
-    
+
     def pause(self):
         for launcher in self.launchers:
             launcher.pause()
