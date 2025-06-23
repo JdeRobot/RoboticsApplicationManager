@@ -32,7 +32,7 @@ from manager.libs.process_utils import check_gpu_acceleration, get_class_from_fi
 from manager.libs.launch_world_model import ConfigurationManager
 from manager.manager.launcher.launcher_world import LauncherWorld
 from manager.manager.launcher.launcher_robot import LauncherRobot
-from manager.manager.launcher.launcher_visualization import LauncherTools
+from src.manager.manager.launcher.launcher_tools import LauncherTools
 from manager.ram_logging.log_manager import LogManager
 from manager.manager.application.robotics_python_application_interface import (
     IRoboticsPythonApplication,
@@ -343,11 +343,11 @@ class Manager:
         LogManager.logger.info("Tools transition started")
 
         cfg_dict = event.kwargs.get("data", {})
-        self.tools = cfg_dict["tools"]
-        config_file = cfg_dict["file"]
+        tools = cfg_dict["tools"]
+        config = cfg_dict["config"]
 
         self.tools_launcher = LauncherTools(
-            tools=self.tools, visualization_config_path=config_file
+            tools=tools, tools_config=config
         )
 
         self.tools_launcher.run(self.consumer)

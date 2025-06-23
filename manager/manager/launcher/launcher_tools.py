@@ -50,13 +50,13 @@ tools = {
 class LauncherTools(BaseModel):
     module: str = ".".join(__name__.split(".")[:-1])
     tools: list[str]
-    visualization_config_path: Optional[str] = None
+    tools_config: Optional[dict] = None
     launchers: Optional[ILauncher] = []
 
     def run(self, consumer):
         for tool in self.tools:
             module = tools[tool]
-            launcher = self.launch_module(module, consumer)
+            launcher = self.launch_module(tool, module, consumer)
             self.launchers.append(launcher)
 
     def terminate(self):
@@ -66,7 +66,7 @@ class LauncherTools(BaseModel):
                 launcher.terminate()
         self.launchers = []
 
-    def launch_module(self, configuration, consumer):
+    def launch_module(self, name, configuration, consumer):
         def process_terminated(name, exit_code):
             LogManager.logger.info(
                 f"LauncherEngine: {name} exited with code {exit_code}"
@@ -81,8 +81,12 @@ class LauncherTools(BaseModel):
         launcher_module_name = configuration["module"]
         launcher_module = f"{self.module}.launcher_{launcher_module_name}.Launcher{class_from_module(launcher_module_name)}"
         launcher_class = get_class(launcher_module)
+        config = None
+        if self.tools_config is not None and name in self.tools_config:
+            config = self.tools_config[name]
+            
         launcher = launcher_class.from_config(launcher_class, configuration)
-        launcher.run(self.visualization_config_path, process_terminated)
+        launcher.run(config, process_terminated)
         return launcher
     
     def pause(self):
