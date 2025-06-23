@@ -3,203 +3,70 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-from manager.libs.process_utils import get_class, class_from_module, get_ros_version
+from manager.libs.process_utils import get_class, class_from_module
 from manager.ram_logging.log_manager import LogManager
 from manager.manager.launcher.launcher_interface import ILauncher
 
-
-visualization = {
-    "none": [],
-    "console": [
-        {
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        }
-    ],
-    "bt_studio": [
-        {
-            "type": "module",
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "gazebo_view",
-            "display": ":2",
-            "external_port": 6080,
-            "internal_port": 5900,
-        },
-    ],
-    "bt_studio_gz": [
-        {
-            "type": "module",
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "gzsim_view",
-            "display": ":2",
-            "external_port": 6080,
-            "internal_port": 5900,
-        },
-    ],
-    "gazebo_gra": [
-        {
-            "type": "module",
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "gazebo_view",
-            "display": ":2",
-            "external_port": 6080,
-            "internal_port": 5900,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "robot_display_view",
-            "display": ":3",
-            "external_port": 2303,
-            "internal_port": 5902,
-        },
-    ],
-    "gazebo_rae": [
-        {
-            "type": "module",
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "gazebo_view",
-            "display": ":2",
-            "external_port": 6080,
-            "internal_port": 5900,
-        },
-    ],
-    "gzsim_gra": [
-        {
-            "type": "module",
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "gzsim_view",
-            "display": ":2",
-            "external_port": 6080,
-            "internal_port": 5900,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "robot_display_view",
-            "display": ":3",
-            "external_port": 2303,
-            "internal_port": 5902,
-        },
-    ],
-    "gzsim_rae": [
-        {
-            "type": "module",
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "gzsim_view",
-            "display": ":2",
-            "external_port": 6080,
-            "internal_port": 5900,
-        },
-    ],
-    "physic_gra": [
-        {
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "robot_display_view",
-            "display": ":2",
-            "external_port": 2303,
-            "internal_port": 5902,
-        },
-    ],
-    "physic_rae": [
-        {
-            "module": "console",
-            "display": ":1",
-            "external_port": 1108,
-            "internal_port": 5901,
-        },
-        {
-            "type": "module",
-            "width": 1024,
-            "height": 768,
-            "module": "robot_display_view",
-            "display": ":2",
-            "external_port": 2303,
-            "internal_port": 5902,
-        },
-    ],
+tools = {
+    "console": {
+        "module": "console",
+        "display": ":1",
+        "external_port": 1108,
+        "internal_port": 5901,
+    },
+    "gazebo": {
+        "type": "module",
+        "width": 1024,
+        "height": 768,
+        "module": "gazebo",
+        "display": ":2",
+        "external_port": 6080,
+        "internal_port": 5900,
+    },
+    "gzsim": {
+        "type": "module",
+        "width": 1024,
+        "height": 768,
+        "module": "gzsim",
+        "display": ":2",
+        "external_port": 6080,
+        "internal_port": 5900,
+    },
+    "web_gui": {
+        "type": "module",
+        "module": "web_gui",
+        "internal_port": 2303,
+        "consumer": None,
+    },
+    "state_monitor": {
+        "type": "module",
+        "module": "state_monitor",
+        "file": "/tmp/tree_state",
+        "consumer": None,
+    },
 }
 
 
-class LauncherVisualization(BaseModel):
+class LauncherTools(BaseModel):
     module: str = ".".join(__name__.split(".")[:-1])
-    visualization: str
+    tools: list[str]
     visualization_config_path: Optional[str] = None
     launchers: Optional[ILauncher] = []
 
-    def run(self):
-        for module in visualization[self.visualization]:
-            launcher = self.launch_module(module)
+    def run(self, consumer):
+        for tool in self.tools:
+            module = tools[tool]
+            launcher = self.launch_module(module, consumer)
             self.launchers.append(launcher)
 
     def terminate(self):
-        LogManager.logger.info("Terminating visualization launcher")
+        LogManager.logger.info("Terminating tools launcher")
         for launcher in self.launchers:
             if launcher.is_running():
                 launcher.terminate()
         self.launchers = []
 
-    def launch_module(self, configuration):
+    def launch_module(self, configuration, consumer):
         def process_terminated(name, exit_code):
             LogManager.logger.info(
                 f"LauncherEngine: {name} exited with code {exit_code}"
@@ -207,17 +74,38 @@ class LauncherVisualization(BaseModel):
             if self.terminated_callback is not None:
                 self.terminated_callback(name, exit_code)
 
+        # Replace consumer
+        if "consumer" in configuration:
+            configuration["consumer"] = consumer
+
         launcher_module_name = configuration["module"]
         launcher_module = f"{self.module}.launcher_{launcher_module_name}.Launcher{class_from_module(launcher_module_name)}"
         launcher_class = get_class(launcher_module)
         launcher = launcher_class.from_config(launcher_class, configuration)
         launcher.run(self.visualization_config_path, process_terminated)
         return launcher
+    
+    def pause(self):
+        for launcher in self.launchers:
+            launcher.pause()
+
+    def unpause(self):
+        for launcher in self.launchers:
+            launcher.unpause()
+
+    def reset(self):
+        for launcher in self.launchers:
+            launcher.reset()
+
+    def pass_msg(self, data):
+        for launcher in self.launchers:
+            if launcher.acceptsMsgs:
+                launcher.get_msg(data)
 
     def launch_command(self, configuration):
         pass
 
 
-class LauncherVisualizationException(Exception):
+class LauncherToolsException(Exception):
     def __init__(self, message):
-        super(LauncherWorldException, self).__init__(message)
+        super(LauncherToolsException, self).__init__(message)

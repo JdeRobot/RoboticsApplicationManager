@@ -1,3 +1,4 @@
+import sys
 from manager.manager.launcher.launcher_interface import ILauncher
 from manager.manager.docker_thread.docker_thread import DockerThread
 from manager.manager.vnc.vnc_server import Vnc_server
@@ -10,9 +11,44 @@ import time
 import os
 import stat
 from typing import List, Any
+from manager.ram_logging.log_manager import LogManager
 
+def call_gzservice(self, service, reqtype, reptype, timeout, req):
+    command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
+    subprocess.call(
+        f"{command}",
+        shell=True,
+        stdout=sys.stdout,
+        stderr=subprocess.STDOUT,
+        bufsize=1024,
+        universal_newlines=True,
+    )
 
-class LauncherGzsimView(ILauncher):
+def call_service(self, service, service_type, request_data="{}"):
+    command = f"ros2 service call {service} {service_type} '{request_data}'"
+    subprocess.call(
+        f"{command}",
+        shell=True,
+        stdout=sys.stdout,
+        stderr=subprocess.STDOUT,
+        bufsize=1024,
+        universal_newlines=True,
+    )
+
+def is_ros_service_available(self, service_name):
+    try:
+        result = subprocess.run(
+            ["ros2", "service", "list", "--include-hidden-services"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return service_name in result.stdout
+    except subprocess.CalledProcessError as e:
+        LogManager.logger.exception(f"Error checking service availability: {e}")
+        return False
+
+class LauncherGzsim(ILauncher):
     display: str
     internal_port: int
     external_port: int
@@ -72,6 +108,41 @@ class LauncherGzsimView(ILauncher):
 
     def died(self):
         pass
+
+    def pause(self):
+        call_gzservice(
+            "$(gz service -l | grep '^/world/\w*/control$')",
+            "gz.msgs.WorldControl",
+            "gz.msgs.Boolean",
+            "3000",
+            "pause: true",
+        )
+
+    def unpause(self):
+        call_gzservice(
+            "$(gz service -l | grep '^/world/\w*/control$')",
+            "gz.msgs.WorldControl",
+            "gz.msgs.Boolean",
+            "3000",
+            "pause: false",
+        )
+
+    def reset(self):
+        if is_ros_service_available("/drone0/platform/state_machine/_reset"):
+            call_service(
+                "/drone0/platform/state_machine/_reset",
+                "std_srvs/srv/Trigger",
+                "{}",
+            )
+        call_gzservice(
+            "$(gz service -l | grep '^/world/\w*/control$')",
+            "gz.msgs.WorldControl",
+            "gz.msgs.Boolean",
+            "3000",
+            "reset: {all: true}",
+        )
+        if is_ros_service_available("/drone0/controller/_reset"):
+            call_service("/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}")
 
     def get_dri_path(self):
         directory_path = "/dev/dri"
