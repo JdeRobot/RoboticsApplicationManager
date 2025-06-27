@@ -24,7 +24,6 @@ import os
 
 
 class RoboticsApplicationWrapper(IRoboticsPythonApplication):
-
     def __init__(self, update_callback):
         super().__init__(update_callback)
         self.running = False
