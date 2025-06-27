@@ -54,7 +54,6 @@ DEFAULT_CLOSE_REASON = bytes("", encoding="utf-8")
 
 
 class API:
-
     def run_forever(self, threaded=False):
         return self._run_forever(threaded)
 
@@ -274,7 +273,6 @@ class WebsocketServer(ThreadingMixIn, TCPServer, API):
 
 
 class WebSocketHandler(StreamRequestHandler):
-
     def __init__(self, socket, addr, server):
         self.server = server
         assert not hasattr(self, "_send_lock"), "_send_lock already exists"

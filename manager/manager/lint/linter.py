@@ -4,7 +4,6 @@ import subprocess
 
 
 class Lint:
-
     def clean_pylint_output(self, result, warnings=False):
 
         # result = result.replace(os.path.basename(code_file_name), 'user_code')

@@ -8,7 +8,6 @@ from manager.ram_logging.log_manager import LogManager
 
 
 class Handler(FileSystemEventHandler):
-
     def __init__(self, file, callback):
         self.update_callback = callback
         self.file = file
