@@ -188,6 +188,7 @@ class Manager:
         self.queue = Queue()
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.world_launcher = None
+        self.world_type = None
         self.robot_launcher = None
         self.tools_launcher = None
         self.application_process = None
@@ -270,7 +271,7 @@ class Manager:
 
         # Launch world
         try:
-            if world_cfg["world"] == None:
+            if world_cfg["type"] == None:
                 self.world_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
@@ -285,6 +286,8 @@ class Manager:
         except ValueError as e:
             LogManager.logger.error(f"Configuration validation failed: {e}")
 
+        self.world_type = world_cfg["type"]
+
         self.world_launcher = LauncherWorld(**cfg.model_dump())
         LogManager.logger.info(str(self.world_launcher))
         self.world_launcher.run()
@@ -292,7 +295,7 @@ class Manager:
 
         # Launch robot
         try:
-            if robot_cfg["world"] == None:
+            if robot_cfg["type"] == None:
                 self.robot_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
@@ -346,7 +349,7 @@ class Manager:
         tools = cfg_dict["tools"]
         config = cfg_dict["config"]
 
-        self.tools_launcher = LauncherTools(tools=tools, tools_config=config)
+        self.tools_launcher = LauncherTools(world_type= self.world_type ,tools=tools, tools_config=config)
 
         self.tools_launcher.run(self.consumer)
         LogManager.logger.info("Tools transition finished")

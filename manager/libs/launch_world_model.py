@@ -6,7 +6,7 @@ from pydantic import BaseModel, ValidationError
 
 
 class ConfigurationModel(BaseModel):
-    world: str
+    type: str
     launch_file_path: str
 
 

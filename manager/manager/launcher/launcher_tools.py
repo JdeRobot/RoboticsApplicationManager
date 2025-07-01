@@ -46,15 +46,23 @@ tools = {
     },
 }
 
+simulator = {
+    "gazebo": {"tool": "gazebo"},
+    "gz": {"tool": "gzsim"},
+}
+
 
 class LauncherTools(BaseModel):
     module: str = ".".join(__name__.split(".")[:-1])
+    world_type: str
     tools: list[str]
     tools_config: Optional[dict] = None
     launchers: Optional[ILauncher] = []
 
     def run(self, consumer):
         for tool in self.tools:
+            if tool == "simulator":
+                tool = simulator[self.world_type]["tool"]
             module = tools[tool]
             launcher = self.launch_module(tool, module, consumer)
             self.launchers.append(launcher)
