@@ -32,7 +32,7 @@ from manager.libs.process_utils import check_gpu_acceleration, get_class_from_fi
 from manager.libs.launch_world_model import ConfigurationManager
 from manager.manager.launcher.launcher_world import LauncherWorld
 from manager.manager.launcher.launcher_robot import LauncherRobot
-from src.manager.manager.launcher.launcher_tools import LauncherTools
+from manager.manager.launcher.launcher_tools import LauncherTools
 from manager.ram_logging.log_manager import LogManager
 from manager.manager.application.robotics_python_application_interface import (
     IRoboticsPythonApplication,
