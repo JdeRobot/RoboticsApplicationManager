@@ -70,7 +70,7 @@ class Lint:
             loop_match = re.search(loop_regex, code)
 
             if loop_match is None:
-                return "ERROR: No event loop found. Add 'while True:', 'rclpy.spin(node)', or 'rclpy.spin_once(node)' or use 'rclpy.Rate()'"
+                return "ERROR: No event loop found. Add 'while True:', 'rclpy.spin(node)', or 'rclpy.spin_once(node)' or use 'Rate'"
             
             if "rclpy.spin" in loop_match.group() or "rclpy.spin_once" in loop_match.group() or ".create_rate" in loop_match.group():
                 # Keep the code as-is; don't modify it
