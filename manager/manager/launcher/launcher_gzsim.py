@@ -14,7 +14,7 @@ from typing import List, Any
 from manager.ram_logging.log_manager import LogManager
 
 
-def call_gzservice(self, service, reqtype, reptype, timeout, req):
+def call_gzservice(service, reqtype, reptype, timeout, req):
     command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
     subprocess.call(
         f"{command}",
@@ -26,7 +26,7 @@ def call_gzservice(self, service, reqtype, reptype, timeout, req):
     )
 
 
-def call_service(self, service, service_type, request_data="{}"):
+def call_service(service, service_type, request_data="{}"):
     command = f"ros2 service call {service} {service_type} '{request_data}'"
     subprocess.call(
         f"{command}",
@@ -38,7 +38,7 @@ def call_service(self, service, service_type, request_data="{}"):
     )
 
 
-def is_ros_service_available(self, service_name):
+def is_ros_service_available(service_name):
     try:
         result = subprocess.run(
             ["ros2", "service", "list", "--include-hidden-services"],

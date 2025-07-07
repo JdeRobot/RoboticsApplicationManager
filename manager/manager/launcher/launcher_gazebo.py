@@ -13,7 +13,7 @@ import stat
 from typing import List, Any
 
 
-def call_service(self, service, service_type, request_data="{}"):
+def call_service(service, service_type, request_data="{}"):
     command = f"ros2 service call {service} {service_type} '{request_data}'"
     subprocess.call(
         f"{command}",
