@@ -63,6 +63,7 @@ class Lint:
                 r'[^ ]while\s*True\s*:|'
                 r'[^ ]while\s*1\s*:|'
                 r'[^ ]while\s*\(\s*1\s*\)\s*:|'
+                r'rclpy\.spin\(\s*\w+\s*\)|'
                 r'rclpy\.spin_once\(\s*\w+\s*.*?\)|'
                 r'\.create_rate\(\s*[\w.]+\s*\)' 
                 
