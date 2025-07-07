@@ -629,10 +629,11 @@ ideal_cycle = 20
             errors = self.linter.evaluate_code(code, self.ros_version)
             if errors == "":
 
-                code = self.add_frequency_control(code)
-                f = open(code_path, "w")
-                f.write(code)
-                f.close()
+                # code = self.add_frequency_control(code)
+                # f = open(code_path, "w")
+                # f.write(code)
+                # f.close()
+                pass
 
             else:
                 console_path = find_docker_console()
@@ -667,15 +668,16 @@ ideal_cycle = 20
         zip_ref = zipfile.ZipFile("/workspace/code/app.zip", "r")
         zip_ref.extractall("/workspace/code")
         zip_ref.close()
+        print("Here")
 
         if not os.path.isfile(entrypoint):
             LogManager.logger.info("User code not found")
             raise Exception("User code not found")
 
         try:
-            if entrypoint == "/workspace/code/academy.py":
-                # TODO: temporal
-                prepare_RA_code(entrypoint)
+            # if entrypoint == "/workspace/code/academy.py":
+            #     # TODO: temporal
+            #     prepare_RA_code(entrypoint)
 
             fds = os.listdir("/dev/pts/")
             console_fd = str(max(map(int, fds[:-1])))
