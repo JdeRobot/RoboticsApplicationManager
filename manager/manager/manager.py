@@ -354,36 +354,6 @@ class Manager:
         self.tools_launcher.run(self.consumer)
         LogManager.logger.info("Tools transition finished")
 
-    def add_frequency_control(self, code):
-        frequency_control_code_imports = """
-import time
-from datetime import datetime
-ideal_cycle = 20
-"""
-        code = frequency_control_code_imports + code
-        infinite_loop = re.search(
-            r"[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:",
-            code,
-        )
-        frequency_control_code_pre = """
-    start_time_internal_freq_control = datetime.now()
-            """
-        code = (
-            code[: infinite_loop.end()]
-            + frequency_control_code_pre
-            + code[infinite_loop.end() :]
-        )
-        frequency_control_code_post = """
-    finish_time_internal_freq_control = datetime.now()
-    dt = finish_time_internal_freq_control - start_time_internal_freq_control
-    ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
-
-    if (ms < ideal_cycle):
-        time.sleep((ideal_cycle - ms) / 1000.0)
-"""
-        code = code + frequency_control_code_post
-        return code
-
     def on_style_check_application(self, event):
         """
         Handles the 'style_check' event, does not change the state and returns the current state.
@@ -616,33 +586,6 @@ ideal_cycle = 20
             # raise Exception("No active console other than /dev/pts/0")
             return consoles
 
-        def prepare_RA_code(code_path):
-            f = open(code_path, "r")
-            code = f.read()
-            f.close()
-
-            # Make code backwards compatible
-            code = code.replace("from GUI import GUI", "import GUI")
-            code = code.replace("from HAL import HAL", "import HAL")
-
-            # Create executable app
-            errors = self.linter.evaluate_code(code, self.ros_version)
-            if errors == "":
-
-                # code = self.add_frequency_control(code)
-                # f = open(code_path, "w")
-                # f.write(code)
-                # f.close()
-                pass
-
-            else:
-                console_path = find_docker_console()
-                for i in console_path:
-                    with open(i, "w") as console:
-                        console.write(errors + "\n\n")
-
-                raise Exception(errors)
-
         # Kill already running code
         try:
             proc = psutil.Process(self.application_process.pid)
@@ -659,6 +602,7 @@ ideal_cycle = 20
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         entrypoint = app_cfg["entrypoint"]
+        to_lint = app_cfg["linter"]
 
         # Unzip the app
         if app_cfg["code"].startswith("data:"):
@@ -668,17 +612,27 @@ ideal_cycle = 20
         zip_ref = zipfile.ZipFile("/workspace/code/app.zip", "r")
         zip_ref.extractall("/workspace/code")
         zip_ref.close()
-        print("Here")
 
         if not os.path.isfile(entrypoint):
             LogManager.logger.info("User code not found")
             raise Exception("User code not found")
 
-        try:
-            # if entrypoint == "/workspace/code/academy.py":
-            #     # TODO: temporal
-            #     prepare_RA_code(entrypoint)
+        # Pass the linter
+        errors = self.linter.evaluate_source_code(to_lint)
+        failed_linter = False
 
+        for error in errors:
+            if error != "":
+                failed_linter = True
+                console_path = find_docker_console()
+                for i in console_path:
+                    with open(i, "w") as console:
+                        console.write(errors + "\n\n")
+
+        if failed_linter:
+            raise Exception(errors)
+
+        try:
             fds = os.listdir("/dev/pts/")
             console_fd = str(max(map(int, fds[:-1])))
 

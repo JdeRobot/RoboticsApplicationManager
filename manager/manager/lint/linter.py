@@ -1,7 +1,8 @@
+import glob
 import re
 import os
 import subprocess
-
+import tempfile
 
 class Lint:
 
@@ -103,3 +104,51 @@ class Lint:
             return final_result.strip()
         except Exception as ex:
             print(ex)
+
+    def evaluate_source_code(self, files):
+        all_files = []
+        for f in files:
+            glob_files = glob.glob(os.path.join("/workspace/code", f))
+            for g in glob_files:
+                all_files.append(g)
+
+        output = []
+
+        linter_env = os.environ.copy()
+        linter_env["PYTHONPATH"] = f"{linter_env['PYTHONPATH']}:/workspace/code"
+
+        try:
+
+            for file in all_files:
+                if file.endswith(".py"):
+                    with open(file) as f:
+                        python_code = f.read()
+
+                    # Create temp file
+                    code_file = tempfile.NamedTemporaryFile(delete=False)
+                    code_file.write(python_code.encode())
+                    code_file.seek(0)
+                    code_file.close()
+
+                    options = f"{code_file.name} --enable=similarities --disable=C0114,C0116"
+
+                    # Run pylint using subprocess
+                    result = subprocess.run(
+                        ["pylint"] + options.split(), capture_output=True, text=True, env=linter_env
+                    )
+
+                    # Process pylint exit
+                    stdout = result.stdout
+
+                    # Clean temp files
+                    if os.path.exists(code_file.name):
+                        os.remove(code_file.name)
+
+                    raw_output = stdout + "\n"
+                    cleaned_result = self.clean_pylint_output(raw_output)
+                    final_result = self.append_rating_if_missing(cleaned_result)
+                    output.append(final_result.strip())
+
+            return output
+        except Exception as ex:
+            return ex
