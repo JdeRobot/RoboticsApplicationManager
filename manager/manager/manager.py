@@ -627,7 +627,7 @@ class Manager:
                 console_path = find_docker_console()
                 for i in console_path:
                     with open(i, "w") as console:
-                        console.write(errors + "\n\n")
+                        console.write(error + "\n\n")
 
         if failed_linter:
             raise Exception(errors)
