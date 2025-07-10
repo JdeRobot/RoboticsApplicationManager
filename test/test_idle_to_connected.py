@@ -69,3 +69,20 @@ def test_idle_to_connected(manager):
     # Verify the state change message
     assert state_change_msg[0][0]["state"] == "connected"
     assert state_change_msg[1]["command"] == "state-changed"
+
+
+def test_idle_to_connected_with_exception(manager):
+    """Test transitioning Manager from 'idle' to 'connected' state with an exception."""
+    # Simulate an exception during the connection process
+    manager.consumer.send_message = lambda *args, **kwargs: (
+        1 / 0  # This will raise a ZeroDivisionError
+    )
+
+    with pytest.raises(ZeroDivisionError):
+        manager.trigger("connect", event=None)
+
+    # State should still be 'idle' after the exception
+    assert manager.state == "idle"
+
+    # Check that no messages were sent to the consumer
+    assert not manager.consumer.messages
