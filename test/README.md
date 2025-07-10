@@ -10,7 +10,6 @@ cd RoboticsApplicationManager
 
 - Run PyTest
 
-```
-bash
+```bash
 PYTHONPATH=. pytest
 ```
