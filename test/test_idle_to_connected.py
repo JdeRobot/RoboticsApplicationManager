@@ -23,6 +23,7 @@ class DummyConsumer:
 @pytest.fixture
 def manager(monkeypatch):
     """Fixture to provide a Manager instance with patched dependencies for testing."""
+
     # Patch subprocess.check_output for ROS_DISTRO and IMAGE_TAG
     def fake_check_output(cmd, *a, **k):
         if "ROS_DISTRO" in cmd[-1]:

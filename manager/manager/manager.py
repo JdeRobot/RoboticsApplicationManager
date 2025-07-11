@@ -478,6 +478,7 @@ ideal_cycle = 20
         Raises:
             Exception: with the errors found in the linter
         """
+
         def find_docker_console():
             """Search console in docker different of /dev/pts/0 ."""
             pts_consoles = [
@@ -689,6 +690,7 @@ ideal_cycle = 20
         Parameters:
             event: The event object containing application configuration and code data.
         """
+
         def find_docker_console():
             """Search console in docker different of /dev/pts/0 ."""
             pts_consoles = [
