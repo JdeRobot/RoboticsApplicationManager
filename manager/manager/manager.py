@@ -317,7 +317,7 @@ class Manager:
 
         # Launch world
         try:
-            if world_cfg["world"] == None:
+            if world_cfg["world"] is None:
                 self.world_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
@@ -339,7 +339,7 @@ class Manager:
 
         # Launch robot
         try:
-            if robot_cfg["world"] == None:
+            if robot_cfg["world"] is None:
                 self.robot_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
