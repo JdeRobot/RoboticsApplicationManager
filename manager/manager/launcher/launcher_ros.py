@@ -44,9 +44,9 @@ class LauncherRos(ILauncher):
     def run(self):
         try:
             # generate entry_point environment variable
-            os.environ["EXERCISE_FOLDER"] = (
-                f"{os.environ.get('EXERCISES_STATIC_FOLDER')}/{self.exercise_id}"
-            )
+            os.environ[
+                "EXERCISE_FOLDER"
+            ] = f"{os.environ.get('EXERCISES_STATIC_FOLDER')}/{self.exercise_id}"
 
             # expand variables in configuration paths
             resource_folders = [
@@ -57,15 +57,15 @@ class LauncherRos(ILauncher):
             launch_file = os.path.expandvars(self.launch_file)
 
             env = dict(os.environ)
-            env["GAZEBO_RESOURCE_PATH"] = (
-                f"{env.get('GAZEBO_RESOURCE_PATH', '')}:{':'.join(resource_folders)}"
-            )
-            env["GAZEBO_MODEL_PATH"] = (
-                f"{env.get('GAZEBO_MODEL_PATH', '')}:{':'.join(model_folders)}"
-            )
-            env["GAZEBO_PLUGIN_PATH"] = (
-                f"{env.get('GAZEBO_PLUGIN_PATH', '')}:{':'.join(plugin_folders)}"
-            )
+            env[
+                "GAZEBO_RESOURCE_PATH"
+            ] = f"{env.get('GAZEBO_RESOURCE_PATH', '')}:{':'.join(resource_folders)}"
+            env[
+                "GAZEBO_MODEL_PATH"
+            ] = f"{env.get('GAZEBO_MODEL_PATH', '')}:{':'.join(model_folders)}"
+            env[
+                "GAZEBO_PLUGIN_PATH"
+            ] = f"{env.get('GAZEBO_PLUGIN_PATH', '')}:{':'.join(plugin_folders)}"
 
             parameters = " ".join(self.parameters)
             command = f"{self.ros_command_line} {parameters} {launch_file}"
