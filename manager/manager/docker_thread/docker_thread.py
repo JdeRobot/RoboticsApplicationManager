@@ -4,7 +4,7 @@ import threading
 import subprocess
 import os
 import signal
-
+import sys
 
 class DockerThread(threading.Thread):
     """Threaded Docker Thread Class"""
@@ -19,7 +19,7 @@ class DockerThread(threading.Thread):
         self.process = subprocess.Popen(
             self.cmd,
             shell=self.shell,
-            stdout=subprocess.PIPE,
+            stdout=sys.stdout,
             stderr=subprocess.PIPE,
             start_new_session=True,
             bufsize=1024,
