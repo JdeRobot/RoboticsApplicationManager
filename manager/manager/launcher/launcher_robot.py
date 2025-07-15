@@ -66,7 +66,7 @@ worlds = {
 
 
 class LauncherRobot(BaseModel):
-    world: str
+    type: str
     launch_file_path: str
     module: str = ".".join(__name__.split(".")[:-1])
     ros_version: int = get_ros_version()
@@ -76,7 +76,7 @@ class LauncherRobot(BaseModel):
     def run(self, start_pose=None):
         if start_pose != None:
             self.start_pose = start_pose
-        for module in worlds[self.world][str(self.ros_version)]:
+        for module in worlds[self.type][str(self.ros_version)]:
             module["launch_file"] = self.launch_file_path
             launcher = self.launch_module(module)
             self.launchers.append(launcher)

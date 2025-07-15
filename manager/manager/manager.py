@@ -32,10 +32,8 @@ from manager.libs.process_utils import check_gpu_acceleration, get_class_from_fi
 from manager.libs.launch_world_model import ConfigurationManager
 from manager.manager.launcher.launcher_world import LauncherWorld
 from manager.manager.launcher.launcher_robot import LauncherRobot
-from manager.manager.launcher.launcher_visualization import LauncherVisualization
+from manager.manager.launcher.launcher_tools import LauncherTools
 from manager.ram_logging.log_manager import LogManager
-from manager.libs.applications.compatibility.server import Server
-from manager.libs.applications.compatibility.file_watchdog import FileWatchdog
 from manager.manager.application.robotics_python_application_interface import (
     IRoboticsPythonApplication,
 )
@@ -49,7 +47,7 @@ class Manager:
         "idle",
         "connected",
         "world_ready",
-        "visualization_ready",
+        "tools_ready",
         "application_running",
         "paused",
     ]
@@ -71,15 +69,15 @@ class Manager:
         },
         # Transitions for state world ready
         {
-            "trigger": "prepare_visualization",
+            "trigger": "prepare_tools",
             "source": "world_ready",
-            "dest": "visualization_ready",
-            "before": "on_prepare_visualization",
+            "dest": "tools_ready",
+            "before": "on_prepare_tools",
         },
-        # Transitions for state visualization_ready
+        # Transitions for state tools_ready
         {
             "trigger": "run_application",
-            "source": ["visualization_ready", "paused", "application_running"],
+            "source": ["tools_ready", "paused", "application_running"],
             "dest": "application_running",
             "before": "on_run_application",
         },
@@ -99,15 +97,15 @@ class Manager:
         # Transitions for terminate levels
         {
             "trigger": "terminate_application",
-            "source": ["visualization_ready", "application_running", "paused"],
-            "dest": "visualization_ready",
+            "source": ["tools_ready", "application_running", "paused"],
+            "dest": "tools_ready",
             "before": "on_terminate_application",
         },
         {
-            "trigger": "terminate_visualization",
-            "source": "visualization_ready",
+            "trigger": "terminate_tools",
+            "source": "tools_ready",
             "dest": "world_ready",
-            "before": "on_terminate_visualization",
+            "before": "on_terminate_tools",
         },
         {
             "trigger": "terminate_universe",
@@ -130,7 +128,7 @@ class Manager:
                 "connected",
                 "paused",
                 "world_ready",
-                "visualization_ready",
+                "tools_ready",
             ],
             "dest": "=",
             "before": "on_style_check_application",
@@ -143,7 +141,7 @@ class Manager:
                 "connected",
                 "paused",
                 "world_ready",
-                "visualization_ready",
+                "tools_ready",
             ],
             "dest": "=",
             "before": "on_code_analysis",
@@ -156,7 +154,7 @@ class Manager:
                 "connected",
                 "paused",
                 "world_ready",
-                "visualization_ready",
+                "tools_ready",
             ],
             "dest": "=",
             "before": "on_code_format",
@@ -169,7 +167,7 @@ class Manager:
                 "connected",
                 "paused",
                 "world_ready",
-                "visualization_ready",
+                "tools_ready",
             ],
             "dest": "=",
             "before": "on_code_autocomplete",
@@ -190,12 +188,11 @@ class Manager:
         self.queue = Queue()
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.world_launcher = None
+        self.world_type = None
         self.robot_launcher = None
-        self.visualization_launcher = None
-        self.visualization_type = None
+        self.tools_launcher = None
         self.application_process = None
         self.running = True
-        self.gui_server = None
         self.linter = Lint()
 
         # Creates workspace directories
@@ -274,7 +271,7 @@ class Manager:
 
         # Launch world
         try:
-            if world_cfg["world"] == None:
+            if world_cfg["type"] == None:
                 self.world_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
@@ -289,6 +286,8 @@ class Manager:
         except ValueError as e:
             LogManager.logger.error(f"Configuration validation failed: {e}")
 
+        self.world_type = world_cfg["type"]
+
         self.world_launcher = LauncherWorld(**cfg.model_dump())
         LogManager.logger.info(str(self.world_launcher))
         self.world_launcher.run()
@@ -296,7 +295,7 @@ class Manager:
 
         # Launch robot
         try:
-            if robot_cfg["world"] == None:
+            if robot_cfg["type"] == None:
                 self.robot_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
@@ -342,58 +341,20 @@ class Manager:
             '/bin/bash -c "cd /workspace/worlds; source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."'
         )
 
-    def on_prepare_visualization(self, event):
+    def on_prepare_tools(self, event):
 
-        LogManager.logger.info("Visualization transition started")
+        LogManager.logger.info("Tools transition started")
 
         cfg_dict = event.kwargs.get("data", {})
-        self.visualization_type = cfg_dict["type"]
-        config_file = cfg_dict["file"]
+        tools = cfg_dict["tools"]
+        config = cfg_dict["config"]
 
-        self.visualization_launcher = LauncherVisualization(
-            visualization=self.visualization_type, visualization_config_path=config_file
+        self.tools_launcher = LauncherTools(
+            world_type=self.world_type, tools=tools, tools_config=config
         )
 
-        self.visualization_launcher.run()
-
-        if self.visualization_type in ["gazebo_rae", "gzsim_rae", "console"]:
-            self.gui_server = Server(2303, self.update)
-            self.gui_server.start()
-        elif self.visualization_type in ["bt_studio", "bt_studio_gz"]:
-            self.gui_server = FileWatchdog("/tmp/tree_state", self.update_bt_studio)
-            self.gui_server.start()
-
-        LogManager.logger.info("Visualization transition finished")
-
-    def add_frequency_control(self, code):
-        frequency_control_code_imports = """
-import time
-from datetime import datetime
-ideal_cycle = 20
-"""
-        code = frequency_control_code_imports + code
-        infinite_loop = re.search(
-            r"[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:",
-            code,
-        )
-        frequency_control_code_pre = """
-    start_time_internal_freq_control = datetime.now()
-            """
-        code = (
-            code[: infinite_loop.end()]
-            + frequency_control_code_pre
-            + code[infinite_loop.end() :]
-        )
-        frequency_control_code_post = """
-    finish_time_internal_freq_control = datetime.now()
-    dt = finish_time_internal_freq_control - start_time_internal_freq_control
-    ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
-
-    if (ms < ideal_cycle):
-        time.sleep((ideal_cycle - ms) / 1000.0)
-"""
-        code = code + frequency_control_code_post
-        return code
+        self.tools_launcher.run(self.consumer)
+        LogManager.logger.info("Tools transition finished")
 
     def on_style_check_application(self, event):
         """
@@ -627,32 +588,6 @@ ideal_cycle = 20
             # raise Exception("No active console other than /dev/pts/0")
             return consoles
 
-        def prepare_RA_code(code_path):
-            f = open(code_path, "r")
-            code = f.read()
-            f.close()
-
-            # Make code backwards compatible
-            code = code.replace("from GUI import GUI", "import GUI")
-            code = code.replace("from HAL import HAL", "import HAL")
-
-            # Create executable app
-            errors = self.linter.evaluate_code(code, self.ros_version)
-            if errors == "":
-
-                code = self.add_frequency_control(code)
-                f = open(code_path, "w")
-                f.write(code)
-                f.close()
-
-            else:
-                console_path = find_docker_console()
-                for i in console_path:
-                    with open(i, "w") as console:
-                        console.write(errors + "\n\n")
-
-                raise Exception(errors)
-
         # Kill already running code
         try:
             proc = psutil.Process(self.application_process.pid)
@@ -668,12 +603,8 @@ ideal_cycle = 20
 
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
-        type = app_cfg["type"]
-
-        if type == "robotics-academy":
-            code_path = "/workspace/code/academy.py"
-        elif type == "bt-studio":
-            code_path = "/workspace/code/execute_docker.py"
+        entrypoint = app_cfg["entrypoint"]
+        to_lint = app_cfg["linter"]
 
         # Unzip the app
         if app_cfg["code"].startswith("data:"):
@@ -684,19 +615,31 @@ ideal_cycle = 20
         zip_ref.extractall("/workspace/code")
         zip_ref.close()
 
-        if not os.path.isfile(code_path):
+        if not os.path.isfile(entrypoint):
             LogManager.logger.info("User code not found")
             raise Exception("User code not found")
 
-        try:
-            if type == "robotics-academy":
-                prepare_RA_code(code_path)
+        # Pass the linter
+        errors = self.linter.evaluate_source_code(to_lint)
+        failed_linter = False
 
+        for error in errors:
+            if error != "":
+                failed_linter = True
+                console_path = find_docker_console()
+                for i in console_path:
+                    with open(i, "w") as console:
+                        console.write(error + "\n\n")
+
+        if failed_linter:
+            raise Exception(errors)
+
+        try:
             fds = os.listdir("/dev/pts/")
             console_fd = str(max(map(int, fds[:-1])))
 
             self.application_process = subprocess.Popen(
-                ["python3", code_path],
+                ["python3", entrypoint],
                 stdin=open("/dev/pts/" + console_fd, "r"),
                 stdout=sys.stdout,
                 stderr=subprocess.STDOUT,
@@ -767,12 +710,9 @@ ideal_cycle = 20
                 LogManager.logger.exception("No application running")
                 print(traceback.format_exc())
 
-    def on_terminate_visualization(self, event):
+    def on_terminate_tools(self, event):
 
-        self.visualization_launcher.terminate()
-        if self.gui_server != None:
-            self.gui_server.stop()
-            self.gui_server = None
+        self.tools_launcher.terminate()
         self.terminate_harmonic_processes()
 
     def on_terminate_universe(self, event):
@@ -797,13 +737,11 @@ ideal_cycle = 20
             except Exception as e:
                 LogManager.logger.exception("Exception stopping application process")
 
-        if self.visualization_launcher:
+        if self.tools_launcher:
             try:
-                self.visualization_launcher.terminate()
+                self.tools_launcher.terminate()
             except Exception as e:
-                LogManager.logger.exception(
-                    "Exception terminating visualization launcher"
-                )
+                LogManager.logger.exception("Exception terminating tools launcher")
 
         if self.robot_launcher:
             try:
@@ -825,7 +763,7 @@ ideal_cycle = 20
 
     def process_message(self, message):
         if message.command == "gui":
-            self.gui_server.send(message.data)
+            self.tools_launcher.pass_msg(message.data)
             return
 
         self.trigger(message.command, data=message.data or None)
@@ -862,94 +800,22 @@ ideal_cycle = 20
             self.reset_sim()
 
     def pause_sim(self):
-        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
-            self.call_gzservice(
-                "$(gz service -l | grep '^/world/\w*/control$')",
-                "gz.msgs.WorldControl",
-                "gz.msgs.Boolean",
-                "3000",
-                "pause: true",
-            )
-        elif not self.visualization_type in ["console"]:
-            self.call_service("/pause_physics", "std_srvs/srv/Empty")
+        self.tools_launcher.pause()
 
     def unpause_sim(self):
-        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
-            self.call_gzservice(
-                "$(gz service -l | grep '^/world/\w*/control$')",
-                "gz.msgs.WorldControl",
-                "gz.msgs.Boolean",
-                "3000",
-                "pause: false",
-            )
-        elif not self.visualization_type in ["console"]:
-            self.call_service("/unpause_physics", "std_srvs/srv/Empty")
+        self.tools_launcher.unpause()
 
     def reset_sim(self):
         if self.robot_launcher:
             self.robot_launcher.terminate()
 
-        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
-            if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
-                self.call_service(
-                    "/drone0/platform/state_machine/_reset",
-                    "std_srvs/srv/Trigger",
-                    "{}",
-                )
-            self.call_gzservice(
-                "$(gz service -l | grep '^/world/\w*/control$')",
-                "gz.msgs.WorldControl",
-                "gz.msgs.Boolean",
-                "3000",
-                "reset: {all: true}",
-            )
-            if self.is_ros_service_available("/drone0/controller/_reset"):
-                self.call_service(
-                    "/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}"
-                )
-        elif not self.visualization_type in ["console"]:
-            self.call_service("/reset_world", "std_srvs/srv/Empty")
+        self.tools_launcher.reset()
 
         if self.robot_launcher:
             try:
                 self.robot_launcher.run()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")
-
-    def call_service(self, service, service_type, request_data="{}"):
-        command = f"ros2 service call {service} {service_type} '{request_data}'"
-        subprocess.call(
-            f"{command}",
-            shell=True,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-
-    def call_gzservice(self, service, reqtype, reptype, timeout, req):
-        command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
-        subprocess.call(
-            f"{command}",
-            shell=True,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-
-    def is_ros_service_available(self, service_name):
-        try:
-            result = subprocess.run(
-                ["ros2", "service", "list", "--include-hidden-services"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            return service_name in result.stdout
-        except subprocess.CalledProcessError as e:
-            LogManager.logger.exception(f"Error checking service availability: {e}")
-            return False
 
     def start(self):
         """
@@ -965,11 +831,6 @@ ideal_cycle = 20
         def signal_handler(sign, frame):
             print("\nprogram exiting gracefully")
             self.running = False
-            if self.gui_server is not None:
-                try:
-                    self.gui_server.stop()
-                except Exception as e:
-                    LogManager.logger.exception("Exception stopping GUI server")
 
             try:
                 self.consumer.stop()
@@ -985,13 +846,11 @@ ideal_cycle = 20
                         "Exception stopping application process"
                     )
 
-            if self.visualization_launcher:
+            if self.tools_launcher:
                 try:
-                    self.visualization_launcher.terminate()
+                    self.tools_launcher.terminate()
                 except Exception as e:
-                    LogManager.logger.exception(
-                        "Exception terminating visualization launcher"
-                    )
+                    LogManager.logger.exception("Exception terminating tools launcher")
 
             if self.robot_launcher:
                 try:

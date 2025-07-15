@@ -16,27 +16,11 @@ worlds = {
             }
         ],
     },
-    "drones": {
+    "gz": {
         "2": [
             {
                 "type": "module",
-                "module": "drones_ros2",
-                "resource_folders": [],
-                "model_folders": [],
-                "plugin_folders": [],
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
-    },
-    "gzsimdrones": {
-        "2": [
-            {
-                "type": "module",
-                "module": "drones_gzsim",
-                "resource_folders": [],
-                "model_folders": [],
-                "plugin_folders": [],
+                "module": "ros2_api",
                 "parameters": [],
                 "launch_file": [],
             }
@@ -47,14 +31,14 @@ worlds = {
 
 
 class LauncherWorld(BaseModel):
-    world: str
+    type: str
     launch_file_path: str
     module: str = ".".join(__name__.split(".")[:-1])
     ros_version: int = get_ros_version()
     launchers: Optional[ILauncher] = []
 
     def run(self):
-        for module in worlds[self.world][str(self.ros_version)]:
+        for module in worlds[self.type][str(self.ros_version)]:
             module["launch_file"] = self.launch_file_path
             launcher = self.launch_module(module)
             self.launchers.append(launcher)

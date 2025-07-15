@@ -12,6 +12,7 @@ class LauncherConsole(ILauncher):
     internal_port: int
     external_port: int
     running: bool = False
+    acceptsMsgs: bool = False
     threads: List[Any] = []
     console_vnc: Any = Vnc_server()
 
@@ -37,6 +38,15 @@ class LauncherConsole(ILauncher):
         self.threads.append(console_thread)
 
         self.running = True
+
+    def pause(self):
+        pass
+
+    def unpause(self):
+        pass
+
+    def reset(self):
+        pass
 
     def is_running(self):
         return self.running
