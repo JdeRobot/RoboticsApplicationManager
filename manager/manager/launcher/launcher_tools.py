@@ -54,7 +54,7 @@ simulator = {
 
 class LauncherTools(BaseModel):
     module: str = ".".join(__name__.split(".")[:-1])
-    world_type: str
+    world_type: Optional[str] = None
     tools: list[str]
     tools_config: Optional[dict] = None
     launchers: Optional[ILauncher] = []
