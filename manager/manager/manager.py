@@ -349,7 +349,9 @@ class Manager:
         tools = cfg_dict["tools"]
         config = cfg_dict["config"]
 
-        self.tools_launcher = LauncherTools(world_type= self.world_type ,tools=tools, tools_config=config)
+        self.tools_launcher = LauncherTools(
+            world_type=self.world_type, tools=tools, tools_config=config
+        )
 
         self.tools_launcher.run(self.consumer)
         LogManager.logger.info("Tools transition finished")

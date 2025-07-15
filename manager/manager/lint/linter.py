@@ -4,6 +4,7 @@ import os
 import subprocess
 import tempfile
 
+
 class Lint:
 
     def clean_pylint_output(self, result, warnings=False):
@@ -130,11 +131,16 @@ class Lint:
                     code_file.seek(0)
                     code_file.close()
 
-                    options = f"{code_file.name} --enable=similarities --disable=C0114,C0116"
+                    options = (
+                        f"{code_file.name} --enable=similarities --disable=C0114,C0116"
+                    )
 
                     # Run pylint using subprocess
                     result = subprocess.run(
-                        ["pylint"] + options.split(), capture_output=True, text=True, env=linter_env
+                        ["pylint"] + options.split(),
+                        capture_output=True,
+                        text=True,
+                        env=linter_env,
                     )
 
                     # Process pylint exit
