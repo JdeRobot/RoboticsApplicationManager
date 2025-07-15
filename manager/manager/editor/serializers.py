@@ -2,7 +2,6 @@ from types import NoneType
 
 
 class Completion:
-
     def __init__(self, completion):
         self.label = completion.name
         self.code = completion.name_with_symbols
