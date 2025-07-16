@@ -219,6 +219,7 @@ class LauncherVisualization(BaseModel):
         Returns:
             ILauncher: The launcher instance for the visualization module.
         """
+
         def process_terminated(name, exit_code):
             LogManager.logger.info(
                 f"LauncherEngine: {name} exited with code {exit_code}"
