@@ -1,9 +1,15 @@
+"""
+This module provides the LauncherVisualization class.
+
+Responsible for managing visualization launchers in the Robotics Application Manager.
+"""
+
 from manager.libs.process_utils import get_class, class_from_module
 from typing import Optional
 from pydantic import BaseModel
 
 
-from manager.libs.process_utils import get_class, class_from_module, get_ros_version
+from manager.manager.launcher.launcher_world import LauncherWorldException
 from manager.ram_logging.log_manager import LogManager
 from manager.manager.launcher.launcher_interface import ILauncher
 
@@ -182,17 +188,21 @@ visualization = {
 
 
 class LauncherVisualization(BaseModel):
+    """Manages the launching and termination of visualization modules for the RAM."""
+
     module: str = ".".join(__name__.split(".")[:-1])
     visualization: str
     visualization_config_path: Optional[str] = None
     launchers: Optional[ILauncher] = []
 
     def run(self):
+        """Launch all visualization modules specified in the configuration."""
         for module in visualization[self.visualization]:
             launcher = self.launch_module(module)
             self.launchers.append(launcher)
 
     def terminate(self):
+        """Terminate all running visualization launchers."""
         LogManager.logger.info("Terminating visualization launcher")
         for launcher in self.launchers:
             if launcher.is_running():
@@ -200,6 +210,15 @@ class LauncherVisualization(BaseModel):
         self.launchers = []
 
     def launch_module(self, configuration):
+        """
+        Launch a visualization module based on the provided configuration.
+
+        Args:
+            configuration (dict): Config dictionary for the visualization module.
+
+        Returns:
+            ILauncher: The launcher instance for the visualization module.
+        """
         def process_terminated(name, exit_code):
             LogManager.logger.info(
                 f"LauncherEngine: {name} exited with code {exit_code}"
@@ -208,16 +227,33 @@ class LauncherVisualization(BaseModel):
                 self.terminated_callback(name, exit_code)
 
         launcher_module_name = configuration["module"]
-        launcher_module = f"{self.module}.launcher_{launcher_module_name}.Launcher{class_from_module(launcher_module_name)}"
+        launcher_module = (
+            f"{self.module}.launcher_{launcher_module_name}."
+            f"Launcher{class_from_module(launcher_module_name)}"
+        )
         launcher_class = get_class(launcher_module)
         launcher = launcher_class.from_config(launcher_class, configuration)
         launcher.run(self.visualization_config_path, process_terminated)
         return launcher
 
     def launch_command(self, configuration):
+        """
+        Launch a visualization command.
+
+        Args:
+            configuration (dict): Config dictionary for the visualization command.
+        """
         pass
 
 
 class LauncherVisualizationException(Exception):
+    """Exception raised for errors in the LauncherVisualization."""
+
     def __init__(self, message):
+        """
+        Initialize the LauncherVisualizationException with an error message.
+
+        Args:
+            message (str): The error message describing the exception.
+        """
         super(LauncherWorldException, self).__init__(message)
