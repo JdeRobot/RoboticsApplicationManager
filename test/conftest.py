@@ -3,6 +3,32 @@
 import pytest
 from manager.manager.manager import Manager
 
+# Patch Server and FileWatchdog to avoid starting real servers
+
+
+class DummyServer:
+    """A dummy server to simulate server behavior for testing purposes."""
+
+    def __init__(self, port, update_callback):
+        """
+        Initialize the DummyServer with a port and update callback.
+
+        Args:
+            port (int): The port number for the dummy server.
+            update_callback (callable): The callback function for updates.
+        """
+        self.port = port
+        self.update_callback = update_callback
+        self.started = False
+
+    def start(self):
+        """Simulate starting the dummy server."""
+        self.started = True
+
+    def stop(self):
+        """Simulate stopping the dummy server."""
+        self.started = False
+
 
 class DummyConsumer:
     """A dummy consumer to capture messages sent by the Manager."""
@@ -70,19 +96,6 @@ def manager(monkeypatch):
             pass
 
     monkeypatch.setattr("manager.manager.manager.LauncherWorld", DummyLauncherWorld)
-
-    # Patch Server and FileWatchdog to avoid starting real servers
-    class DummyServer:
-        def __init__(self, port, update_callback):
-            self.port = port
-            self.update_callback = update_callback
-            self.started = False
-
-        def start(self):
-            self.started = True
-
-        def stop(self):
-            self.started = False
 
     class DummyFileWatchdog:
         def __init__(self, path, update_callback):

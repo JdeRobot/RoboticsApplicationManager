@@ -2,6 +2,7 @@
 
 import pytest
 from transitions import MachineError
+from conftest import DummyServer
 from test_utils import setup_manager_to_application_running
 from test_utils import setup_manager_to_world_ready
 from test_utils import setup_manager_to_visualization_ready
@@ -100,10 +101,13 @@ def test_terminate_visualization_valid(manager, monkeypatch):
 
 def test_terminate_visualization_invalid_machine_error(manager, monkeypatch):
     """
-    Test the valid terminate visualization transition in the Manager.
+    Test the invalid terminate visualization transition in the Manager.
 
     Ensure that the transition raises an error when executed from an invalid state.
     """
+    monkeypatch.setattr(
+        "manager.libs.applications.compatibility.server.Server", DummyServer
+    )
     # Ensure the manager is in a state where it can stop
     setup_manager_to_application_running(manager, monkeypatch)
 
