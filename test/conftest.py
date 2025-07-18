@@ -25,6 +25,10 @@ class DummyConsumer:
         self.messages.append((args, kwargs))
         self.last_message = (args, kwargs)
 
+    def stop(self):
+        """Simulate consumer stopping."""
+        pass
+
 
 @pytest.fixture
 def manager(monkeypatch):
