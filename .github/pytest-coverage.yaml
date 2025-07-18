@@ -2,8 +2,9 @@ name: Pytest with Coverage
 
 on:
   pull_request:
+    branches: [humble-devel]
+  push:
     branches: [humble-devel, testing]
-
 jobs:
   test:
     runs-on: ubuntu-latest
