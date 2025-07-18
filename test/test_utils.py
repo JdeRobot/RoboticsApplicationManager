@@ -1,11 +1,10 @@
-"""Utility functions for testing the manager state transitions."""
-
+"""Utilities for testing the manager state transitions."""
 
 import builtins
 import io
 
 
-def setup_manager_to_connected(manager):
+def setup_manager_to_connected(manager, monkeypatch):
     """Move manager to connected state."""
     manager.trigger("connect", event=None)
     assert manager.state == "connected"
@@ -14,7 +13,7 @@ def setup_manager_to_connected(manager):
 def setup_manager_to_world_ready(manager, monkeypatch):
     """Move manager to world_ready state."""
 
-    setup_manager_to_connected(manager)
+    setup_manager_to_connected(manager, monkeypatch)
 
     # Use ConfigurationModel for valid world config
     from manager.libs.launch_world_model import ConfigurationModel

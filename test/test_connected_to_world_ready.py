@@ -1,85 +1,13 @@
 """Tests for transitioning Manager from 'connected' to 'world_ready' state."""
 
 import pytest
-
-from manager.manager.manager import Manager
-
-
-class DummyConsumer:
-    """A dummy consumer to capture messages sent by the Manager."""
-
-    def __init__(self):
-        """
-        Initialize the DummyConsumer with empty message storage.
-
-        This constructor sets up the messages list and last_message attribute.
-        """
-        self.messages = []
-        self.last_message = None
-
-    def send_message(self, *args, **kwargs):
-        """
-        Capture and store a message sent by the Manager.
-
-        Stores the message arguments and updates the last_message attribute.
-        """
-        self.messages.append((args, kwargs))
-        self.last_message = (args, kwargs)
+from test_utils import setup_manager_to_connected
 
 
-@pytest.fixture
-def manager(monkeypatch):
-    """Fixture to provide a Manager instance with patched dependencies for testing."""
-
-    # Patch subprocess.check_output for ROS_DISTRO and IMAGE_TAG
-    def fake_check_output(cmd, *a, **k):
-        if "ROS_DISTRO" in cmd[-1]:
-            return b"humble"
-        if "IMAGE_TAG" in cmd[-1]:
-            return b"test_image_tag"
-        return b""
-
-    monkeypatch.setattr("subprocess.check_output", fake_check_output)
-
-    # Patch check_gpu_acceleration where it is used
-    monkeypatch.setattr(
-        "manager.manager.manager.check_gpu_acceleration", lambda x=None: "OFF"
-    )
-
-    # Patch os.makedirs and os.path.isdir to avoid real FS operations
-    monkeypatch.setattr("os.makedirs", lambda path, exist_ok=False: None)
-    monkeypatch.setattr("os.path.isdir", lambda path: True)
-
-    # Patch LauncherWorld to avoid launching real processes
-    class DummyLauncherWorld:
-        def __init__(self, *a, **k):
-            self.launched = False
-
-        def launch(self):
-            self.launched = True
-
-        def run(self):
-            self.launched = True
-            # Simulate running the world
-            return
-
-        def terminate(self):
-            pass
-
-    monkeypatch.setattr("manager.manager.manager.LauncherWorld", DummyLauncherWorld)
-
-    # Setup Manager with dummy consumer
-    m = Manager(host="localhost", port=12345)
-    m.consumer = DummyConsumer()
-    # Move to 'connected' state first
-    m.trigger("connect", event=None)
-    return m
-
-
-def test_connected_to_world_ready(manager):
+def test_connected_to_world_ready(manager, monkeypatch):
     """Test transitioning Manager from 'connected' to 'world_ready' state."""
     # Initial state should be 'connected'
-    assert manager.state == "connected"
+    setup_manager_to_connected(manager, monkeypatch)
 
     # Use ConfigurationModel for valid world config
     from manager.libs.launch_world_model import ConfigurationModel
@@ -110,6 +38,8 @@ def test_connected_to_world_ready(manager):
 
 def test_launch_world_with_invalid_world_config(manager, monkeypatch):
     """Test that launching world with invalid world config logs error."""
+    # Initial state should be 'connected'
+    setup_manager_to_connected(manager, monkeypatch)
 
     # Patch ConfigurationManager.validate to simulate a failed validation
     # but still return a dummy config
@@ -144,6 +74,8 @@ def test_launch_world_with_invalid_world_config(manager, monkeypatch):
 
 def test_launch_world_with_invalid_robot_config(manager, monkeypatch):
     """Test that launching world with invalid robot config logs error."""
+    # Initial state should be 'connected'
+    setup_manager_to_connected(manager, monkeypatch)
 
     # Patch ConfigurationManager.validate to simulate a failed validation
     # but still return a dummy config
@@ -184,10 +116,10 @@ def test_launch_world_with_invalid_robot_config(manager, monkeypatch):
     )
 
 
-def test_launch_world_with_no_world_config(manager):
+def test_launch_world_with_no_world_config(manager, monkeypatch):
     """Test that launching world with no world config does not raise an error."""
     # Initial state should be 'connected'
-    assert manager.state == "connected"
+    setup_manager_to_connected(manager, monkeypatch)
 
     # Use ConfigurationModel for valid robot config
     from manager.libs.launch_world_model import ConfigurationModel
@@ -211,10 +143,10 @@ def test_launch_world_with_no_world_config(manager):
     assert manager.world_launcher is None
 
 
-def test_launch_world_with_no_robot_config(manager):
+def test_launch_world_with_no_robot_config(manager, monkeypatch):
     """Test that launching world with no robot config does not raise an error."""
     # Initial state should be 'connected'
-    assert manager.state == "connected"
+    setup_manager_to_connected(manager, monkeypatch)
 
     # Use ConfigurationModel for valid world config
     from manager.libs.launch_world_model import ConfigurationModel
