@@ -7,3 +7,4 @@ __pycache__/
 
 # Log Files
 *.log
+*.coverage
