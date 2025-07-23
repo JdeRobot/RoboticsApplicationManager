@@ -3,44 +3,53 @@
 import pytest
 from manager.manager.manager import Manager
 
-# Patch Server and FileWatchdog to avoid starting real servers
-
 
 class DummyServer:
+    """A dummy server class to simulate server behavior for testing purposes."""
+
     def __init__(self, host, port, loglevel):
+        """Initialize the DummyServer with host, port, and loglevel."""
         self.host = host
         self.port = port
         self.loglevel = loglevel
 
     def set_fn_new_client(self, fn):
+        """Set the function to be called when a new client connects."""
         pass
 
     def set_fn_client_left(self, fn):
+        """Set the function to be called when a client leaves."""
         pass
 
     def set_fn_message_received(self, fn):
+        """Set the function to be called when a message is received."""
         pass
 
     def deny_new_connections(self):
+        """Simulate denying new connections (dummy implementation)."""
         pass
 
     def allow_new_connections(self):
+        """Simulate allowing new connections (dummy implementation)."""
         pass
 
     def send_message(self, client, message):
+        """Simulate sending a message to a client (dummy implementation)."""
         pass
 
     def run_forever(self, threaded=True):
+        """Simulate running the server forever (dummy implementation)."""
         pass
 
     def shutdown_gracefully(self):
+        """Simulate graceful shutdown of the server (dummy implementation)."""
         pass
 
 
 class DummyConsumer:
     """A dummy consumer to capture messages sent by the Manager."""
 
-    def __init__(self):
+    def __init__(self, host=None, port=None, queue=None):
         """
         Initialize the DummyConsumer with empty message storage.
 
@@ -68,6 +77,7 @@ def manager(monkeypatch):
     """Fixture to provide a Manager instance with patched dependencies for testing."""
 
     monkeypatch.setattr("manager.comms.websocket_server.WebsocketServer", DummyServer)
+    monkeypatch.setattr("manager.manager.manager.ManagerConsumer", DummyConsumer)
 
     # Patch subprocess.check_output for ROS_DISTRO and IMAGE_TAG
     def fake_check_output(cmd, *a, **k):
@@ -143,5 +153,4 @@ def manager(monkeypatch):
 
     # Setup Manager with dummy consumer
     m = Manager(host="localhost", port=12345)
-    m.consumer = DummyConsumer()
     return m
