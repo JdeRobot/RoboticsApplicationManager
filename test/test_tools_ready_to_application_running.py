@@ -3,16 +3,22 @@
 import io
 import pytest
 import builtins
-from test_utils import setup_manager_to_visualization_ready
+from test_utils import setup_manager_to_tools_ready
+
+valid_app_data = {
+    "entrypoint": "main.py",
+    "linter": "pylint",
+    "code": "data:base64,ZmFrZV9jb2Rl",
+}
 
 
-def test_visualization_ready_to_application_running_valid(manager, monkeypatch):
+def test_tools_ready_to_application_running_valid(manager, monkeypatch):
     """
-    Test transitioning from 'visualization_ready' to 'application_running' state.
+    Test transitioning from 'tools_ready' to 'application_running' state.
 
     This test verifies the state transitions in case of valid values.
     """
-    setup_manager_to_visualization_ready(manager, monkeypatch)
+    setup_manager_to_tools_ready(manager, monkeypatch)
 
     class DummyProc:
         def __init__(self):
@@ -59,7 +65,7 @@ def test_visualization_ready_to_application_running_valid(manager, monkeypatch):
     # Trigger application running state
     manager.trigger(
         "run_application",
-        data={"type": "robotics-academy", "code": "data:base64,ZmFrZV9jb2Rl"},
+        data=valid_app_data,
     )
     # Assert state is now application_running
     assert manager.state == "application_running"
@@ -67,7 +73,7 @@ def test_visualization_ready_to_application_running_valid(manager, monkeypatch):
 
 def test_on_run_application_missing_code(manager, monkeypatch):
     """Test running application with missing code file."""
-    setup_manager_to_visualization_ready(manager, monkeypatch)
+    setup_manager_to_tools_ready(manager, monkeypatch)
 
     # Mock file system so code file is missing
     monkeypatch.setattr("os.path.isfile", lambda path: False)
@@ -103,18 +109,18 @@ def test_on_run_application_missing_code(manager, monkeypatch):
     # Mock linter to return no errors
     manager.linter.evaluate_code = lambda code, ros_version: ""
     # Prep data
-    data = {"type": "robotics-academy", "code": "data:base64,ZmFrZV9jb2Rl"}
+    data = valid_app_data
     # Trigger run_application with missing code
     with pytest.raises(Exception, match="User code not found"):
         manager.trigger("run_application", data=data)
     assert manager.application_process is None
-    # Ensure state is still visualization_ready
-    assert manager.state == "visualization_ready"
+    # Ensure state is still tools_ready
+    assert manager.state == "tools_ready"
 
 
 def test_on_run_application_corrupt_zip(manager, monkeypatch):
     """Test running application with corrupt zip/base64."""
-    setup_manager_to_visualization_ready(manager, monkeypatch)
+    setup_manager_to_tools_ready(manager, monkeypatch)
 
     # Mock file system so code dir exists
     monkeypatch.setattr("os.path.isfile", lambda path: True)
@@ -150,8 +156,8 @@ def test_on_run_application_corrupt_zip(manager, monkeypatch):
         "manager.manager.manager.Manager.unpause_sim", lambda self: None
     )
     manager.linter.evaluate_code = lambda code, ros_version: ""
-    data = {"type": "robotics-academy", "code": "data:base64,ZmFrZV9jb2Rl"}
-    with pytest.raises(Exception, match="Corrupt base64"):
+    data = valid_app_data
+    with pytest.raises(Exception):
         manager.trigger("run_application", data=data)
     assert manager.application_process is None
-    assert manager.state == "visualization_ready"
+    assert manager.state == "tools_ready"

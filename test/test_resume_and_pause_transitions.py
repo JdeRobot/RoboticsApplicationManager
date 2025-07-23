@@ -3,7 +3,7 @@
 import pytest
 from transitions import MachineError
 from test_utils import setup_manager_to_application_running
-from test_utils import setup_manager_to_visualization_ready
+from test_utils import setup_manager_to_tools_ready
 
 
 class DummyProc:
@@ -38,7 +38,7 @@ def test_pause_transition_valid(manager, monkeypatch):
 def test_pause_transition_invalid_machine_error(manager, monkeypatch):
     """Test the invalid pause transition in the Manager."""
     # Ensure the manager is in a state where it can pause
-    setup_manager_to_visualization_ready(manager, monkeypatch)
+    setup_manager_to_tools_ready(manager, monkeypatch)
 
     # Mock needed methods and attributes
     monkeypatch.setattr("psutil.Process", lambda pid: DummyProc())
@@ -47,7 +47,7 @@ def test_pause_transition_invalid_machine_error(manager, monkeypatch):
     with pytest.raises(MachineError):
         manager.trigger("pause")
     # Check that the state has changed to 'paused'
-    assert manager.state == "visualization_ready"
+    assert manager.state == "tools_ready"
 
 
 def test_resume_transition_valid(manager, monkeypatch):

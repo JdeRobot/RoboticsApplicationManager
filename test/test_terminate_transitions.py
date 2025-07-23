@@ -5,7 +5,7 @@ from transitions import MachineError
 from conftest import DummyServer
 from test_utils import setup_manager_to_application_running
 from test_utils import setup_manager_to_world_ready
-from test_utils import setup_manager_to_visualization_ready
+from test_utils import setup_manager_to_tools_ready
 
 
 class DummyProc:
@@ -55,7 +55,7 @@ def test_terminate_application_valid(manager, monkeypatch):
     # Trigger the terminate transition
     manager.trigger("terminate_application")
     # Check that the state has changed to 'visualization_ready'
-    assert manager.state == "visualization_ready"
+    assert manager.state == "tools_ready"
 
 
 def test_terminate_application_invalid_machine_error(manager, monkeypatch):
@@ -85,21 +85,21 @@ def test_terminate_application_invalid_machine_error(manager, monkeypatch):
     assert manager.state == "world_ready"
 
 
-def test_terminate_visualization_valid(manager, monkeypatch):
+def test_terminate_tools_valid(manager, monkeypatch):
     """Test the valid terminate visualization transition in the Manager."""
     # Ensure the manager is in a state where it can stop
-    setup_manager_to_visualization_ready(manager, monkeypatch)
+    setup_manager_to_tools_ready(manager, monkeypatch)
     # Mock needed methods and attributes
     manager.visualization_launcher = DummyVisualizationLauncher()
     manager.terminate_harmonic_processes = lambda: None
 
     # Trigger the stop transition
-    manager.trigger("terminate_visualization")
+    manager.trigger("terminate_tools")
     # Check that the state has changed to 'world_ready'
     assert manager.state == "world_ready"
 
 
-def test_terminate_visualization_invalid_machine_error(manager, monkeypatch):
+def test_terminate_tools_invalid_machine_error(manager, monkeypatch):
     """
     Test the invalid terminate visualization transition in the Manager.
 
@@ -113,7 +113,7 @@ def test_terminate_visualization_invalid_machine_error(manager, monkeypatch):
 
     # Trigger the stop transition
     with pytest.raises(MachineError):
-        manager.trigger("terminate_visualization")
+        manager.trigger("terminate_tools")
     # Check that the state has not changed
     assert manager.state == "application_running"
 

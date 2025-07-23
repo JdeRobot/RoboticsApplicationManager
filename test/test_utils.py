@@ -3,6 +3,8 @@
 import builtins
 import io
 
+from manager.manager.launcher.launcher_robot import worlds
+
 
 def setup_manager_to_connected(manager, monkeypatch):
     """Move manager to connected state."""
@@ -19,14 +21,18 @@ def setup_manager_to_world_ready(manager, monkeypatch):
     from manager.libs.launch_world_model import ConfigurationModel
 
     valid_world_cfg = ConfigurationModel(
-        world="test_world", launch_file_path="/path/to/launch_file.launch"
+        type=next(iter(worlds)),  # Use the first world type
+        launch_file_path="/path/to/launch_file.launch",
     ).model_dump()
 
     event_data = {
         "world": valid_world_cfg,
         "robot": {
             "world": None,  # No robot specified
-            "robot_config": {"name": "test_robot", "type": "simple"},
+            "type": next(iter(worlds)),  # Use the first world type
+            "start_pose": [0, 0, 0, 0, 0, 0],
+            "launch_file_path": "/path/to/robot_launch_file.launch",
+            # "robot_config": {"name": "test_robot", "type": worlds[0].robot_type},
         },
     }
     manager.trigger("launch_world", data=event_data)
@@ -47,28 +53,41 @@ def setup_manager_to_world_ready(manager, monkeypatch):
             self.launched = False
 
 
-def setup_manager_to_visualization_ready(manager, monkeypatch):
+def setup_manager_to_tools_ready(manager, monkeypatch):
     """Move manager to visualization_ready state."""
 
     # Move to 'world_ready' state first
     setup_manager_to_world_ready(manager, monkeypatch)
 
+    class DummyToolsLauncher:
+        def __init__(self, *args, **kwargs):
+            self.launchers = []
+
+        def run(self, consumer=None):
+            # Simulate running the tools launcher
+            return
+
+        def terminate(self):
+            pass
+
+    monkeypatch.setattr("manager.manager.manager.LauncherTools", DummyToolsLauncher)
+
     # Trigger visualization ready state
     manager.trigger(
-        "prepare_visualization",
+        "prepare_tools",
         data={
-            "type": "gazebo_rae",
-            "file": "test_file",
+            "tools": [],
+            "config": None,
         },
     )
 
-    assert manager.state == "visualization_ready"
+    assert manager.state == "tools_ready"
 
 
 def setup_manager_to_application_running(manager, monkeypatch):
     """Move manager to application_running state."""
 
-    setup_manager_to_visualization_ready(manager, monkeypatch)
+    setup_manager_to_tools_ready(manager, monkeypatch)
 
     class DummyProc:
         def __init__(self):
@@ -115,7 +134,12 @@ def setup_manager_to_application_running(manager, monkeypatch):
     # Trigger application running state
     manager.trigger(
         "run_application",
-        data={"type": "robotics-academy", "code": "data:base64,ZmFrZV9jb2Rl"},
+        data={
+            "type": "robotics-academy",
+            "code": "data:base64,ZmFrZV9jb2Rl",
+            "entrypoint": "main.py",
+            "linter": "pylint",
+        },
     )
     # Assert state is now application_running
     assert manager.state == "application_running"

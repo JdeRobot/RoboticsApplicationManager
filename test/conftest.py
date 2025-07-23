@@ -109,22 +109,20 @@ def manager(monkeypatch):
         def stop(self):
             self.started = False
 
-    class DummyVisualizationLauncher:
+    class DummyToolsLauncher:
         def __init__(self, *args, **kwargs):
             self.launchers = []
 
-        def run(self):
-            # Simulate running the visualization launcher
+        def run(self, consumer):
+            # Simulate running the tools launcher
             return
 
         def terminate(self):
             pass
 
-    monkeypatch.setattr(
-        "manager.manager.manager.LauncherVisualization", DummyVisualizationLauncher
-    )
-    monkeypatch.setattr("manager.manager.manager.Server", DummyServer)
-    monkeypatch.setattr("manager.manager.manager.FileWatchdog", DummyFileWatchdog)
+    monkeypatch.setattr("manager.manager.manager.LauncherTools", DummyToolsLauncher)
+    # monkeypatch.setattr("manager.manager.manager.Server", DummyServer)
+    # monkeypatch.setattr("manager.manager.manager.FileWatchdog", DummyFileWatchdog)
 
     # Setup Manager with dummy consumer
     m = Manager(host="localhost", port=12345)

@@ -1,7 +1,26 @@
 """Tests for transitioning Manager from 'connected' to 'world_ready' state."""
 
 import pytest
+from manager.libs.launch_world_model import ConfigurationModel
 from test_utils import setup_manager_to_connected
+from manager.manager.launcher.launcher_robot import worlds
+
+valid_world_cfg = ConfigurationModel(
+    type=next(iter(worlds)), launch_file_path="/path/to/launch_file.launch"
+).model_dump()
+
+valid_robot_cfg = {
+    "world": None,  # No robot specified
+    "type": next(iter(worlds)),  # Use the first world type
+    "start_pose": [0, 0, 0, 0, 0, 0],
+    "launch_file_path": "/path/to/robot_launch_file.launch",
+}
+
+invalid_world_cfg = {
+    "world": "bad_world",
+    "type": next(iter(worlds)),
+    "launch_file_path": None,  # No launch file specified
+}  # missing launch_file_path
 
 
 def test_connected_to_world_ready(manager, monkeypatch):
@@ -9,19 +28,7 @@ def test_connected_to_world_ready(manager, monkeypatch):
     # Initial state should be 'connected'
     setup_manager_to_connected(manager, monkeypatch)
 
-    # Use ConfigurationModel for valid world config
-    from manager.libs.launch_world_model import ConfigurationModel
-
-    valid_world_cfg = ConfigurationModel(
-        world="test_world", launch_file_path="/path/to/launch_file.launch"
-    ).model_dump()
-    event_data = {
-        "world": valid_world_cfg,
-        "robot": {
-            "world": None,  # No robot specified
-            "robot_config": {"name": "test_robot", "type": "simple"},
-        },
-    }
+    event_data = {"world": valid_world_cfg, "robot": valid_robot_cfg}
     manager.trigger("launch_world", data=event_data)
 
     # State should now be 'world_ready'
@@ -51,19 +58,18 @@ def test_launch_world_with_invalid_world_config(manager, monkeypatch):
         # Simulate logging error, but return a dummy config to avoid UnboundLocalError
         return DummyConfig()
 
+    def fake_prepare_custom_universe(cfg):
+        raise ValueError("Invalid world configuration")
+
     monkeypatch.setattr(
         "manager.libs.launch_world_model.ConfigurationManager.validate", fake_validate
     )
+    manager.prepare_custom_universe = fake_prepare_custom_universe
 
-    invalid_world_cfg = {"world": "bad_world"}  # missing launch_file_path
-    event_data = {
-        "world": invalid_world_cfg,
-        "robot": {
-            "world": None,
-            "robot_config": {"name": "test_robot", "type": "simple"},
-        },
-    }
-    manager.trigger("launch_world", data=event_data)
+    event_data = {"world": invalid_world_cfg, "robot": valid_robot_cfg}
+
+    with pytest.raises(ValueError):
+        manager.trigger("launch_world", data=event_data)
     # Assert that world_launcher is created but has no useful config
     assert manager.world_launcher is not None
     assert (
@@ -91,17 +97,10 @@ def test_launch_world_with_invalid_robot_config(manager, monkeypatch):
         "manager.libs.launch_world_model.ConfigurationManager.validate", fake_validate
     )
 
-    valid_world_cfg = {
-        "world": "test_world",
-        "launch_file_path": "/path/to/launch_file.launch",
-    }
     invalid_robot_cfg = {"name": "", "type": ""}  # Invalid robot config
     event_data = {
         "world": valid_world_cfg,
-        "robot": {
-            "world": valid_world_cfg,
-            "robot_config": invalid_robot_cfg,
-        },
+        "robot": invalid_robot_cfg,
     }
 
     with pytest.raises(ValueError):
@@ -121,17 +120,11 @@ def test_launch_world_with_no_world_config(manager, monkeypatch):
     # Initial state should be 'connected'
     setup_manager_to_connected(manager, monkeypatch)
 
-    # Use ConfigurationModel for valid robot config
-    from manager.libs.launch_world_model import ConfigurationModel
-
-    valid_robot_cfg = ConfigurationModel(
-        world="test_world",  # No world specified
-        launch_file_path="/path/to/robot_launch_file.launch",
-    ).model_dump()
     event_data = {
         "world": {
             "world": None,  # No world specified
             "launch_file_path": None,  # No launch file specified
+            "type": None,
         },  # No world specified
         "robot": valid_robot_cfg,
     }
@@ -148,16 +141,13 @@ def test_launch_world_with_no_robot_config(manager, monkeypatch):
     # Initial state should be 'connected'
     setup_manager_to_connected(manager, monkeypatch)
 
-    # Use ConfigurationModel for valid world config
-    from manager.libs.launch_world_model import ConfigurationModel
-
-    valid_world_cfg = ConfigurationModel(
-        world="test_world", launch_file_path="/path/to/launch_file.launch"
-    ).model_dump()
-
     event_data = {
         "world": valid_world_cfg,
-        "robot": {"world": None, "robot_config": None},  # No robot specified
+        "robot": {
+            "world": None,
+            "robot_config": None,
+            "type": None,
+        },  # No robot specified
     }
     manager.trigger("launch_world", data=event_data)
 
