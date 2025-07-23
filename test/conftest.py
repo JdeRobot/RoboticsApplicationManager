@@ -75,10 +75,12 @@ def manager(monkeypatch):
         "manager.manager.manager.check_gpu_acceleration", lambda x=None: "OFF"
     )
 
-    # Patch get_ros_version
+    def dummy_run(self, start_pose=None):
+        print('run around')
+
     monkeypatch.setattr(
-        "manager.libs.process_utils.get_ros_version",
-        lambda: "humble"  # change if needed
+        "manager.manager.launcher.launcher_robot.LauncherRobot.run",
+        dummy_run
     )
 
     # Patch os.makedirs and os.path.isdir to avoid real FS operations
@@ -127,6 +129,7 @@ def manager(monkeypatch):
             pass
 
     monkeypatch.setattr("manager.manager.manager.LauncherTools", DummyToolsLauncher)
+    # Deprecated
     # monkeypatch.setattr("manager.manager.manager.Server", DummyServer)
     # monkeypatch.setattr("manager.manager.manager.FileWatchdog", DummyFileWatchdog)
 

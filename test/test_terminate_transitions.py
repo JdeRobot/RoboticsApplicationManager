@@ -20,7 +20,7 @@ class DummyProc:
         pass
 
 
-class DummyVisualizationLauncher:
+class DummyToolsLauncher:
     """Dummy class for testing visualization launching."""
 
     def launch(self):
@@ -90,7 +90,7 @@ def test_terminate_tools_valid(manager, monkeypatch):
     # Ensure the manager is in a state where it can stop
     setup_manager_to_tools_ready(manager, monkeypatch)
     # Mock needed methods and attributes
-    manager.visualization_launcher = DummyVisualizationLauncher()
+    manager.visualization_launcher = DummyToolsLauncher()
     manager.terminate_harmonic_processes = lambda: None
 
     # Trigger the stop transition
@@ -123,7 +123,7 @@ def test_terminate_universe_valid(manager, monkeypatch):
     # Ensure the manager is in a state where it can stop
     setup_manager_to_world_ready(manager, monkeypatch)
     # Mock needed methods and attributes
-    manager.visualization_launcher = DummyVisualizationLauncher()
+    manager.visualization_launcher = DummyToolsLauncher()
     manager.terminate_harmonic_processes = lambda: None
 
     # Trigger the stop transition
