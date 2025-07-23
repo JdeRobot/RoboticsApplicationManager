@@ -14,7 +14,7 @@ from manager.comms.consumer_message import (
     ManagerConsumerMessageException,
     ManagerConsumerMessage,
 )
-from manager.comms.websocker_server import WebsocketServer
+from manager.comms.websocket_server import WebsocketServer
 from manager.ram_logging.log_manager import LogManager
 
 

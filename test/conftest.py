@@ -7,27 +7,34 @@ from manager.manager.manager import Manager
 
 
 class DummyServer:
-    """A dummy server to simulate server behavior for testing purposes."""
-
-    def __init__(self, port, update_callback):
-        """
-        Initialize the DummyServer with a port and update callback.
-
-        Args:
-            port (int): The port number for the dummy server.
-            update_callback (callable): The callback function for updates.
-        """
+    def __init__(self, host, port, loglevel):
+        self.host = host
         self.port = port
-        self.update_callback = update_callback
-        self.started = False
+        self.loglevel = loglevel
 
-    def start(self):
-        """Simulate starting the dummy server."""
-        self.started = True
+    def set_fn_new_client(self, fn):
+        pass
 
-    def stop(self):
-        """Simulate stopping the dummy server."""
-        self.started = False
+    def set_fn_client_left(self, fn):
+        pass
+
+    def set_fn_message_received(self, fn):
+        pass
+
+    def deny_new_connections(self):
+        pass
+
+    def allow_new_connections(self):
+        pass
+
+    def send_message(self, client, message):
+        pass
+
+    def run_forever(self, threaded=True):
+        pass
+
+    def shutdown_gracefully(self):
+        pass
 
 
 class DummyConsumer:
@@ -60,6 +67,8 @@ class DummyConsumer:
 def manager(monkeypatch):
     """Fixture to provide a Manager instance with patched dependencies for testing."""
 
+    monkeypatch.setattr("manager.comms.websocket_server.WebsocketServer", DummyServer)
+
     # Patch subprocess.check_output for ROS_DISTRO and IMAGE_TAG
     def fake_check_output(cmd, *a, **k):
         if "ROS_DISTRO" in cmd[-1]:
@@ -76,11 +85,10 @@ def manager(monkeypatch):
     )
 
     def dummy_run(self, start_pose=None):
-        print('run around')
+        print("run around")
 
     monkeypatch.setattr(
-        "manager.manager.launcher.launcher_robot.LauncherRobot.run",
-        dummy_run
+        "manager.manager.launcher.launcher_robot.LauncherRobot.run", dummy_run
     )
 
     # Patch os.makedirs and os.path.isdir to avoid real FS operations
