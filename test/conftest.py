@@ -75,6 +75,12 @@ def manager(monkeypatch):
         "manager.manager.manager.check_gpu_acceleration", lambda x=None: "OFF"
     )
 
+    # Patch get_ros_version
+    monkeypatch.setattr(
+        "manager.libs.process_utils.get_ros_version",
+        lambda: "humble"  # change if needed
+    )
+
     # Patch os.makedirs and os.path.isdir to avoid real FS operations
     monkeypatch.setattr("os.makedirs", lambda path, exist_ok=False: None)
     monkeypatch.setattr("os.path.isdir", lambda path: True)
