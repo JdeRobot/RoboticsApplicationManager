@@ -30,17 +30,17 @@ The `Manager` class is the core of RAM, orchestrating operations and managing tr
   - `idle`: The initial state, waiting for a connection.
   - `connected`: Connected and ready to initiate processes.
   - `world_ready`: The world environment is set up and ready.
-  - `visualization_ready`: Visualization tools are prepared and ready.
+  - `tools_ready`: Tools are prepared and ready.
   - `application_running`: A robotic application is actively running.
   - `paused`: The application is paused.
 - **Transitions**:
   - `connect`: Moves from `idle` to `connected`.
   - `launch_world`: Initiates the world setup from `connected`.
-  - `prepare_visualization`: Prepares the visualization tools in `world_ready`.
-  - `run_application`: Starts the application in `visualization_ready` or `paused`.
+  - `prepare_tools`: Prepares the tools in `world_ready`.
+  - `run_application`: Starts the application in `tools_ready` or `paused`.
   - `pause`: Pauses the running application.
   - `resume`: Resumes a paused application.
-  - `terminate`: Stops the application and goes back to `visualization_ready`.
+  - `terminate`: Stops the application and goes back to `tools_ready`.
   - `stop`: Completely stops the application.
   - `disconnect`: Disconnects from the current session and returns to `idle`.
 - **Stateless Transitions**:
@@ -54,7 +54,7 @@ The `Manager` class is the core of RAM, orchestrating operations and managing tr
 
 - `on_connect(self, event)`: Manages the transition to the 'connected' state.
 - `on_launch_world(self, event)`: Prepares and launches the robotic world.
-- `on_prepare_visualization(self, event)`: Sets up visualization tools.
+- `on_prepare_tools(self, event)`: Sets up tools.
 - `on_run_application(self, event)`: Executes the robotic application.
 - `on_pause(self, msg)`: Pauses the running application.
 - `on_resume(self, msg)`: Resumes the paused application.
@@ -84,13 +84,13 @@ The `Manager` class is the core of RAM, orchestrating operations and managing tr
 4. **Termination and Cleanup**: `Manager` can instruct `LauncherWorld` to terminate the world environment through its `terminate` method. `LauncherWorld` ensures a clean and orderly shutdown of all modules and resources involved in the world setup.
 5. **Error Handling and Logging**: `Manager` handles exceptions and errors that may arise during the world setup or termination processes, ensuring robust operation.
 
-#### Interaction Between `Manager` and `LauncherVisualization`
+#### Interaction Between `Manager` and `LauncherTools`
 
-1. **Visualization Setup**: `Manager` initializes `LauncherVisualization` with a specific visualization configuration, which can include types like `console`, `gazebo_gra`, `gazebo_rae`, etc.
-2. **Module Launching for Visualization**: `LauncherVisualization` dynamically launches visualization modules based on the configuration provided by `Manager`.
-3. **State Management and Synchronization**: Upon successful setup of the visualization tools, `Manager` can update its state (e.g., to `visualization_ready`) to reflect the readiness of the visualization environment.
-4. **Termination of Visualization Tools**: `Manager` can instruct `LauncherVisualization` to terminate the current visualization setup using its `terminate` method.
-5. **Error Handling and Logging**: `Manager` is equipped to manage exceptions and errors that might occur during the setup or termination of visualization tools.
+1. **Visualization Setup**: `Manager` initializes `LauncherTools` with a specific tools configuration, which can include tools like `console`, `simulator`, `web_gui`, etc.
+2. **Module Launching for Tools**: `LauncherTools` dynamically launches tools modules based on the configuration provided by `Manager`.
+3. **State Management and Synchronization**: Upon successful setup of the tools, `Manager` can update its state (e.g., to `tools_ready`) to reflect the readiness of the tools.
+4. **Termination of Tools**: `Manager` can instruct `LauncherTools` to terminate the current tools setup using its `terminate` method.
+5. **Error Handling and Logging**: `Manager` is equipped to manage exceptions and errors that might occur during the setup or termination of the tools.
 
 #### Interaction Between `Manager` and `application_process`
 
@@ -100,7 +100,7 @@ The `Manager` class is the core of RAM, orchestrating operations and managing tr
 4. **Error Handling and Logging**: `Manager` is responsible for handling any errors or exceptions that occur during the execution of the `application_process`.
 5. **State Synchronization**: The state of the `application_process` is closely synchronized with the state machine in `Manager`.
 
-#### Interaction Between `Manager` and `Server` (Specific to RoboticsAcademy Applications)
+#### Interaction Between `Manager` and `Server` (Specific to RoboticsAcademy Applications) (Now inside tool web_gui)
 
 1. **Dedicated WebSocket Server for GUI Updates**: `Server` is used exclusively for RoboticsAcademy applications that require real-time interaction with a web-based GUI.
 2. **Client Communication for GUI Module**: For RoboticsAcademy applications with a GUI module, `Server` handles incoming and outgoing messages.
@@ -120,10 +120,10 @@ The `Manager` class is the core of RAM, orchestrating operations and managing tr
    - Once connected, the client can request RAM to launch a robotic world by sending a `launch_world` command.
    - RAM transitions to the `world_ready` state after successfully setting up the world environment.
 
-3. **Setting Up Visualization**:
+3. **Setting Up Tools**:
 
-   - After the world is ready, the client requests RAM to prepare the visualization tools with a `prepare_visualization` command.
-   - RAM transitions to the `visualization_ready` state, indicating that visualization tools are set up and ready.
+   - After the world is ready, the client requests RAM to prepare the tools with a `prepare_tools` command.
+   - RAM transitions to the `tools_ready` state, indicating that the tools are set up and ready.
 
 4. **Running an Application**:
 
@@ -138,7 +138,7 @@ The `Manager` class is the core of RAM, orchestrating operations and managing tr
 6. **Stopping the Application**:
 
    - Finally, the client can send a `stop` command to halt the application.
-   - RAM stops the application and transitions back to the `visualization_ready` state, ready for new commands.
+   - RAM stops the application and transitions back to the `tools_ready` state, ready for new commands.
 
 7. **Disconnecting**:
    - Once all tasks are completed, the client can disconnect from RAM, which then returns to the `idle` state, ready for a new session.

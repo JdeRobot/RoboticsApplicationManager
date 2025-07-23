@@ -4,6 +4,7 @@ import threading
 import subprocess
 import os
 import signal
+import sys
 
 
 class DockerThread(threading.Thread):

@@ -8,9 +8,9 @@ from pydantic import BaseModel, ValidationError
 
 
 class ConfigurationModel(BaseModel):
-    """Pydantic model for robotics application world and launch file configuration."""
+    """Pydantic model for robotics application world type and launch file config."""
 
-    world: str
+    type: str
     launch_file_path: str
 
 

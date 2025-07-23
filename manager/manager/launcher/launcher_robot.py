@@ -70,7 +70,7 @@ worlds = {
 class LauncherRobot(BaseModel):
     """Class for managing robot launchers in different simulation worlds."""
 
-    world: str
+    type: str
     launch_file_path: str
     module: str = ".".join(__name__.split(".")[:-1])
     ros_version: int = get_ros_version()
@@ -81,7 +81,7 @@ class LauncherRobot(BaseModel):
         """Run the robot launcher with an optional start pose."""
         if start_pose is not None:
             self.start_pose = start_pose
-        for module in worlds[self.world][str(self.ros_version)]:
+        for module in worlds[self.type][str(self.ros_version)]:
             module["launch_file"] = self.launch_file_path
             launcher = self.launch_module(module)
             self.launchers.append(launcher)
