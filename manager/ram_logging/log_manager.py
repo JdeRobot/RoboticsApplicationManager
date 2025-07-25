@@ -1,3 +1,9 @@
+"""
+LogManager singleton for managing application logging.
+
+Has support for colored and length-limited log formatting.
+"""
+
 import logging
 import os
 
@@ -6,6 +12,8 @@ from manager.libs.singleton import singleton
 
 # Clase para un Formatter personalizado que añade colores
 class ColorFormatter(logging.Formatter):
+    """Custom formatter that adds colors to log messages based on their log level."""
+
     # Diccionario de colores para diferentes niveles de log
     COLORS = {
         logging.ERROR: "\033[91m",  # Rojo para errores
@@ -16,6 +24,7 @@ class ColorFormatter(logging.Formatter):
     RESET = "\033[0m"  # Resetear a color por defecto
 
     def format(self, record):
+        """Format the log record with color based on its log level."""
         color = self.COLORS.get(record.levelno)
         message = super().format(record)
         if color:
@@ -24,6 +33,8 @@ class ColorFormatter(logging.Formatter):
 
 
 class MaxLengthColorFormatter(logging.Formatter):
+    """Custom formatter that adds colors and limits log message length."""
+
     # Diccionario de colores para diferentes niveles de log
     COLORS = {
         logging.ERROR: "\033[91m",  # Rojo para errores
@@ -35,6 +46,7 @@ class MaxLengthColorFormatter(logging.Formatter):
     MAX_LENGTH = 1000
 
     def format(self, record):
+        """Format the log record with color and limit its length."""
         color = self.COLORS.get(record.levelno)
         msg = super().format(record)
         if color:
@@ -50,13 +62,23 @@ class MaxLengthColorFormatter(logging.Formatter):
 
 @singleton
 class LogManager:
+    """Singleton class for managing application logging."""
+
     def __init__(self):
+        """
+        Initialize the LogManager.
+
+        Sets up file and console logging handlers with appropriate formatters.
+        """
         log_path = os.getcwd()
         log_level = logging.INFO
         log_to_console = True
 
         self.log_file = os.path.join(log_path, "ram.log")
-        log_format = "%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s] (%(name)s)  %(message)s"
+        log_format = (
+            "%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s] "
+            "(%(name)s)  %(message)s"
+        )
         date_format = "%H:%M:%S"
         self.log_formatter = logging.Formatter(log_format, date_format)
         self.color_formatter = ColorFormatter(

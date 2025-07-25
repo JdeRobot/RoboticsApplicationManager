@@ -1,3 +1,10 @@
+"""Manager module for Robotics Application Manager.
+
+This module defines the Manager class and related logic for managing applications,
+including launching worlds, robots, visualizations,
+and handling code analysis and formatting.
+"""
+
 from __future__ import annotations
 import json
 import sys
@@ -43,6 +50,14 @@ from manager.manager.editor.serializers import serialize_completions
 
 
 class Manager:
+    """
+    Manager class for Robotics Application Manager.
+
+    This class manages the lifecycle of robotics applications,
+    including launching worlds, robots, visualizations,
+    handling code analysis, formatting, and communication with clients.
+    """
+
     states = [
         "idle",
         "connected",
@@ -175,7 +190,15 @@ class Manager:
     ]
 
     def __init__(self, host: str, port: int):
+        """
+        Initialize the Manager instance with the given host and port.
 
+        This method sets up the state machine, initializes the ROS version,
+        creates a message queue, and prepares the consumer for communication.
+        Parameters:
+            host (str): The host address to listen to.
+            port (int): The port number to listen to.
+        """
         self.machine = Machine(
             model=self,
             states=Manager.states,
@@ -207,27 +230,46 @@ class Manager:
             os.makedirs(binaries_dir)
 
     def state_change(self, event):
+        """
+        Handle actions to be performed after a state change in the state machine.
+
+        Parameters:
+            event: The event object associated with the state change.
+        """
         LogManager.logger.info(f"State changed to {self.state}")
         if self.consumer is not None:
             self.consumer.send_message({"state": self.state}, command="state-changed")
 
     def update(self, data):
-        LogManager.logger.debug(f"Sending update to client")
+        """
+        Send an update message to the client with the provided data.
+
+        Parameters:
+            data: The data to be sent in the update message.
+        """
+        LogManager.logger.debug("Sending update to client")
         if self.consumer is not None:
             self.consumer.send_message({"update": data}, command="update")
 
     def update_bt_studio(self, data):
-        LogManager.logger.debug(f"Sending update to client")
+        """
+        Send an update message to the client for BT Studio with the provided data.
+
+        Parameters:
+            data: The data to be sent in the update message.
+        """
+        LogManager.logger.debug("Sending update to client")
         if self.consumer is not None:
             self.consumer.send_message({"update": data}, command="update")
 
     def on_connect(self, event):
         """
-        This method is triggered when the application transitions to the 'connected' state.
+        Triggered when the application transitions to the 'connected' state.
+
         It sends an introspection message to a consumer with key information.
 
         Parameters:
-            event (Event): The event object containing data related to the 'connect' event.
+            event (Event): Event object containing data related to the 'connect' event.
 
         The message sent to the consumer includes:
         - `robotics_backend_version`: The current Robotics Backend version.
@@ -247,7 +289,8 @@ class Manager:
 
     def on_launch_world(self, event):
         """
-        Handles the 'launch' event, transitioning the application from 'connected' to 'ready' state.
+        Handle the 'launch' event, transitioning the application from 'connected' to 'ready' state.
+
         This method initializes the launch process based on the provided configuration.
 
         During the launch process, it validates and processes the configuration data received from the event.
@@ -312,7 +355,14 @@ class Manager:
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
+        """
+        Prepare and extract a custom universe from a base64-encoded zip file.
 
+        Then build it in the workspace.
+
+        Parameters:
+            cfg_dict (dict): Config dictionary containing the universe name and zip data
+        """
         # Unzip the app
         if cfg_dict["zip"].startswith("data:"):
             _, _, zip_file = cfg_dict["zip"].partition("base64,")
@@ -358,7 +408,9 @@ class Manager:
 
     def on_style_check_application(self, event):
         """
-        Handles the 'style_check' event, does not change the state and returns the current state.
+        Handle the 'style_check' event.
+
+        Does not change the state and returns the current state.
 
         It uses the linter to check if the style of the code is correct, if there
         are errors it writes them in all the consoles and raises the errors.
@@ -371,7 +423,7 @@ class Manager:
         """
 
         def find_docker_console():
-            """Search console in docker different of /dev/pts/0"""
+            """Search console in docker different of /dev/pts/0 ."""
             pts_consoles = [
                 f"/dev/pts/{dev}" for dev in os.listdir("/dev/pts/") if dev.isdigit()
             ]
@@ -425,8 +477,9 @@ class Manager:
 
     def on_code_analysis(self, event):
         """
-        Handles the 'code_analysis' event, does not change the state and returns the current state.
+        Handle the 'code_analysis' event.
 
+        Does not change the state and returns the current state.
         It uses pylint to check for the errors and warnings in the code.
 
         Parameters:
@@ -435,7 +488,6 @@ class Manager:
         Returns:
             Sends the output of the pylint command in the code-analysis event for the frontend.
         """
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code_string = app_cfg["code"]
@@ -490,17 +542,18 @@ class Manager:
 
     def on_code_format(self, event):
         """
-        Handles the 'code_format' event, does not change the state and returns the current state.
+        Handle the 'code_format' event.
 
+        Does not change the state and returns the current state.
         It uses the black formatter to format the user code.
 
         Parameters:
             event (Event): Has the fields code (user code).
 
         Returns:
-            Sends the output of the black format in the code-format event for the frontend.
+            Sends the output of the black format in
+                the code-format event for the frontend.
         """
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code = app_cfg["code"]
@@ -524,17 +577,19 @@ class Manager:
 
     def on_code_autocomplete(self, event):
         """
-        Handles the 'code_autocomplete' event, does not change the state and returns the current state.
+        Handle the 'code_autocomplete' event.
 
-        It uses jedi to find the possible autocompletions in the user code give the cursor position.
+        Does not change the state and returns the current state.
+        It uses jedi to find the possible autocompletions in the user code
+            given the cursor position.
 
         Parameters:
             event (Event): Has the fields code (user code), line and col .
 
         Returns:
-            Sends the possible completions in the code-autocomplete event for the frontend.
+            Sends the possible completions in
+                the code-autocomplete event for the frontend.
         """
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code = app_cfg["code"]
@@ -568,8 +623,19 @@ class Manager:
             LogManager.logger.info("Error formating code" + str(e))
 
     def on_run_application(self, event):
+        """
+        Handle the 'run_application' event.
+
+        This method manages the process of running the user application,
+        including preparing the code, handling console output,
+        and launching the application process.
+
+        Parameters:
+            event: The event object containing application configuration and code data.
+        """
+
         def find_docker_console():
-            """Search console in docker different of /dev/pts/0"""
+            """Search console in docker different of /dev/pts/0 ."""
             pts_consoles = [
                 f"/dev/pts/{dev}" for dev in os.listdir("/dev/pts/") if dev.isdigit()
             ]
@@ -654,7 +720,10 @@ class Manager:
 
     def terminate_harmonic_processes(self):
         """
-        Terminate all processes within the Docker container whose command line contains 'gz' or 'launch'.
+        Terminate all Harmonic processes in the container.
+
+        Terminate all processes in the container
+        whose command line contains 'gz' or 'launch'.
         """
         LogManager.logger.info("Terminate Harmonic process")
         keywords = ["gz", "launch"]
@@ -699,7 +768,15 @@ class Manager:
                 )
 
     def on_terminate_application(self, event):
+        """
+        Handle the 'terminate_application' event.
 
+        Terminates the currently running application process,
+        pauses and resets the simulation if applicable.
+
+        Parameters:
+            event: The event object associated with the termination request.
+        """
         if self.application_process:
             try:
                 stop_process_and_children(self.application_process)
@@ -716,14 +793,28 @@ class Manager:
         self.terminate_harmonic_processes()
 
     def on_terminate_universe(self, event):
+        """
+        Handle the 'terminate_universe' event.
 
-        if self.world_launcher != None:
+        Terminates the world and robot launchers if they exist
+        and terminates related Harmonic processes.
+
+        Parameters:
+            event: The event object associated with the termination request.
+        """
+        if self.world_launcher is not None:
             self.world_launcher.terminate()
-        if self.robot_launcher != None:
+        if self.robot_launcher is not None:
             self.robot_launcher.terminate()
         self.terminate_harmonic_processes()
 
     def on_disconnect(self, event):
+        """
+        Handle the 'disconnect' event.
+
+        This method stops all running processes,
+        terminates launchers, and restarts the script.
+        """
 
         try:
             self.consumer.stop()
@@ -786,6 +877,12 @@ class Manager:
             self.reset_sim()
 
     def on_resume(self, msg):
+        """
+        Resume the application process if it exists, otherwise reset the simulation.
+
+        Parameters:
+            msg: The event or message triggering the resume action.
+        """
         if self.application_process is not None:
             try:
                 proc = psutil.Process(self.application_process.pid)
@@ -806,6 +903,13 @@ class Manager:
         self.tools_launcher.unpause()
 
     def reset_sim(self):
+        """
+        Reset the simulation environment and relaunch the robot if applicable.
+
+        This method terminates the robot launcher, resets the simulation state using
+        the appropriate ROS or Gazebo services based on the visualization type,
+        and relaunches the robot if a launcher is available.
+        """
         if self.robot_launcher:
             self.robot_launcher.terminate()
 
@@ -819,8 +923,10 @@ class Manager:
 
     def start(self):
         """
-        Starts the RAM
-        RAM must be run in main thread to be able to handle signaling other processes, for instance ROS launcher.
+        Start the RAM.
+
+        RAM must be run in main thread to be able to handle signaling other processes,
+        for instance ROS launcher.
         """
         LogManager.logger.info(
             f"Starting RAM consumer in {self.consumer.server}:{self.consumer.port}"
