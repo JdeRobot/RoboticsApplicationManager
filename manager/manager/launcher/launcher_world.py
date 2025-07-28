@@ -9,7 +9,7 @@ worlds = {
     "gazebo": {
         "2": [
             {
-                "type": "module",
+                "type": "gazebo",
                 "module": "ros2_api",
                 "parameters": [],
                 "launch_file": [],
@@ -19,7 +19,7 @@ worlds = {
     "gz": {
         "2": [
             {
-                "type": "module",
+                "type": "gz",
                 "module": "ros2_api",
                 "parameters": [],
                 "launch_file": [],

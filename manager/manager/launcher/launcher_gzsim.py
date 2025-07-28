@@ -60,6 +60,7 @@ class LauncherGzsim(ILauncher):
     width: int
     running: bool = False
     threads: List[Any] = []
+    acceptsMsgs: bool = False
     gz_vnc: Any = Vnc_server()
 
     def run(self, config_file, callback):

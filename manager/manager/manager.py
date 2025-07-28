@@ -652,51 +652,6 @@ class Manager:
 
         LogManager.logger.info("Run application transition finished")
 
-    def terminate_harmonic_processes(self):
-        """
-        Terminate all processes within the Docker container whose command line contains 'gz' or 'launch'.
-        """
-        LogManager.logger.info("Terminate Harmonic process")
-        keywords = ["gz", "launch"]
-        for keyword in keywords:
-            try:
-                ps_aux_cmd = ["ps", "aux"]
-                grep_cmd = ["grep", keyword]
-                grep_exclude_cmd = ["grep", "-v", "grep"]
-
-                ps_aux_proc = subprocess.Popen(ps_aux_cmd, stdout=subprocess.PIPE)
-                grep_proc = subprocess.Popen(
-                    grep_cmd, stdin=ps_aux_proc.stdout, stdout=subprocess.PIPE
-                )
-                exclude_grep_proc = subprocess.Popen(
-                    grep_exclude_cmd, stdin=grep_proc.stdout, stdout=subprocess.PIPE
-                )
-
-                ps_aux_proc.stdout.close()
-                grep_proc.stdout.close()
-
-                output = exclude_grep_proc.communicate()[0].decode("utf-8")
-
-                for line in output.splitlines():
-                    try:
-                        # Extract PID
-                        pid = int(line.split()[1])
-                        subprocess.run(["kill", "-15", str(pid)], check=True)
-
-                        # Avoid zombies
-                        try:
-                            os.waitpid(pid, 0)
-                        except ChildProcessError:
-                            pass
-                    except Exception as e:
-                        LogManager.logger.exception(
-                            f"Failed to terminate process with line: {line}. Error: {e}"
-                        )
-
-            except Exception as e:
-                LogManager.logger.exception(
-                    f"Failed to search and terminate processes with keyword '{keyword}': {e}"
-                )
 
     def on_terminate_application(self, event):
 
@@ -713,7 +668,6 @@ class Manager:
     def on_terminate_tools(self, event):
 
         self.tools_launcher.terminate()
-        self.terminate_harmonic_processes()
 
     def on_terminate_universe(self, event):
 
@@ -721,7 +675,6 @@ class Manager:
             self.world_launcher.terminate()
         if self.robot_launcher != None:
             self.robot_launcher.terminate()
-        self.terminate_harmonic_processes()
 
     def on_disconnect(self, event):
 
@@ -754,8 +707,6 @@ class Manager:
                 self.world_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")
-
-        self.terminate_harmonic_processes()
 
         # Reiniciar el script
         python = sys.executable
@@ -864,7 +815,6 @@ class Manager:
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating world launcher")
 
-            self.terminate_harmonic_processes()
             exit()
 
         signal.signal(signal.SIGINT, signal_handler)

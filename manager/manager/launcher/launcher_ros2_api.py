@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import List, Any
 import time
 import stat
@@ -8,7 +9,6 @@ from manager.manager.docker_thread.docker_thread import DockerThread
 import subprocess
 
 import logging
-
 
 class LauncherRos2Api(ILauncher):
     type: str
@@ -43,38 +43,22 @@ class LauncherRos2Api(ILauncher):
                     thread.join()
                 self.threads.remove(thread)
 
-        kill_cmd = "pkill -9 -f "
-        cmd = kill_cmd + "gzserver"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-        cmd = kill_cmd + "spawn_model.launch.py"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
+        print("Type:", self.type)
+
+        to_kill = ["launch.py"]
+        if self.type == "gz":
+            to_kill = ["gz", "launch.py"]
+        else:
+            to_kill = ["gzserver", "launch.py"]
 
         kill_cmd = "pkill -9 -f "
-        cmd = kill_cmd + "gzserver"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-        cmd = kill_cmd + "spawn_model.launch.py"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
+        for i in to_kill:
+            cmd = kill_cmd + i
+            print(cmd)
+            subprocess.call(
+                cmd,
+                shell=True,
+                stdout=sys.stdout,
+                bufsize=1024,
+                universal_newlines=True,
+            )
