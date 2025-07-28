@@ -10,6 +10,7 @@ import subprocess
 
 import logging
 
+
 class LauncherRos2Api(ILauncher):
     type: str
     module: str

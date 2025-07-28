@@ -652,7 +652,6 @@ class Manager:
 
         LogManager.logger.info("Run application transition finished")
 
-
     def on_terminate_application(self, event):
 
         if self.application_process:
