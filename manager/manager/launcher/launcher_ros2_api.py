@@ -56,7 +56,7 @@ class LauncherRos2Api(ILauncher):
             subprocess.call(
                 cmd,
                 shell=True,
-                stdout=sys.stdout,
+                stdout=subprocess.PIPE,
                 bufsize=1024,
                 universal_newlines=True,
             )
