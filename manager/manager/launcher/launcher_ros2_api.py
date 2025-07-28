@@ -43,8 +43,6 @@ class LauncherRos2Api(ILauncher):
                     thread.join()
                 self.threads.remove(thread)
 
-        print("Type:", self.type)
-
         to_kill = ["launch.py"]
         if self.type == "gz":
             to_kill = ["gz", "launch.py"]
@@ -54,7 +52,6 @@ class LauncherRos2Api(ILauncher):
         kill_cmd = "pkill -9 -f "
         for i in to_kill:
             cmd = kill_cmd + i
-            print(cmd)
             subprocess.call(
                 cmd,
                 shell=True,
