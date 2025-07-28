@@ -1,12 +1,28 @@
+"""Linter module for evaluating and cleaning Python code using pylint."""
+
 import glob
 import re
-import os
+import os  # noqa: F401
 import subprocess
 import tempfile
 
 
 class Lint:
+    """Class for evaluating and cleaning Python code using pylint."""
+
     def clean_pylint_output(self, result, warnings=False):
+        """
+        Clean the output from pylint.
+
+        By removing unwanted messages and formatting errors.
+
+        Args:
+            result (str): The output string from pylint.
+            warnings (bool): Whether to include warnings in the output.
+
+        Returns:
+            str: The cleaned and formatted output.
+        """
 
         # result = result.replace(os.path.basename(code_file_name), 'user_code')
         # Define the patterns to remove
@@ -16,13 +32,15 @@ class Lint:
             r":[0-9]+:[0-9]+: R[0-9]{4}:.*",  # Refactor messages
             r":[0-9]+:[0-9]+: error.*EOF.*",  # Unexpected EOF error
             r":[0-9]+:[0-9]+: E1101:.*Module 'ompl.*",  # ompl E1101 error
-            r":[0-9]+:[0-9]+:.*value.*argument.*unbound.*method.*",  # No value for argument 'self' error
+            (
+                r":[0-9]+:[0-9]+:.*value.*argument.*unbound.*method.*"
+            ),  # No value for argument 'self' error
             r":[0-9]+:[0-9]+: E1111:.*",  # Assignment from no return error
             r":[0-9]+:[0-9]+: E1136:.*",  # E1136 until issue is resolved
         ]
 
         if not warnings:
-            # Remove convention, refactor, and warning messages if warnings are not desired
+            # Remove convention, refactor, and warning msgs if warnings are not desired
             for pattern in patterns[:3]:
                 result = re.sub(r"^[^:]*" + pattern, "", result, flags=re.MULTILINE)
 
@@ -43,6 +61,15 @@ class Lint:
         return result
 
     def append_rating_if_missing(self, result):
+        """
+        Append a default rating message to the result if it is missing.
+
+        Args:
+            result (str): The output string from pylint.
+
+        Returns:
+            str: The result string with the rating message appended if necessary.
+        """
         rating_message = (
             "-----------------------------------\nYour code has been rated at 0.00/10"
         )
@@ -58,13 +85,28 @@ class Lint:
     def evaluate_code(
         self, code, ros_version, warnings=False, py_lint_source="pylint_checker.py"
     ):
+        """
+        Evaluate the provided Python code using pylint and return the cleaned output.
+
+        Args:
+            code (str): The Python code to evaluate.
+            ros_version (str): The ROS version to determine environment settings.
+            warnings (bool, optional): Whether to include warnings in the output.
+                Defaults to False.
+            py_lint_source (str, optional): The pylint checker source file.
+                Defaults to "pylint_checker.py".
+
+        Returns:
+            str: The cleaned and formatted pylint output.
+        """
         try:
             code = re.sub(r"from HAL import HAL", "from hal import HAL", code)
             code = re.sub(r"from GUI import GUI", "from gui import GUI", code)
             code = re.sub(r"from MAP import MAP", "from map import MAP", code)
             code = re.sub(r"\nimport cv2\n", "\nfrom cv2 import cv2\n", code)
 
-            # Avoids EOF error when iterative code is empty (which prevents other errors from showing)
+            # Avoids EOF error when iterative code is empty
+            # (which prevents other errors from showing)
             while_position = re.search(
                 r"[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:",
                 code,
@@ -89,9 +131,17 @@ class Lint:
 
             command = ""
             if "humble" in str(ros_version):
-                command = f"export PYTHONPATH=$PYTHONPATH:/workspace/code; python3 /RoboticsApplicationManager/manager/manager/lint/{py_lint_source}"
+                command = (
+                    f"export PYTHONPATH=$PYTHONPATH:/workspace/code; "
+                    f"python3 /RoboticsApplicationManager/manager/manager/lint/"
+                    f"{py_lint_source}"
+                )
             else:
-                command = f"export PYTHONPATH=$PYTHONPATH:/workspace/code; python3 /RoboticsApplicationManager/manager/manager/lint/{py_lint_source}"
+                command = (
+                    f"export PYTHONPATH=$PYTHONPATH:/workspace/code; "
+                    f"python3 /RoboticsApplicationManager/manager/manager/lint/"
+                    f"{py_lint_source}"
+                )
 
             ret = subprocess.run(command, capture_output=True, text=True, shell=True)
 
