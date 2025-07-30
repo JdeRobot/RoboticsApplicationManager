@@ -61,7 +61,7 @@ class LauncherTools(BaseModel):
 
     def run(self, consumer):
         for tool in self.tools:
-            if tool == "simulator":
+            if tool == "simulator" and self.world_type:
                 tool = simulator[self.world_type]["tool"]
             module = tools[tool]
             launcher = self.launch_module(tool, module, consumer)
