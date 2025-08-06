@@ -653,7 +653,7 @@ class Manager:
 
             # raise Exception("No active console other than /dev/pts/0")
             return consoles
-        
+
         def prepare_RA_code(code_path):
             f = open(code_path, "r")
             code = f.read()
@@ -675,7 +675,7 @@ class Manager:
             else:
                 console_path = find_docker_console()
                 for i in console_path:
-                    with open(i, 'w') as console:
+                    with open(i, "w") as console:
                         console.write(errors + "\n\n")
 
                 raise Exception(errors)

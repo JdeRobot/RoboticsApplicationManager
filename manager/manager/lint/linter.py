@@ -119,14 +119,18 @@ class Lint:
 
             if loop_match is None:
                 return "ERROR: No event loop found. Add 'while True:', 'rclpy.spin(node)', or 'rclpy.spin_once(node)' or use 'Rate'"
-            
-            if "rclpy.spin" in loop_match.group() or "rclpy.spin_once" in loop_match.group() or ".create_rate" in loop_match.group():
+
+            if (
+                "rclpy.spin" in loop_match.group()
+                or "rclpy.spin_once" in loop_match.group()
+                or ".create_rate" in loop_match.group()
+            ):
                 # Keep the code as-is; don't modify it
                 pass
             else:
                 # Modify code for while True (add frequency control)
-                sequential_code = code[:loop_match.start()]
-                iterative_code = code[loop_match.start():]
+                sequential_code = code[: loop_match.start()]
+                iterative_code = code[loop_match.start() :]
                 iterative_code = re.sub(loop_regex, "\n", iterative_code, 1)
                 iterative_code = re.sub(r"^[ ]{4}", "", iterative_code, flags=re.M)
                 code = sequential_code + iterative_code
