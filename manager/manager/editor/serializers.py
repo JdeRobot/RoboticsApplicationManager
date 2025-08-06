@@ -2,8 +2,7 @@ from types import NoneType
 
 
 class Completion:
-
-    def __init__(self,completion):
+    def __init__(self, completion):
         self.label = completion.name
         self.code = completion.name_with_symbols
         self.docstring = completion.docstring(raw=True)
@@ -12,6 +11,7 @@ class Completion:
             self.detail = self.type
         else:
             self.detail = completion.parent().full_name
+
 
 def serialize_completions(completions):
     serialized = []
@@ -23,6 +23,7 @@ def serialize_completions(completions):
 
 
 from rest_framework import serializers
+
 
 class CompletionSerializer(serializers.Serializer):
     label = serializers.CharField(max_length=200)

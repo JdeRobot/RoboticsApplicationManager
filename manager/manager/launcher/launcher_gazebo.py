@@ -1,3 +1,4 @@
+import sys
 from manager.manager.launcher.launcher_interface import ILauncher
 from manager.manager.docker_thread.docker_thread import DockerThread
 from manager.manager.vnc.vnc_server import Vnc_server
@@ -12,13 +13,26 @@ import stat
 from typing import List, Any
 
 
-class LauncherGazeboView(ILauncher):
+def call_service(service, service_type, request_data="{}"):
+    command = f"ros2 service call {service} {service_type} '{request_data}'"
+    subprocess.call(
+        f"{command}",
+        shell=True,
+        stdout=sys.stdout,
+        stderr=subprocess.STDOUT,
+        bufsize=1024,
+        universal_newlines=True,
+    )
+
+
+class LauncherGazebo(ILauncher):
     display: str
     internal_port: int
     external_port: int
     height: int
     width: int
     running: bool = False
+    acceptsMsgs: bool = False
     threads: List[Any] = []
     gz_vnc: Any = Vnc_server()
 
@@ -50,6 +64,15 @@ class LauncherGazeboView(ILauncher):
         wait_for_process_to_start(process_name, timeout=60)
 
         self.running = True
+
+    def pause(self):
+        call_service("/pause_physics", "std_srvs/srv/Empty")
+
+    def unpause(self):
+        call_service("/unpause_physics", "std_srvs/srv/Empty")
+
+    def reset(self):
+        call_service("/reset_world", "std_srvs/srv/Empty")
 
     def is_running(self):
         return self.running

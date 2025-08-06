@@ -6,20 +6,24 @@ import time
 import psutil
 
 from manager.libs.process_utils import stop_process_and_children
-from manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
+from manager.manager.application.robotics_python_application_interface import (
+    IRoboticsPythonApplication,
+)
 from manager.manager.lint.linter import Lint
 from manager.manager.docker_thread.docker_thread import DockerThread
 
 from manager.libs.applications.compatibility.client import Client
 from manager.libs.process_utils import stop_process_and_children
 from manager.ram_logging.log_manager import LogManager
-from manager.manager.application.robotics_python_application_interface import IRoboticsPythonApplication
+from manager.manager.application.robotics_python_application_interface import (
+    IRoboticsPythonApplication,
+)
 from manager.manager.lint.linter import Lint
 
 import os
 
-class RoboticsApplicationWrapper(IRoboticsPythonApplication):
 
+class RoboticsApplicationWrapper(IRoboticsPythonApplication):
     def __init__(self, update_callback):
         super().__init__(update_callback)
         self.running = False
@@ -30,8 +34,16 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
         self.entrypoint_path = None
 
     def _create_process(self, cmd):
-        #print("creando procesos")
-        process = subprocess.Popen(f"{cmd}", shell=True, stdout = sys.stdout, stderr=subprocess.STDOUT, bufsize=1024, universal_newlines=True, cwd="/workspace/code")
+        # print("creando procesos")
+        process = subprocess.Popen(
+            f"{cmd}",
+            shell=True,
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+            cwd="/workspace/code",
+        )
         psProcess = psutil.Process(pid=process.pid)
         return psProcess
 
@@ -44,8 +56,10 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
     def load_code(self, path: str):
         self.entrypoint_path = path
 
-    def run(self):     
-        self.user_process = self._create_process(f"DISPLAY=:2 python3 {self.entrypoint_path}")
+    def run(self):
+        self.user_process = self._create_process(
+            f"DISPLAY=:2 python3 {self.entrypoint_path}"
+        )
         self.running = True
 
     def stop(self):
@@ -72,9 +86,9 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
         fds.sort()
         console_fd = fds[-2]
 
-        sys.stderr = open('/dev/pts/' + console_fd, 'w')
-        sys.stdout = open('/dev/pts/' + console_fd, 'w')
-        sys.stdin = open('/dev/pts/' + console_fd, 'w')
+        sys.stderr = open("/dev/pts/" + console_fd, "w")
+        sys.stdout = open("/dev/pts/" + console_fd, "w")
+        sys.stdin = open("/dev/pts/" + console_fd, "w")
 
     def close_console(self):
         sys.stderr.close()
@@ -89,9 +103,9 @@ class RoboticsApplicationWrapper(IRoboticsPythonApplication):
         # send signal to processes
         for p in children:
             try:
-                if(signal == "pause"):
+                if signal == "pause":
                     p.suspend()
-                if(signal == "resume"):
+                if signal == "resume":
                     p.resume()
             except psutil.NoSuchProcess:
                 pass

@@ -37,4 +37,3 @@ class LauncherDronesGzsim(ILauncher):
             for thread in self.threads:
                 thread.terminate()
                 thread.join()
-           

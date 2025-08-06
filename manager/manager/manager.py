@@ -1,3 +1,10 @@
+"""Manager module for Robotics Application Manager.
+
+This module defines the Manager class and related logic for managing applications,
+including launching worlds, robots, visualizations,
+and handling code analysis and formatting.
+"""
+
 from __future__ import annotations
 import json
 import sys
@@ -5,7 +12,8 @@ import tempfile
 
 import black
 
-sys.path.insert(0, '/RoboticsApplicationManager')
+
+sys.path.insert(0, "/RoboticsApplicationManager")
 
 import os
 import signal
@@ -31,10 +39,8 @@ from manager.libs.process_utils import check_gpu_acceleration, get_class_from_fi
 from manager.libs.launch_world_model import ConfigurationManager
 from manager.manager.launcher.launcher_world import LauncherWorld
 from manager.manager.launcher.launcher_robot import LauncherRobot
-from manager.manager.launcher.launcher_visualization import LauncherVisualization
+from manager.manager.launcher.launcher_tools import LauncherTools
 from manager.ram_logging.log_manager import LogManager
-from manager.libs.applications.compatibility.server import Server
-from manager.libs.applications.compatibility.file_watchdog import FileWatchdog
 from manager.manager.application.robotics_python_application_interface import (
     IRoboticsPythonApplication,
 )
@@ -42,12 +48,21 @@ from manager.libs.process_utils import stop_process_and_children
 from manager.manager.lint.linter import Lint
 from manager.manager.editor.serializers import serialize_completions
 
+
 class Manager:
+    """
+    Manager class for Robotics Application Manager.
+
+    This class manages the lifecycle of robotics applications,
+    including launching worlds, robots, visualizations,
+    handling code analysis, formatting, and communication with clients.
+    """
+
     states = [
         "idle",
         "connected",
         "world_ready",
-        "visualization_ready",
+        "tools_ready",
         "application_running",
         "paused",
     ]
@@ -69,15 +84,15 @@ class Manager:
         },
         # Transitions for state world ready
         {
-            "trigger": "prepare_visualization",
+            "trigger": "prepare_tools",
             "source": "world_ready",
-            "dest": "visualization_ready",
-            "before": "on_prepare_visualization",
+            "dest": "tools_ready",
+            "before": "on_prepare_tools",
         },
-        # Transitions for state visualization_ready
+        # Transitions for state tools_ready
         {
             "trigger": "run_application",
-            "source": ["visualization_ready", "paused", "application_running"],
+            "source": ["tools_ready", "paused", "application_running"],
             "dest": "application_running",
             "before": "on_run_application",
         },
@@ -97,15 +112,15 @@ class Manager:
         # Transitions for terminate levels
         {
             "trigger": "terminate_application",
-            "source": ["visualization_ready", "application_running", "paused"],
-            "dest": "visualization_ready",
+            "source": ["tools_ready", "application_running", "paused"],
+            "dest": "tools_ready",
             "before": "on_terminate_application",
         },
         {
-            "trigger": "terminate_visualization",
-            "source": "visualization_ready",
+            "trigger": "terminate_tools",
+            "source": "tools_ready",
             "dest": "world_ready",
-            "before": "on_terminate_visualization",
+            "before": "on_terminate_tools",
         },
         {
             "trigger": "terminate_universe",
@@ -120,38 +135,70 @@ class Manager:
             "dest": "idle",
             "before": "on_disconnect",
         },
-        # Style check 
+        # Style check
         {
             "trigger": "style_check",
-            "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
+            "source": [
+                "idle",
+                "connected",
+                "paused",
+                "world_ready",
+                "tools_ready",
+            ],
             "dest": "=",
             "before": "on_style_check_application",
         },
-        # Code analysis 
+        # Code analysis
         {
             "trigger": "code_analysis",
-            "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
+            "source": [
+                "idle",
+                "connected",
+                "paused",
+                "world_ready",
+                "tools_ready",
+            ],
             "dest": "=",
             "before": "on_code_analysis",
         },
-        # Code analysis 
+        # Code analysis
         {
             "trigger": "code_format",
-            "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
+            "source": [
+                "idle",
+                "connected",
+                "paused",
+                "world_ready",
+                "tools_ready",
+            ],
             "dest": "=",
             "before": "on_code_format",
         },
-        # Code analysis 
+        # Code analysis
         {
             "trigger": "code_autocomplete",
-            "source": ["idle", "connected", "paused", "world_ready","visualization_ready"],
+            "source": [
+                "idle",
+                "connected",
+                "paused",
+                "world_ready",
+                "tools_ready",
+            ],
             "dest": "=",
             "before": "on_code_autocomplete",
-        }
+        },
     ]
 
     def __init__(self, host: str, port: int):
+        """
+        Initialize the Manager instance with the given host and port.
 
+        This method sets up the state machine, initializes the ROS version,
+        creates a message queue, and prepares the consumer for communication.
+        Parameters:
+            host (str): The host address to listen to.
+            port (int): The port number to listen to.
+        """
         self.machine = Machine(
             model=self,
             states=Manager.states,
@@ -164,12 +211,11 @@ class Manager:
         self.queue = Queue()
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.world_launcher = None
+        self.world_type = None
         self.robot_launcher = None
-        self.visualization_launcher = None
-        self.visualization_type = None
+        self.tools_launcher = None
         self.application_process = None
         self.running = True
-        self.gui_server = None
         self.linter = Lint()
 
         # Creates workspace directories
@@ -184,27 +230,46 @@ class Manager:
             os.makedirs(binaries_dir)
 
     def state_change(self, event):
+        """
+        Handle actions to be performed after a state change in the state machine.
+
+        Parameters:
+            event: The event object associated with the state change.
+        """
         LogManager.logger.info(f"State changed to {self.state}")
         if self.consumer is not None:
             self.consumer.send_message({"state": self.state}, command="state-changed")
 
     def update(self, data):
-        LogManager.logger.debug(f"Sending update to client")
+        """
+        Send an update message to the client with the provided data.
+
+        Parameters:
+            data: The data to be sent in the update message.
+        """
+        LogManager.logger.debug("Sending update to client")
         if self.consumer is not None:
             self.consumer.send_message({"update": data}, command="update")
 
     def update_bt_studio(self, data):
-        LogManager.logger.debug(f"Sending update to client")
+        """
+        Send an update message to the client for BT Studio with the provided data.
+
+        Parameters:
+            data: The data to be sent in the update message.
+        """
+        LogManager.logger.debug("Sending update to client")
         if self.consumer is not None:
             self.consumer.send_message({"update": data}, command="update")
 
     def on_connect(self, event):
         """
-        This method is triggered when the application transitions to the 'connected' state.
+        Triggered when the application transitions to the 'connected' state.
+
         It sends an introspection message to a consumer with key information.
 
         Parameters:
-            event (Event): The event object containing data related to the 'connect' event.
+            event (Event): Event object containing data related to the 'connect' event.
 
         The message sent to the consumer includes:
         - `robotics_backend_version`: The current Robotics Backend version.
@@ -224,7 +289,8 @@ class Manager:
 
     def on_launch_world(self, event):
         """
-        Handles the 'launch' event, transitioning the application from 'connected' to 'ready' state.
+        Handle the 'launch' event, transitioning the application from 'connected' to 'ready' state.
+
         This method initializes the launch process based on the provided configuration.
 
         During the launch process, it validates and processes the configuration data received from the event.
@@ -243,12 +309,12 @@ class Manager:
             The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
         cfg_dict = event.kwargs.get("data", {})
-        world_cfg = cfg_dict['world']
-        robot_cfg = cfg_dict['robot']
+        world_cfg = cfg_dict["world"]
+        robot_cfg = cfg_dict["robot"]
 
         # Launch world
         try:
-            if world_cfg['world'] == None:
+            if world_cfg["type"] == None:
                 self.world_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
@@ -263,6 +329,8 @@ class Manager:
         except ValueError as e:
             LogManager.logger.error(f"Configuration validation failed: {e}")
 
+        self.world_type = world_cfg["type"]
+
         self.world_launcher = LauncherWorld(**cfg.model_dump())
         LogManager.logger.info(str(self.world_launcher))
         self.world_launcher.run()
@@ -270,7 +338,7 @@ class Manager:
 
         # Launch robot
         try:
-            if robot_cfg['world'] == None:
+            if robot_cfg["type"] == None:
                 self.robot_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
@@ -283,11 +351,18 @@ class Manager:
 
         self.robot_launcher = LauncherRobot(**cfg.model_dump())
         LogManager.logger.info(str(self.robot_launcher))
-        self.robot_launcher.run(robot_cfg['start_pose'])
+        self.robot_launcher.run(robot_cfg["start_pose"])
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
+        """
+        Prepare and extract a custom universe from a base64-encoded zip file.
 
+        Then build it in the workspace.
+
+        Parameters:
+            cfg_dict (dict): Config dictionary containing the universe name and zip data
+        """
         # Unzip the app
         if cfg_dict["zip"].startswith("data:"):
             _, _, zip_file = cfg_dict["zip"].partition("base64,")
@@ -312,67 +387,32 @@ class Manager:
         zip_ref.extractall(universe_folder + "/")
         zip_ref.close()
 
-        os.system('/bin/bash -c "cd /workspace/worlds; source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."')
+        os.system(
+            '/bin/bash -c "cd /workspace/worlds; source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."'
+        )
 
-    def on_prepare_visualization(self, event):
+    def on_prepare_tools(self, event):
 
-        LogManager.logger.info("Visualization transition started")
+        LogManager.logger.info("Tools transition started")
 
         cfg_dict = event.kwargs.get("data", {})
-        self.visualization_type = cfg_dict['type']
-        config_file = cfg_dict['file']
+        tools = cfg_dict["tools"]
+        config = cfg_dict["config"]
 
-        self.visualization_launcher = LauncherVisualization(
-            visualization=self.visualization_type,
-            visualization_config_path = config_file
+        self.tools_launcher = LauncherTools(
+            world_type=self.world_type, tools=tools, tools_config=config
         )
-        
-        self.visualization_launcher.run()
 
-        if self.visualization_type in ["gazebo_rae", "gzsim_rae", "console"]:
-            self.gui_server = Server(2303, self.update)
-            self.gui_server.start()
-        elif self.visualization_type in ["bt_studio", "bt_studio_gz"]:
-            self.gui_server = FileWatchdog('/tmp/tree_state', self.update_bt_studio)
-            self.gui_server.start()
-
-        LogManager.logger.info("Visualization transition finished")
-
-    def add_frequency_control(self, code):
-        frequency_control_code_imports = """
-import time
-from datetime import datetime
-ideal_cycle = 20
-"""
-        code = frequency_control_code_imports + code
-        infinite_loop = re.search(
-            r"[^ ]while\s*\(\s*True\s*\)\s*:|[^ ]while\s*True\s*:|[^ ]while\s*1\s*:|[^ ]while\s*\(\s*1\s*\)\s*:",
-            code,
-        )
-        frequency_control_code_pre = """
-    start_time_internal_freq_control = datetime.now()
-            """
-        code = (
-            code[: infinite_loop.end()]
-            + frequency_control_code_pre
-            + code[infinite_loop.end() :]
-        )
-        frequency_control_code_post = """
-    finish_time_internal_freq_control = datetime.now()
-    dt = finish_time_internal_freq_control - start_time_internal_freq_control
-    ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
-
-    if (ms < ideal_cycle):
-        time.sleep((ideal_cycle - ms) / 1000.0)
-"""
-        code = code + frequency_control_code_post
-        return code
+        self.tools_launcher.run(self.consumer)
+        LogManager.logger.info("Tools transition finished")
 
     def on_style_check_application(self, event):
         """
-        Handles the 'style_check' event, does not change the state and returns the current state.
+        Handle the 'style_check' event.
 
-        It uses the linter to check if the style of the code is correct, if there 
+        Does not change the state and returns the current state.
+
+        It uses the linter to check if the style of the code is correct, if there
         are errors it writes them in all the consoles and raises the errors.
 
         Parameters:
@@ -381,21 +421,24 @@ ideal_cycle = 20
         Raises:
             Exception: with the errors found in the linter
         """
+
         def find_docker_console():
-            """Search console in docker different of /dev/pts/0"""
-            pts_consoles = [f"/dev/pts/{dev}" for dev in os.listdir('/dev/pts/') if dev.isdigit()]
+            """Search console in docker different of /dev/pts/0 ."""
+            pts_consoles = [
+                f"/dev/pts/{dev}" for dev in os.listdir("/dev/pts/") if dev.isdigit()
+            ]
             consoles = []
             for console in pts_consoles:
                 if console != "/dev/pts/0":
                     try:
                         # Search if it's a console
-                        with open(console, 'w') as f:
+                        with open(console, "w") as f:
                             f.write("")
                         consoles.append(console)
                     except Exception:
                         # Continue searching
                         continue
-            
+
             # raise Exception("No active console other than /dev/pts/0")
             return consoles
 
@@ -415,22 +458,28 @@ ideal_cycle = 20
         code = code.replace("from HAL import HAL", "import HAL")
 
         # Create executable app
-        errors = self.linter.evaluate_code(code, exercise_id, self.ros_version, py_lint_source="pylint_checker_style.py")
+        errors = self.linter.evaluate_code(
+            code,
+            exercise_id,
+            self.ros_version,
+            py_lint_source="pylint_checker_style.py",
+        )
 
         if errors == "":
             errors = "No errors found"
 
         console_path = find_docker_console()
         for i in console_path:
-            with open(i, 'w') as console:
+            with open(i, "w") as console:
                 console.write(errors + "\n\n")
 
         raise Exception(errors)
 
-    def on_code_analysis(self, event):    
+    def on_code_analysis(self, event):
         """
-        Handles the 'code_analysis' event, does not change the state and returns the current state.
+        Handle the 'code_analysis' event.
 
+        Does not change the state and returns the current state.
         It uses pylint to check for the errors and warnings in the code.
 
         Parameters:
@@ -439,7 +488,6 @@ ideal_cycle = 20
         Returns:
             Sends the output of the pylint command in the code-analysis event for the frontend.
         """
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code_string = app_cfg["code"]
@@ -450,64 +498,62 @@ ideal_cycle = 20
             LogManager.logger.info("User code not found")
             return
 
-
         # Save the code string to a temporary file
         with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_file:
-            temp_file.write(code_string.encode('utf-8'))
+            temp_file.write(code_string.encode("utf-8"))
             temp_file_path = temp_file.name
-            
-        
+
         # terminal command
-        command = ['pylint', '--output-format=json',] + [temp_file_path]
+        command = [
+            "pylint",
+            "--output-format=json",
+        ] + [temp_file_path]
         # '--extension-pkg-whitelist=cv2'
-        
+
         # Add the disable option for specific error IDs
         if disable_error_ids:
-            disable_str = ','.join(disable_error_ids)
-            command.append(f'--disable={disable_str}')
-        
+            disable_str = ",".join(disable_error_ids)
+            command.append(f"--disable={disable_str}")
+
         # run the command
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
+
         # Decode the results
-        pylint_output = result.stdout.decode('utf-8')
-        pylint_errors = result.stderr.decode('utf-8')
-        
+        pylint_output = result.stdout.decode("utf-8")
+        pylint_errors = result.stderr.decode("utf-8")
+
         # Parse the JSON output if pylint output is not empty
         try:
             pylint_json = json.loads(pylint_output) if pylint_output else []
         except json.JSONDecodeError as e:
             LogManager.logger.info(f"Failed to parse JSON: {str(e)}")
 
-        
         # Clean up the temporary file after Pylint run
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
-        
+
         if pylint_errors:
             LogManager.logger.info("Found errors in code")
-        
+
         self.consumer.send_message(
-            {
-                "pylint_output": pylint_json,
-                "pylint_errors": pylint_errors
-            },
+            {"pylint_output": pylint_json, "pylint_errors": pylint_errors},
             command="code-analysis",
         )
 
     def on_code_format(self, event):
         """
-        Handles the 'code_format' event, does not change the state and returns the current state.
+        Handle the 'code_format' event.
 
+        Does not change the state and returns the current state.
         It uses the black formatter to format the user code.
 
         Parameters:
             event (Event): Has the fields code (user code).
 
         Returns:
-            Sends the output of the black format in the code-format event for the frontend.
+            Sends the output of the black format in
+                the code-format event for the frontend.
         """
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code = app_cfg["code"]
@@ -516,7 +562,7 @@ ideal_cycle = 20
         if not code:
             LogManager.logger.info("User code not found")
             return
-        
+
         try:
             # Format the code with Black
             formatted_code = black.format_str(code, mode=black.Mode())
@@ -527,39 +573,41 @@ ideal_cycle = 20
                 command="code-format",
             )
         except Exception as e:
-            LogManager.logger.info('Error formating code' + str(e))
+            LogManager.logger.info("Error formating code" + str(e))
 
     def on_code_autocomplete(self, event):
         """
-        Handles the 'code_autocomplete' event, does not change the state and returns the current state.
+        Handle the 'code_autocomplete' event.
 
-        It uses jedi to find the possible autocompletions in the user code give the cursor position.
+        Does not change the state and returns the current state.
+        It uses jedi to find the possible autocompletions in the user code
+            given the cursor position.
 
         Parameters:
             event (Event): Has the fields code (user code), line and col .
 
         Returns:
-            Sends the possible completions in the code-autocomplete event for the frontend.
+            Sends the possible completions in
+                the code-autocomplete event for the frontend.
         """
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         code = app_cfg["code"]
         line = app_cfg["line"]
         col = app_cfg["col"]
 
-        jedi.settings.add_bracket_after_function= True
-        
+        jedi.settings.add_bracket_after_function = True
+
         # if code string is empty
         if not code:
             LogManager.logger.info("User code not found")
             return
-        
+
         if not line or not col:
             LogManager.logger.info("User code position not found")
             return
-        
-        script = jedi.Script(code, path='/workspace/code/academy.py')
+
+        script = jedi.Script(code, path="/workspace/code/academy.py")
 
         try:
             completions = script.complete(line, col)
@@ -572,24 +620,37 @@ ideal_cycle = 20
                 command="code-autocomplete",
             )
         except Exception as e:
-            LogManager.logger.info('Error formating code' + str(e))
-        
+            LogManager.logger.info("Error formating code" + str(e))
+
     def on_run_application(self, event):
+        """
+        Handle the 'run_application' event.
+
+        This method manages the process of running the user application,
+        including preparing the code, handling console output,
+        and launching the application process.
+
+        Parameters:
+            event: The event object containing application configuration and code data.
+        """
+
         def find_docker_console():
-            """Search console in docker different of /dev/pts/0"""
-            pts_consoles = [f"/dev/pts/{dev}" for dev in os.listdir('/dev/pts/') if dev.isdigit()]
+            """Search console in docker different of /dev/pts/0 ."""
+            pts_consoles = [
+                f"/dev/pts/{dev}" for dev in os.listdir("/dev/pts/") if dev.isdigit()
+            ]
             consoles = []
             for console in pts_consoles:
                 if console != "/dev/pts/0":
                     try:
                         # Search if it's a console
-                        with open(console, 'w') as f:
+                        with open(console, "w") as f:
                             f.write("")
                         consoles.append(console)
                     except Exception:
                         # Continue searching
                         continue
-            
+
             # raise Exception("No active console other than /dev/pts/0")
             return consoles
         
@@ -634,12 +695,8 @@ ideal_cycle = 20
 
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
-        type = app_cfg["type"]
-
-        if type == "robotics-academy":
-            code_path = "/workspace/code/academy.py"
-        elif type == "bt-studio":
-            code_path = "/workspace/code/execute_docker.py"
+        entrypoint = app_cfg["entrypoint"]
+        to_lint = app_cfg["linter"]
 
         # Unzip the app
         if app_cfg["code"].startswith("data:"):
@@ -650,20 +707,32 @@ ideal_cycle = 20
         zip_ref.extractall("/workspace/code")
         zip_ref.close()
 
-        if not os.path.isfile(code_path):
+        if not os.path.isfile(entrypoint):
             LogManager.logger.info("User code not found")
             raise Exception("User code not found")
-        
-        try:
-            if (type == "robotics-academy"):
-                prepare_RA_code(code_path)
 
+        # Pass the linter
+        errors = self.linter.evaluate_source_code(to_lint)
+        failed_linter = False
+
+        for error in errors:
+            if error != "":
+                failed_linter = True
+                console_path = find_docker_console()
+                for i in console_path:
+                    with open(i, "w") as console:
+                        console.write(error + "\n\n")
+
+        if failed_linter:
+            raise Exception(errors)
+
+        try:
             fds = os.listdir("/dev/pts/")
             console_fd = str(max(map(int, fds[:-1])))
 
             self.application_process = subprocess.Popen(
-                ["python3", code_path],
-                stdin=open('/dev/pts/' + console_fd, 'r'),
+                ["python3", entrypoint],
+                stdin=open("/dev/pts/" + console_fd, "r"),
                 stdout=sys.stdout,
                 stderr=subprocess.STDOUT,
                 bufsize=1024,
@@ -672,43 +741,52 @@ ideal_cycle = 20
             self.unpause_sim()
         except:
             LogManager.logger.info("Run application failed")
-        
+
         LogManager.logger.info("Run application transition finished")
-    
+
     def terminate_harmonic_processes(self):
         """
-        Terminate all processes within the Docker container whose command line contains 'gz' or 'launch'.
+        Terminate all Harmonic processes in the container.
+
+        Terminate all processes in the container
+        whose command line contains 'gz' or 'launch'.
         """
         LogManager.logger.info("Terminate Harmonic process")
-        keywords = ['gz', 'launch']
+        keywords = ["gz", "launch"]
         for keyword in keywords:
             try:
-                ps_aux_cmd = ['ps', 'aux']
-                grep_cmd = ['grep', keyword]
-                grep_exclude_cmd = ['grep', '-v', 'grep']
+                ps_aux_cmd = ["ps", "aux"]
+                grep_cmd = ["grep", keyword]
+                grep_exclude_cmd = ["grep", "-v", "grep"]
 
                 ps_aux_proc = subprocess.Popen(ps_aux_cmd, stdout=subprocess.PIPE)
-                grep_proc = subprocess.Popen(grep_cmd, stdin=ps_aux_proc.stdout, stdout=subprocess.PIPE)
-                exclude_grep_proc = subprocess.Popen(grep_exclude_cmd, stdin=grep_proc.stdout, stdout=subprocess.PIPE)
+                grep_proc = subprocess.Popen(
+                    grep_cmd, stdin=ps_aux_proc.stdout, stdout=subprocess.PIPE
+                )
+                exclude_grep_proc = subprocess.Popen(
+                    grep_exclude_cmd, stdin=grep_proc.stdout, stdout=subprocess.PIPE
+                )
 
                 ps_aux_proc.stdout.close()
                 grep_proc.stdout.close()
 
-                output = exclude_grep_proc.communicate()[0].decode('utf-8')
-                
+                output = exclude_grep_proc.communicate()[0].decode("utf-8")
+
                 for line in output.splitlines():
                     try:
                         # Extract PID
                         pid = int(line.split()[1])
-                        subprocess.run(['kill', '-15', str(pid)], check=True)
-                        
+                        subprocess.run(["kill", "-15", str(pid)], check=True)
+
                         # Avoid zombies
                         try:
                             os.waitpid(pid, 0)
                         except ChildProcessError:
                             pass
                     except Exception as e:
-                        LogManager.logger.exception(f"Failed to terminate process with line: {line}. Error: {e}")
+                        LogManager.logger.exception(
+                            f"Failed to terminate process with line: {line}. Error: {e}"
+                        )
 
             except Exception as e:
                 LogManager.logger.exception(
@@ -716,7 +794,15 @@ ideal_cycle = 20
                 )
 
     def on_terminate_application(self, event):
+        """
+        Handle the 'terminate_application' event.
 
+        Terminates the currently running application process,
+        pauses and resets the simulation if applicable.
+
+        Parameters:
+            event: The event object associated with the termination request.
+        """
         if self.application_process:
             try:
                 stop_process_and_children(self.application_process)
@@ -727,23 +813,34 @@ ideal_cycle = 20
                 LogManager.logger.exception("No application running")
                 print(traceback.format_exc())
 
-    def on_terminate_visualization(self, event):
+    def on_terminate_tools(self, event):
 
-        self.visualization_launcher.terminate()
-        if self.gui_server != None:
-            self.gui_server.stop()
-            self.gui_server = None
+        self.tools_launcher.terminate()
         self.terminate_harmonic_processes()
 
     def on_terminate_universe(self, event):
+        """
+        Handle the 'terminate_universe' event.
 
-        if self.world_launcher != None:
+        Terminates the world and robot launchers if they exist
+        and terminates related Harmonic processes.
+
+        Parameters:
+            event: The event object associated with the termination request.
+        """
+        if self.world_launcher is not None:
             self.world_launcher.terminate()
-        if self.robot_launcher != None:
+        if self.robot_launcher is not None:
             self.robot_launcher.terminate()
         self.terminate_harmonic_processes()
 
     def on_disconnect(self, event):
+        """
+        Handle the 'disconnect' event.
+
+        This method stops all running processes,
+        terminates launchers, and restarts the script.
+        """
 
         try:
             self.consumer.stop()
@@ -757,13 +854,11 @@ ideal_cycle = 20
             except Exception as e:
                 LogManager.logger.exception("Exception stopping application process")
 
-        if self.visualization_launcher:
+        if self.tools_launcher:
             try:
-                self.visualization_launcher.terminate()
+                self.tools_launcher.terminate()
             except Exception as e:
-                LogManager.logger.exception(
-                    "Exception terminating visualization launcher"
-                )
+                LogManager.logger.exception("Exception terminating tools launcher")
 
         if self.robot_launcher:
             try:
@@ -776,7 +871,7 @@ ideal_cycle = 20
                 self.world_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")
-        
+
         self.terminate_harmonic_processes()
 
         # Reiniciar el script
@@ -785,7 +880,7 @@ ideal_cycle = 20
 
     def process_message(self, message):
         if message.command == "gui":
-            self.gui_server.send(message.data)
+            self.tools_launcher.pass_msg(message.data)
             return
 
         self.trigger(message.command, data=message.data or None)
@@ -801,11 +896,19 @@ ideal_cycle = 20
             except Exception as e:
                 LogManager.logger.exception("Error suspending process")
         else:
-            LogManager.logger.warning("Application process was None during pause. Calling termination.")
+            LogManager.logger.warning(
+                "Application process was None during pause. Calling termination."
+            )
             self.pause_sim()
             self.reset_sim()
 
     def on_resume(self, msg):
+        """
+        Resume the application process if it exists, otherwise reset the simulation.
+
+        Parameters:
+            msg: The event or message triggering the resume action.
+        """
         if self.application_process is not None:
             try:
                 proc = psutil.Process(self.application_process.pid)
@@ -814,33 +917,29 @@ ideal_cycle = 20
             except Exception as e:
                 LogManager.logger.exception("Error suspending process")
         else:
-            LogManager.logger.warning("Application process was None during resume. Calling termination.")
+            LogManager.logger.warning(
+                "Application process was None during resume. Calling termination."
+            )
             self.reset_sim()
 
     def pause_sim(self):
-        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
-            self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: true")
-        elif not self.visualization_type in ["console"]:
-            self.call_service("/pause_physics", "std_srvs/srv/Empty")
+        self.tools_launcher.pause()
 
     def unpause_sim(self):
-        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
-            self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","pause: false")
-        elif not self.visualization_type in ["console"]:
-            self.call_service("/unpause_physics", "std_srvs/srv/Empty")
+        self.tools_launcher.unpause()
 
     def reset_sim(self):
+        """
+        Reset the simulation environment and relaunch the robot if applicable.
+
+        This method terminates the robot launcher, resets the simulation state using
+        the appropriate ROS or Gazebo services based on the visualization type,
+        and relaunches the robot if a launcher is available.
+        """
         if self.robot_launcher:
             self.robot_launcher.terminate()
-            
-        if self.visualization_type in ["gzsim_rae", "bt_studio_gz"]:
-            if self.is_ros_service_available("/drone0/platform/state_machine/_reset"):
-                self.call_service("/drone0/platform/state_machine/_reset", "std_srvs/srv/Trigger", "{}")
-            self.call_gzservice("$(gz service -l | grep '^/world/\w*/control$')","gz.msgs.WorldControl","gz.msgs.Boolean","3000","reset: {all: true}")
-            if self.is_ros_service_available("/drone0/controller/_reset"):
-                self.call_service("/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}")
-        elif not self.visualization_type in ["console"]:
-            self.call_service("/reset_world", "std_srvs/srv/Empty")
+
+        self.tools_launcher.reset()
 
         if self.robot_launcher:
             try:
@@ -848,40 +947,12 @@ ideal_cycle = 20
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")
 
-    def call_service(self, service, service_type, request_data="{}"):
-        command = f"ros2 service call {service} {service_type} '{request_data}'"
-        subprocess.call(
-            f"{command}",
-            shell=True,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-    
-    def call_gzservice(self, service, reqtype, reptype, timeout, req):
-        command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
-        subprocess.call(
-            f"{command}",
-            shell=True,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-
-    def is_ros_service_available(self, service_name):
-        try:
-            result = subprocess.run(['ros2', 'service', 'list', '--include-hidden-services'], capture_output=True, text=True, check=True)
-            return service_name in result.stdout
-        except subprocess.CalledProcessError as e:
-            LogManager.logger.exception(f"Error checking service availability: {e}")
-            return False
-    
     def start(self):
         """
-        Starts the RAM
-        RAM must be run in main thread to be able to handle signaling other processes, for instance ROS launcher.
+        Start the RAM.
+
+        RAM must be run in main thread to be able to handle signaling other processes,
+        for instance ROS launcher.
         """
         LogManager.logger.info(
             f"Starting RAM consumer in {self.consumer.server}:{self.consumer.port}"
@@ -892,11 +963,6 @@ ideal_cycle = 20
         def signal_handler(sign, frame):
             print("\nprogram exiting gracefully")
             self.running = False
-            if self.gui_server is not None:
-                try:
-                    self.gui_server.stop()
-                except Exception as e:
-                    LogManager.logger.exception("Exception stopping GUI server")
 
             try:
                 self.consumer.stop()
@@ -908,15 +974,15 @@ ideal_cycle = 20
                     stop_process_and_children(self.application_process)
                     self.application_process = None
                 except Exception as e:
-                    LogManager.logger.exception("Exception stopping application process")
-
-            if self.visualization_launcher:
-                try:
-                    self.visualization_launcher.terminate()
-                except Exception as e:
                     LogManager.logger.exception(
-                        "Exception terminating visualization launcher"
+                        "Exception stopping application process"
                     )
+
+            if self.tools_launcher:
+                try:
+                    self.tools_launcher.terminate()
+                except Exception as e:
+                    LogManager.logger.exception("Exception terminating tools launcher")
 
             if self.robot_launcher:
                 try:
@@ -929,7 +995,7 @@ ideal_cycle = 20
                     self.world_launcher.terminate()
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating world launcher")
-            
+
             self.terminate_harmonic_processes()
             exit()
 

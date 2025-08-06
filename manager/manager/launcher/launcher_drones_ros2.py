@@ -36,8 +36,6 @@ class LauncherDronesRos2(ILauncher):
         px4_launch_thread.start()
         self.threads.append(px4_launch_thread)
 
-        
-
     def is_running(self):
         return True
 
@@ -48,4 +46,3 @@ class LauncherDronesRos2(ILauncher):
                     thread.terminate()
                     thread.join()
                 self.threads.remove(thread)
-           

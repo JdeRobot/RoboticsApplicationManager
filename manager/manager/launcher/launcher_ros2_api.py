@@ -28,9 +28,7 @@ class LauncherRos2Api(ILauncher):
         self.threads.append(xserver_thread)
 
         if ACCELERATION_ENABLED:
-            exercise_launch_cmd = (
-                f"source /.env;export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file}"
-            )
+            exercise_launch_cmd = f"source /.env;export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file}"
         else:
             exercise_launch_cmd = f"source /.env;ros2 launch {self.launch_file}"
 

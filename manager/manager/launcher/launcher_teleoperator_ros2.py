@@ -13,7 +13,7 @@ class LauncherTeleoperatorRos2(ILauncher):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
-        if (ACCELERATION_ENABLED):
+        if ACCELERATION_ENABLED:
             teleop_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun python3 /opt/jderobot/utils/model_teleoperator.py 0.0.0.0"
         else:
             teleop_cmd = f"python3 /opt/jderobot/utils/model_teleoperator.py 0.0.0.0"

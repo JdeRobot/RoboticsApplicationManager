@@ -14,6 +14,7 @@ class ManagerConsumerMessage(BaseModel):
     @param command: message command
     @param data: message data (optional)
     """
+
     id: str
     command: str
     data: Optional[Any] = None
@@ -24,7 +25,7 @@ class ManagerConsumerMessage(BaseModel):
         @param response: response data
         @return: the response message as a ManagerConsumerMessage
         """
-        return ManagerConsumerMessage(id=self.id, command='ack', message=response)
+        return ManagerConsumerMessage(id=self.id, command="ack", message=response)
 
     def __repr__(self):
         return self.json()
@@ -37,11 +38,17 @@ class ManagerConsumerMessageException(BaseException):
     def __init__(self, id: str, message: str = None):
         super(ManagerConsumerMessageException, self).__init__(message)
         self.id = id
-        self.command = 'error'
+        self.command = "error"
         self.message = message
 
     def consumer_message(self):
-        return ManagerConsumerMessage(id=self.id, command=self.command, data={'message': self.message})
+        return ManagerConsumerMessage(
+            id=self.id, command=self.command, data={"message": self.message}
+        )
 
     def __str__(self):
-        return str(ManagerConsumerMessage(id=self.id, command=self.command, data={'message': self.message}))
+        return str(
+            ManagerConsumerMessage(
+                id=self.id, command=self.command, data={"message": self.message}
+            )
+        )

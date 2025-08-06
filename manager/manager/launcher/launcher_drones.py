@@ -7,6 +7,7 @@ from typing import List, Any
 import psutil
 import threading
 
+
 class LauncherDrones(ILauncher):
     exercise_id: str
     type: str
@@ -29,7 +30,7 @@ class LauncherDrones(ILauncher):
         self.launch_file = os.path.expandvars(self.launch_file)
 
         # Inicia el proceso en un hilo separado
-        self.launch = DockerThread(f'python3 {self.launch_file}' )
+        self.launch = DockerThread(f"python3 {self.launch_file}")
         self.launch.start()
         self.threads.append(self.launch)
 

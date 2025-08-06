@@ -21,12 +21,16 @@ class LauncherRobotDisplayView(ILauncher):
 
         robot_display_vnc = Vnc_server()
 
-        if (ACCELERATION_ENABLED):
-            robot_display_vnc.start_vnc_gpu(self.display, self.internal_port, self.external_port,DRI_PATH)
+        if ACCELERATION_ENABLED:
+            robot_display_vnc.start_vnc_gpu(
+                self.display, self.internal_port, self.external_port, DRI_PATH
+            )
             # Write display config and start the console
             console_cmd = f"export VGL_DISPLAY={DRI_PATH}; export DISPLAY={self.display}; /usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf {self.display}"
         else:
-            robot_display_vnc.start_vnc(self.display, self.internal_port, self.external_port)
+            robot_display_vnc.start_vnc(
+                self.display, self.internal_port, self.external_port
+            )
             # Write display config and start the console
             console_cmd = f"export DISPLAY={self.display};/usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf {self.display}"
 
