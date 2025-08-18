@@ -654,32 +654,6 @@ class Manager:
             # raise Exception("No active console other than /dev/pts/0")
             return consoles
 
-        def prepare_RA_code(code_path):
-            f = open(code_path, "r")
-            code = f.read()
-            f.close()
-
-            # Make code backwards compatible
-            code = code.replace("from GUI import GUI", "import GUI")
-            code = code.replace("from HAL import HAL", "import HAL")
-
-            # Create executable app
-            errors = self.linter.evaluate_code(code, self.ros_version)
-            if errors == "":
-
-                # code = self.add_frequency_control(code)
-                f = open(code_path, "w")
-                f.write(code)
-                f.close()
-
-            else:
-                console_path = find_docker_console()
-                for i in console_path:
-                    with open(i, "w") as console:
-                        console.write(errors + "\n\n")
-
-                raise Exception(errors)
-
         # Kill already running code
         try:
             proc = psutil.Process(self.application_process.pid)
