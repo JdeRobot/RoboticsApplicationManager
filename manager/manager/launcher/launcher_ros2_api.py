@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import List, Any
 import time
 import stat
@@ -43,38 +44,19 @@ class LauncherRos2Api(ILauncher):
                     thread.join()
                 self.threads.remove(thread)
 
-        kill_cmd = "pkill -9 -f "
-        cmd = kill_cmd + "gzserver"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-        cmd = kill_cmd + "spawn_model.launch.py"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
+        to_kill = ["launch.py"]
+        if self.type == "gz":
+            to_kill = ["gz", "launch.py"]
+        else:
+            to_kill = ["gzserver", "launch.py"]
 
         kill_cmd = "pkill -9 -f "
-        cmd = kill_cmd + "gzserver"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-        cmd = kill_cmd + "spawn_model.launch.py"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
+        for i in to_kill:
+            cmd = kill_cmd + i
+            subprocess.call(
+                cmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                bufsize=1024,
+                universal_newlines=True,
+            )
