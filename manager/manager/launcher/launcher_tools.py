@@ -44,6 +44,12 @@ tools = {
         "file": "/tmp/tree_state",
         "consumer": None,
     },
+    "webcam": {
+        "type": "module",
+        "module": None,
+        "internal_port": 2303,
+        "consumer": None,
+    },
 }
 
 simulator = {
@@ -66,6 +72,8 @@ class LauncherTools(BaseModel):
                     continue
                 tool = simulator[self.world_type]["tool"]
             module = tools[tool]
+            if module["module"] is None:
+                continue
             launcher = self.launch_module(tool, module, consumer)
             self.launchers.append(launcher)
 
