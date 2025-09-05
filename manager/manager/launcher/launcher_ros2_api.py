@@ -46,7 +46,7 @@ class LauncherRos2Api(ILauncher):
 
         to_kill = ["launch.py"]
         if self.type == "gz":
-            to_kill = ["gz", "launch.py"]
+            to_kill = ["drones_ws", "gz", "launch.py"]
         else:
             to_kill = ["gzserver", "launch.py"]
 
