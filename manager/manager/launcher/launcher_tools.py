@@ -32,6 +32,12 @@ tools = {
         "external_port": 6080,
         "internal_port": 5900,
     },
+    "rviz": {
+        "module": "rviz",
+        "display": ":3",
+        "external_port": 6081,
+        "internal_port": 5902,
+    },
     "web_gui": {
         "type": "module",
         "module": "web_gui",
