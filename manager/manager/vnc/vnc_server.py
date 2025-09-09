@@ -27,24 +27,17 @@ class Vnc_server:
             internal_port (int): Port for the VNC server.
             external_port (int): Port for the noVNC server.
         """
-        # Start X server in display
-        xserver_cmd = (
-            f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR "
-            f"+extension RENDER -logfile ./xdummy.log -config ./xorg.conf {display}"
+        # Start X and VNC servers
+        turbovnc_cmd = (
+            f"export TVNC_WM=startlxde && "
+            f"/opt/TurboVNC/bin/vncserver {display} "
+            f"-geometry '1920x1080' -noreset "
+            f"-SecurityTypes None -rfbport {internal_port}"
         )
-        xserver_thread = DockerThread(xserver_cmd)
-        xserver_thread.start()
-        self.threads.append(xserver_thread)
+        turbovnc_thread = DockerThread(turbovnc_cmd)
+        turbovnc_thread.start()
+        self.threads.append(turbovnc_thread)
         wait_for_xserver(display)
-
-        # Start VNC server without password, forever running in background
-        x11vnc_cmd = (
-            f"x11vnc -repeat -quiet -display {display} "
-            f"-nopw -forever -xkb -bg -rfbport {internal_port}"
-        )
-        x11vnc_thread = DockerThread(x11vnc_cmd)
-        x11vnc_thread.start()
-        self.threads.append(x11vnc_thread)
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
         if self.get_ros_version() == "2":
@@ -107,9 +100,6 @@ class Vnc_server:
 
         self.wait_for_port("localhost", internal_port)
         self.wait_for_port("localhost", external_port)
-
-        self.create_desktop_icon()
-        self.create_gzclient_icon()
 
     def wait_for_port(self, host, port, timeout=20):
         """Wait for a TCP port on a host to become available within a timeout period.

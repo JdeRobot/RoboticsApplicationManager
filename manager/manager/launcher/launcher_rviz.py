@@ -18,7 +18,7 @@ class LauncherRviz(ILauncher):
 
     def run(self, config_file, callback):
         DRI_PATH = self.get_dri_path()
-        ACCELERATION_ENABLED = False
+        ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
         if ACCELERATION_ENABLED:
             self.console_vnc.start_vnc_gpu(
