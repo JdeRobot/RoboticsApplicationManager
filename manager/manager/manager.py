@@ -685,6 +685,31 @@ class Manager:
             LogManager.logger.info("User code not found")
             raise Exception("User code not found")
 
+        _, file_extension = os.path.splitext(entrypoint)
+
+        if file_extension == ".cpp":
+            fds = os.listdir("/dev/pts/")
+            console_fd = str(max(map(int, fds[:-1])))
+
+            os.system(
+                '/bin/bash -c "cd /workspace/code; source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."'
+            )
+
+            self.application_process = subprocess.Popen(
+                [
+                    "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
+                ],
+                stdin=open("/dev/pts/" + console_fd, "r"),
+                stdout=sys.stdout,
+                stderr=subprocess.STDOUT,
+                bufsize=1024,
+                universal_newlines=True,
+                shell=True,
+                executable="/bin/bash",
+            )
+            self.unpause_sim()
+            return
+
         # Pass the linter
         errors = self.linter.evaluate_source_code(to_lint)
         failed_linter = False
@@ -717,7 +742,6 @@ class Manager:
             LogManager.logger.info("Run application failed")
 
         LogManager.logger.info("Run application transition finished")
-
 
     def on_terminate_application(self, event):
         """
