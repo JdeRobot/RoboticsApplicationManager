@@ -20,18 +20,24 @@ class LauncherRviz(ILauncher):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
+        config = "ros2 run rviz2 rviz2"
+
+        if config_file != None:
+            config = f'ros2 launch {config_file}'
+        
+        print(config)
         if ACCELERATION_ENABLED:
             self.console_vnc.start_vnc_gpu(
                 self.display, self.internal_port, self.external_port, DRI_PATH
             )
             # Write display config and start the console
-            console_cmd = f"export VGL_DISPLAY={DRI_PATH}; export DISPLAY={self.display}; vglrun ros2 run rviz2 rviz2"
+            console_cmd = f"export VGL_DISPLAY={DRI_PATH}; export DISPLAY={self.display}; vglrun {config}"
         else:
             self.console_vnc.start_vnc(
                 self.display, self.internal_port, self.external_port
             )
             # Write display config and start the console
-            console_cmd = f"export DISPLAY={self.display};ros2 run rviz2 rviz2"
+            console_cmd = f"export DISPLAY={self.display};{config}"
 
         console_thread = DockerThread(console_cmd)
         console_thread.start()
@@ -62,3 +68,28 @@ class LauncherRviz(ILauncher):
 
     def died(self):
         pass
+
+
+    # rviz_node_full = Node(
+    #     package="rviz2",
+    #     executable="rviz2",
+    #     name="rviz2",
+    #     output="log",
+    #     arguments=["-d", rviz_full_config],
+    #     parameters=[
+    #         robot_description,
+    #         robot_description_semantic,
+    #         kinematics_yaml,
+            
+    #         pilz_planning_pipeline_config,
+
+    #         joint_limits,
+    #         pilz_cartesian_limits,
+
+    #         trajectory_execution,
+    #         moveit_controllers,
+    #         planning_scene_monitor_parameters,
+    #         move_group_capabilities,
+    #         {"use_sim_time": True},
+    #     ]
+    # )
