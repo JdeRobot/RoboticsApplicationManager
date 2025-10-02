@@ -26,6 +26,16 @@ worlds = {
             }
         ],
     },
+    "o3de": {
+        "2": [
+            {
+                "type": "o3de",
+                "module": "o3de_api",
+                "parameters": [],
+                "launch_file": [],
+            }
+        ],
+    },
     "physical": {},
 }
 
