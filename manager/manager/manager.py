@@ -664,7 +664,7 @@ class Manager:
 
         # Delete old files
         if os.path.exists("/workspace/code"):
-            shutil.rmtree("/workspace/code")
+            shutil.rmtree("/workspace/code", ignore_errors=False)
         os.mkdir("/workspace/code")
 
         # Extract app config
@@ -692,7 +692,7 @@ class Manager:
             console_fd = str(max(map(int, fds[:-1])))
 
             os.system(
-                '/bin/bash -c "cd /workspace/code; source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."'
+                '/bin/bash -c "cd /workspace/code; source /opt/ros/humble/setup.bash; colcon build; source install/setup.bash; cd ../.."'
             )
 
             self.application_process = subprocess.Popen(
