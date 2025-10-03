@@ -6,6 +6,11 @@ import stat
 
 from manager.manager.launcher.launcher_interface import ILauncher, LauncherException
 from manager.manager.docker_thread.docker_thread import DockerThread
+from manager.manager.vnc.vnc_server import Vnc_server
+from manager.libs.process_utils import (
+    wait_for_process_to_start,
+    check_gpu_acceleration,
+)
 import subprocess
 
 import logging
@@ -16,6 +21,7 @@ class LauncherO3deApi(ILauncher):
     module: str
     launch_file: str
     threads: List[Any] = []
+    gz_vnc: Any = Vnc_server()
 
     def run(self, callback):
         DRI_PATH = self.get_dri_path()
@@ -23,7 +29,33 @@ class LauncherO3deApi(ILauncher):
 
         #TODO: add run here
 
+        xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf :0"
+        xserver_thread = DockerThread(xserver_cmd)
+        xserver_thread.start()
+        self.threads.append(xserver_thread)
+
+        if ACCELERATION_ENABLED:
+            # Starts xserver, x11vnc and novnc
+            self.gz_vnc.start_vnc_gpu(
+                self.display, self.internal_port, self.external_port, DRI_PATH
+            )
+            # Write display config
+            o3decmd = f"export DISPLAY={self.display}; data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher"
+        else:
+            # Starts xserver, x11vnc and novnc
+            self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
+            # Write display config
+            o3decmd = f"export DISPLAY={self.display}; data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher"
+
+        gzclient_thread = DockerThread(o3decmd)
+        gzclient_thread.start()
+        self.threads.append(gzclient_thread)
+
+        process_name = "data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher"
+        wait_for_process_to_start(process_name, timeout=360)
+
     def terminate(self):
+        self.gz_vnc.terminate()
         if self.threads is not None:
             for thread in self.threads:
                 if thread.is_alive():
