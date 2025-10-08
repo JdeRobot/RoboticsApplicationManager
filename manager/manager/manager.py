@@ -691,9 +691,20 @@ class Manager:
             fds = os.listdir("/dev/pts/")
             console_fd = str(max(map(int, fds[:-1])))
 
-            os.system(
-                '/bin/bash -c "cd /workspace/code; source /opt/ros/humble/setup.bash; colcon build; source install/setup.bash; cd ../.."'
+            compile_process = subprocess.Popen(
+                [
+                    "cd /workspace/code; source /opt/ros/humble/setup.bash; colcon build; source install/setup.bash; cd ../.."
+                ],
+                stdin=open("/dev/pts/" + console_fd, "r"),
+                stdout=open("/dev/pts/" + console_fd, "w"),
+                stderr=open("/dev/pts/" + console_fd, "w"),
+                bufsize=1024,
+                universal_newlines=True,
+                shell=True,
+                executable="/bin/bash",
             )
+
+            compile_process.wait()
 
             self.application_process = subprocess.Popen(
                 [
