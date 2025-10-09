@@ -703,8 +703,11 @@ class Manager:
                 shell=True,
                 executable="/bin/bash",
             )
-
-            compile_process.wait()
+            #FIX: does not work. Always returns 0
+            returncode = compile_process.wait()
+            print(returncode)
+            if returncode != 0:
+                raise Exception("Failed to compile")
 
             self.application_process = subprocess.Popen(
                 [
