@@ -693,7 +693,7 @@ class Manager:
 
             compile_process = subprocess.Popen(
                 [
-                    "cd /workspace/code; source /opt/ros/humble/setup.bash; colcon build; source install/setup.bash; cd ../.."
+                    "cd /workspace/code && source /opt/ros/humble/setup.bash && colcon build && source install/setup.bash && cd ../.."
                 ],
                 stdin=open("/dev/pts/" + console_fd, "r"),
                 stdout=open("/dev/pts/" + console_fd, "w"),
@@ -703,7 +703,6 @@ class Manager:
                 shell=True,
                 executable="/bin/bash",
             )
-            #FIX: does not work. Always returns 0
             returncode = compile_process.wait()
             print(returncode)
             if returncode != 0:
