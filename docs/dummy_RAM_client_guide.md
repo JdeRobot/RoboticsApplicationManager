@@ -15,7 +15,7 @@ During the `launch_world` step of the dummy client, the file executed is `simple
 
 2. Start a new Docker container using the RoboticsBackend image and keep it running in the background:
    ```
-   docker run --rm -it -p 7164:7164 -p 6080:6080 -p 1108:1108 -p 7163:7163 jderobot/robotics-backend
+   docker run --rm -it -p 7164:7164 -p 6080-6090:6080-6090 -p 7163:7163 jderobot/robotics-backend
    ```
 
 3. Navigate to the test directory in the cloned RAM repository and run the dummy client file:
