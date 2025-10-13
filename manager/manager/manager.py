@@ -664,7 +664,7 @@ class Manager:
 
         # Delete old files
         if os.path.exists("/workspace/code"):
-            shutil.rmtree("/workspace/code")
+            shutil.rmtree("/workspace/code", ignore_errors=False)
         os.mkdir("/workspace/code")
 
         # Extract app config
@@ -684,6 +684,44 @@ class Manager:
         if not os.path.isfile(entrypoint):
             LogManager.logger.info("User code not found")
             raise Exception("User code not found")
+
+        _, file_extension = os.path.splitext(entrypoint)
+
+        if file_extension == ".cpp":
+            fds = os.listdir("/dev/pts/")
+            console_fd = str(max(map(int, fds[:-1])))
+
+            compile_process = subprocess.Popen(
+                [
+                    "cd /workspace/code && source /opt/ros/humble/setup.bash && colcon build && source install/setup.bash && cd ../.."
+                ],
+                stdin=open("/dev/pts/" + console_fd, "r"),
+                stdout=open("/dev/pts/" + console_fd, "w"),
+                stderr=open("/dev/pts/" + console_fd, "w"),
+                bufsize=1024,
+                universal_newlines=True,
+                shell=True,
+                executable="/bin/bash",
+            )
+            returncode = compile_process.wait()
+            print(returncode)
+            if returncode != 0:
+                raise Exception("Failed to compile")
+
+            self.application_process = subprocess.Popen(
+                [
+                    "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
+                ],
+                stdin=open("/dev/pts/" + console_fd, "r"),
+                stdout=sys.stdout,
+                stderr=subprocess.STDOUT,
+                bufsize=1024,
+                universal_newlines=True,
+                shell=True,
+                executable="/bin/bash",
+            )
+            self.unpause_sim()
+            return
 
         # Pass the linter
         errors = self.linter.evaluate_source_code(to_lint)
@@ -717,7 +755,6 @@ class Manager:
             LogManager.logger.info("Run application failed")
 
         LogManager.logger.info("Run application transition finished")
-
 
     def on_terminate_application(self, event):
         """
