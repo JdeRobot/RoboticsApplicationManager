@@ -15,8 +15,7 @@
 The Robotics Application Manager (RAM) is an advanced manager for executing robotic applications. It operates as a state machine, managing the lifecycle of robotic applications from initialization to termination and uses the following ports to communicate:
 
 - **7063**: Connexion with other applications (Robotics Academy, BT Studio, Unibotics)
-- **6080**: Gazebo VNC
-- **1108**: Console VNC
+- **6080-6090**: Tools VNC
 
 ## Main Class: `Manager`
 
