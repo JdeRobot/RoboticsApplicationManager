@@ -850,7 +850,13 @@ class Manager:
         if self.application_process is not None:
             try:
                 proc = psutil.Process(self.application_process.pid)
-                proc.suspend()
+                children = proc.children(recursive=True)
+                children.append(proc)
+                for p in children:
+                    try:
+                        p.suspend()
+                    except psutil.NoSuchProcess:
+                        pass
                 self.pause_sim()
             except Exception as e:
                 LogManager.logger.exception("Error suspending process")
@@ -871,7 +877,13 @@ class Manager:
         if self.application_process is not None:
             try:
                 proc = psutil.Process(self.application_process.pid)
-                proc.resume()
+                children = proc.children(recursive=True)
+                children.append(proc)
+                for p in children:
+                    try:
+                        p.resume()
+                    except psutil.NoSuchProcess:
+                        pass
                 self.unpause_sim()
             except Exception as e:
                 LogManager.logger.exception("Error suspending process")
