@@ -17,6 +17,11 @@ import logging
 
 
 class LauncherO3deApi(ILauncher):
+    display: str
+    internal_port: int
+    external_port: int
+    height: int
+    width: int
     type: str
     module: str
     launch_file: str

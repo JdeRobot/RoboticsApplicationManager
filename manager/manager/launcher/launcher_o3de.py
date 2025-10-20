@@ -14,11 +14,6 @@ from typing import List, Any
 from manager.ram_logging.log_manager import LogManager
 
 class LauncherO3de(ILauncher):
-    display: str
-    internal_port: int
-    external_port: int
-    height: int
-    width: int
     running: bool = False
     threads: List[Any] = []
     acceptsMsgs: bool = False
@@ -26,8 +21,8 @@ class LauncherO3de(ILauncher):
 
     def run(self, config_file, callback):
 
-        process_name = "gz sim"
-        wait_for_process_to_start(process_name, timeout=60)
+        # process_name = "gz sim"
+        # wait_for_process_to_start(process_name, timeout=60)
 
         self.running = True
 

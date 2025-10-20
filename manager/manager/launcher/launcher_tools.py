@@ -34,12 +34,7 @@ tools = {
     },
     "o3de": {
         "type": "module",
-        "width": 1024,
-        "height": 768,
         "module": "o3de",
-        "display": ":2",
-        "external_port": 6080,
-        "internal_port": 5900,
     },
     "rviz": {
         "module": "rviz",
