@@ -11,7 +11,7 @@ tools = {
     "console": {
         "module": "console",
         "display": ":1",
-        "external_port": 1108,
+        "external_port": 6082,
         "internal_port": 5901,
     },
     "gazebo": {
