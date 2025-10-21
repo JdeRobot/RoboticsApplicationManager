@@ -16,26 +16,45 @@ from manager.ram_logging.log_manager import LogManager
 
 def call_gzservice(service, reqtype, reptype, timeout, req):
     command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
-    subprocess.call(
-        f"{command}",
-        shell=True,
-        stdout=sys.stdout,
-        stderr=subprocess.STDOUT,
-        bufsize=1024,
-        universal_newlines=True,
-    )
+    try:
+        p = subprocess.Popen(
+            [
+                f"{command}",
+            ],
+            shell=True,
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+        )
+        p.wait(10)
+    except:
+        p.kill()
+
+        LogManager.logger.exception(f"Unable to complete call: {service}")
+        raise Exception(f"Unable to complete call: {service}")
 
 
 def call_service(service, service_type, request_data="{}"):
     command = f"ros2 service call {service} {service_type} '{request_data}'"
-    subprocess.call(
-        f"{command}",
-        shell=True,
-        stdout=sys.stdout,
-        stderr=subprocess.STDOUT,
-        bufsize=1024,
-        universal_newlines=True,
-    )
+    try:
+        p = subprocess.Popen(
+            [
+                f"{command}",
+            ],
+            shell=True,
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+        )
+        p.wait(10)
+    except:
+        p.kill()
+
+        LogManager.logger.exception(f"Unable to complete call: {service}")
+        raise Exception(f"Unable to complete call: {service}")
+
 
 
 def is_ros_service_available(service_name):
