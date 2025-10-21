@@ -406,6 +406,27 @@ class Manager:
         self.tools_launcher.run(self.consumer)
         LogManager.logger.info("Tools transition finished")
 
+    def write_to_tool_terminal(self, msg):
+        """Search console in docker different of /dev/pts/0 ."""
+        pts_consoles = [
+            f"/dev/pts/{dev}" for dev in os.listdir("/dev/pts/") if dev.isdigit()
+        ]
+        consoles = []
+        for console in pts_consoles:
+            if console != "/dev/pts/0":
+                try:
+                    # Search if it's a console
+                    with open(console, "w") as f:
+                        f.write("")
+                    consoles.append(console)
+                except Exception:
+                    # Continue searching
+                    continue
+
+        for i in consoles:
+            with open(i, "w") as console:
+                console.write(msg)
+
     def on_style_check_application(self, event):
         """
         Handle the 'style_check' event.
@@ -421,27 +442,6 @@ class Manager:
         Raises:
             Exception: with the errors found in the linter
         """
-
-        def find_docker_console():
-            """Search console in docker different of /dev/pts/0 ."""
-            pts_consoles = [
-                f"/dev/pts/{dev}" for dev in os.listdir("/dev/pts/") if dev.isdigit()
-            ]
-            consoles = []
-            for console in pts_consoles:
-                if console != "/dev/pts/0":
-                    try:
-                        # Search if it's a console
-                        with open(console, "w") as f:
-                            f.write("")
-                        consoles.append(console)
-                    except Exception:
-                        # Continue searching
-                        continue
-
-            # raise Exception("No active console other than /dev/pts/0")
-            return consoles
-
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         try:
@@ -468,11 +468,7 @@ class Manager:
         if errors == "":
             errors = "No errors found"
 
-        console_path = find_docker_console()
-        for i in console_path:
-            with open(i, "w") as console:
-                console.write(errors + "\n\n")
-
+        self.write_to_tool_terminal(errors + "\n\n")
         raise Exception(errors)
 
     def on_code_analysis(self, event):
@@ -633,27 +629,6 @@ class Manager:
         Parameters:
             event: The event object containing application configuration and code data.
         """
-
-        def find_docker_console():
-            """Search console in docker different of /dev/pts/0 ."""
-            pts_consoles = [
-                f"/dev/pts/{dev}" for dev in os.listdir("/dev/pts/") if dev.isdigit()
-            ]
-            consoles = []
-            for console in pts_consoles:
-                if console != "/dev/pts/0":
-                    try:
-                        # Search if it's a console
-                        with open(console, "w") as f:
-                            f.write("")
-                        consoles.append(console)
-                    except Exception:
-                        # Continue searching
-                        continue
-
-            # raise Exception("No active console other than /dev/pts/0")
-            return consoles
-
         # Kill already running code
         try:
             proc = psutil.Process(self.application_process.pid)
@@ -708,6 +683,7 @@ class Manager:
             if returncode != 0:
                 raise Exception("Failed to compile")
 
+            self.unpause_sim()
             self.application_process = subprocess.Popen(
                 [
                     "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
@@ -720,7 +696,6 @@ class Manager:
                 shell=True,
                 executable="/bin/bash",
             )
-            self.unpause_sim()
             return
 
         # Pass the linter
@@ -730,29 +705,23 @@ class Manager:
         for error in errors:
             if error != "":
                 failed_linter = True
-                console_path = find_docker_console()
-                for i in console_path:
-                    with open(i, "w") as console:
-                        console.write(error + "\n\n")
+                self.write_to_tool_terminal(errors + "\n\n")
 
         if failed_linter:
             raise Exception(errors)
 
-        try:
-            fds = os.listdir("/dev/pts/")
-            console_fd = str(max(map(int, fds[:-1])))
+        fds = os.listdir("/dev/pts/")
+        console_fd = str(max(map(int, fds[:-1])))
 
-            self.application_process = subprocess.Popen(
-                ["python3", entrypoint],
-                stdin=open("/dev/pts/" + console_fd, "r"),
-                stdout=sys.stdout,
-                stderr=subprocess.STDOUT,
-                bufsize=1024,
-                universal_newlines=True,
-            )
-            self.unpause_sim()
-        except:
-            LogManager.logger.info("Run application failed")
+        self.unpause_sim()
+        self.application_process = subprocess.Popen(
+            ["python3", entrypoint],
+            stdin=open("/dev/pts/" + console_fd, "r"),
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+        )
 
         LogManager.logger.info("Run application transition finished")
 
@@ -826,7 +795,6 @@ class Manager:
                 self.robot_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating robot launcher")
-
         if self.world_launcher:
             try:
                 self.world_launcher.terminate()
@@ -848,18 +816,15 @@ class Manager:
 
     def on_pause(self, msg):
         if self.application_process is not None:
-            try:
-                proc = psutil.Process(self.application_process.pid)
-                children = proc.children(recursive=True)
-                children.append(proc)
-                for p in children:
-                    try:
-                        p.suspend()
-                    except psutil.NoSuchProcess:
-                        pass
-                self.pause_sim()
-            except Exception as e:
-                LogManager.logger.exception("Error suspending process")
+            proc = psutil.Process(self.application_process.pid)
+            children = proc.children(recursive=True)
+            children.append(proc)
+            for p in children:
+                try:
+                    p.suspend()
+                except psutil.NoSuchProcess:
+                    pass
+            self.pause_sim()
         else:
             LogManager.logger.warning(
                 "Application process was None during pause. Calling termination."
@@ -875,18 +840,15 @@ class Manager:
             msg: The event or message triggering the resume action.
         """
         if self.application_process is not None:
-            try:
-                proc = psutil.Process(self.application_process.pid)
-                children = proc.children(recursive=True)
-                children.append(proc)
-                for p in children:
-                    try:
-                        p.resume()
-                    except psutil.NoSuchProcess:
-                        pass
-                self.unpause_sim()
-            except Exception as e:
-                LogManager.logger.exception("Error suspending process")
+            proc = psutil.Process(self.application_process.pid)
+            children = proc.children(recursive=True)
+            children.append(proc)
+            for p in children:
+                try:
+                    p.resume()
+                except psutil.NoSuchProcess:
+                    pass
+            self.unpause_sim()
         else:
             LogManager.logger.warning(
                 "Application process was None during resume. Calling termination."
@@ -894,10 +856,18 @@ class Manager:
             self.reset_sim()
 
     def pause_sim(self):
-        self.tools_launcher.pause()
+        try:
+            self.tools_launcher.pause()
+        except subprocess.TimeoutExpired as e:
+            self.write_to_tool_terminal(f"{e}\n\n")
+            raise Exception("Failed to pause simulator")
 
     def unpause_sim(self):
-        self.tools_launcher.unpause()
+        try:
+            self.tools_launcher.unpause()
+        except subprocess.TimeoutExpired as e:
+            self.write_to_tool_terminal(f"{e}\n\n")
+            raise Exception("Failed to start simulator")
 
     def reset_sim(self):
         """
@@ -910,7 +880,11 @@ class Manager:
         if self.robot_launcher:
             self.robot_launcher.terminate()
 
-        self.tools_launcher.reset()
+        try:
+            self.tools_launcher.reset()
+        except subprocess.TimeoutExpired as e:
+            self.write_to_tool_terminal(f"{e}\n\n")
+            raise Exception("Failed to reset simulator")
 
         if self.robot_launcher:
             try:

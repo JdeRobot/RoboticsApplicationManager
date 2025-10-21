@@ -4,25 +4,31 @@ from manager.manager.docker_thread.docker_thread import DockerThread
 from manager.manager.vnc.vnc_server import Vnc_server
 from manager.libs.process_utils import (
     wait_for_process_to_start,
-    check_gpu_acceleration,
 )
 import subprocess
-import time
-import os
-import stat
 from typing import List, Any
+from manager.ram_logging.log_manager import LogManager
 
 
 def call_service(service, service_type, request_data="{}"):
-    command = f"ros2 service call {service} {service_type} '{request_data}'"
-    subprocess.call(
-        f"{command}",
-        shell=True,
-        stdout=sys.stdout,
-        stderr=subprocess.STDOUT,
-        bufsize=1024,
-        universal_newlines=True,
-    )
+    command = f"sleep 10;ros2 service call {service} {service_type} '{request_data}'"
+    try:
+        p = subprocess.Popen(
+            [
+                f"{command}",
+            ],
+            shell=True,
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+        )
+        p.wait(10)
+    except subprocess.TimeoutExpired as e:
+        p.kill()
+
+        LogManager.logger.exception(f"Unable to complete call: {service}")
+        raise e
 
 
 class LauncherGazebo(ILauncher):
