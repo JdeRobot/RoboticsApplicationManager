@@ -705,7 +705,7 @@ class Manager:
         for error in errors:
             if error != "":
                 failed_linter = True
-                self.write_to_tool_terminal(errors + "\n\n")
+                self.write_to_tool_terminal(error + "\n\n")
 
         if failed_linter:
             raise Exception(errors)
