@@ -11,7 +11,7 @@ from manager.ram_logging.log_manager import LogManager
 
 
 def call_service(service, service_type, request_data="{}"):
-    command = f"sleep 10;ros2 service call {service} {service_type} '{request_data}'"
+    command = f"ros2 service call {service} {service_type} '{request_data}'"
     try:
         p = subprocess.Popen(
             [
