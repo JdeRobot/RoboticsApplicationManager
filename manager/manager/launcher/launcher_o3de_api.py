@@ -45,18 +45,18 @@ class LauncherO3deApi(ILauncher):
                 self.display, self.internal_port, self.external_port, DRI_PATH
             )
             # Write display config
-            o3decmd = f"export DISPLAY={self.display}; data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher"
+            o3decmd = f'export DISPLAY={self.display}; data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher --forceAdapter="NVIDIA"'
         else:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config
-            o3decmd = f"export DISPLAY={self.display}; data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher"
+            o3decmd = f'export DISPLAY={self.display}; data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher --forceAdapter="NVIDIA"'
 
         gzclient_thread = DockerThread(o3decmd)
         gzclient_thread.start()
         self.threads.append(gzclient_thread)
 
-        process_name = "data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher"
+        process_name = 'data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher --forceAdapter="NVIDIA"'
         wait_for_process_to_start(process_name, timeout=360)
 
     def terminate(self):
