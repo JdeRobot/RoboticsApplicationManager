@@ -42,11 +42,11 @@ class LauncherO3de(ILauncher):
         pass
 
     def pause(self):
-        #TODO: add pause
+        self.running = False
         pass
 
     def unpause(self):
-        #TODO: add resume
+        self.running = True
         pass
 
     def reset(self):
