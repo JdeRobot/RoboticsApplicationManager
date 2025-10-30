@@ -690,7 +690,7 @@ class Manager:
                 ],
                 stdin=open("/dev/pts/" + console_fd, "r"),
                 stdout=open("/dev/pts/" + console_fd, "w"),
-                stderr=open("/dev/pts/" + console_fd, "w"),
+                stderr=sys.stdout,
                 bufsize=1024,
                 universal_newlines=True,
                 shell=True,
@@ -718,7 +718,7 @@ class Manager:
             ["python3", entrypoint],
             stdin=open("/dev/pts/" + console_fd, "r"),
             stdout=open("/dev/pts/" + console_fd, "w"),
-            stderr=open("/dev/pts/" + console_fd, "w"),
+            stderr=sys.stdout,
             bufsize=1024,
             universal_newlines=True,
         )
