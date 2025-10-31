@@ -689,8 +689,8 @@ class Manager:
                     "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
                 ],
                 stdin=open("/dev/pts/" + console_fd, "r"),
-                stdout=sys.stdout,
-                stderr=subprocess.STDOUT,
+                stdout=open("/dev/pts/" + console_fd, "w"),
+                stderr=sys.stdout,
                 bufsize=1024,
                 universal_newlines=True,
                 shell=True,
@@ -717,8 +717,8 @@ class Manager:
         self.application_process = subprocess.Popen(
             ["python3", entrypoint],
             stdin=open("/dev/pts/" + console_fd, "r"),
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
+            stdout=open("/dev/pts/" + console_fd, "w"),
+            stderr=sys.stdout,
             bufsize=1024,
             universal_newlines=True,
         )
