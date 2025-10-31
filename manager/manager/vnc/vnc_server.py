@@ -88,16 +88,23 @@ class Vnc_server:
         self.threads.append(turbovnc_thread)
         wait_for_xserver(display)
 
+        certs = ""
+        
+        if os.path.isfile("/etc/certs/cert.pem"):
+           certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
+
         # Start noVNC with default port 6080 listening to VNC server on 5900
         if self.get_ros_version() == "2":
             novnc_cmd = (
                 f"/noVNC/utils/novnc_proxy --listen {external_port} "
-                f"--vnc localhost:{internal_port}"
+                f"--vnc localhost:{internal_port} "
+                f"{certs}"
             )
         else:
             novnc_cmd = (
                 f"/noVNC/utils/launch.sh --listen {external_port} "
-                f"--vnc localhost:{internal_port}"
+                f"--vnc localhost:{internal_port} "
+                f"{certs}"
             )
 
         novnc_thread = DockerThread(novnc_cmd)
