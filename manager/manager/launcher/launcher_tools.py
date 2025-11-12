@@ -32,6 +32,10 @@ tools = {
         "external_port": 6080,
         "internal_port": 5900,
     },
+    "o3de": {
+        "type": "module",
+        "module": "o3de",
+    },
     "rviz": {
         "module": "rviz",
         "display": ":3",
@@ -61,6 +65,7 @@ tools = {
 simulator = {
     "gazebo": {"tool": "gazebo"},
     "gz": {"tool": "gzsim"},
+    "o3de": {"tool": "o3de"},
 }
 
 

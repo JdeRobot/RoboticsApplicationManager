@@ -26,6 +26,21 @@ worlds = {
             }
         ],
     },
+    "o3de": {
+        "2": [
+            {
+                "width": 1024,
+                "height": 768,
+                "display": ":2",
+                "external_port": 6080,
+                "internal_port": 5900,
+                "type": "o3de",
+                "module": "o3de_api",
+                "parameters": [],
+                "launch_file": [],
+            }
+        ],
+    },
     "physical": {},
 }
 
