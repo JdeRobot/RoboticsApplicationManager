@@ -60,6 +60,12 @@ tools = {
         "internal_port": 2303,
         "consumer": None,
     },
+    "video": {
+        "type": "module",
+        "module": None,
+        "internal_port": 2303,
+        "consumer": None,
+    },
 }
 
 simulator = {
