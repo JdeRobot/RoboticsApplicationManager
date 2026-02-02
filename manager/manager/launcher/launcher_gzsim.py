@@ -56,7 +56,6 @@ def call_service(service, service_type, request_data="{}"):
         raise Exception(f"Unable to complete call: {service}")
 
 
-
 def is_ros_service_available(service_name):
     try:
         result = subprocess.run(
@@ -135,7 +134,7 @@ class LauncherGzsim(ILauncher):
 
     def pause(self):
         call_gzservice(
-            "$(gz service -l | grep '^/world/\w*/control$')",
+            "/world/default/control",
             "gz.msgs.WorldControl",
             "gz.msgs.Boolean",
             "3000",
@@ -144,7 +143,7 @@ class LauncherGzsim(ILauncher):
 
     def unpause(self):
         call_gzservice(
-            "$(gz service -l | grep '^/world/\w*/control$')",
+            "/world/default/control",
             "gz.msgs.WorldControl",
             "gz.msgs.Boolean",
             "3000",
@@ -159,7 +158,7 @@ class LauncherGzsim(ILauncher):
                 "{}",
             )
         call_gzservice(
-            "$(gz service -l | grep '^/world/\w*/control$')",
+            "/world/default/control",
             "gz.msgs.WorldControl",
             "gz.msgs.Boolean",
             "3000",
