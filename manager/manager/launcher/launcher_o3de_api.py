@@ -15,6 +15,7 @@ import subprocess
 
 import logging
 
+
 class LauncherO3deApi(ILauncher):
     display: str
     internal_port: int
@@ -31,19 +32,19 @@ class LauncherO3deApi(ILauncher):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
-        #TODO: add run here
+        # TODO: add run here
 
         xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf :0"
         xserver_thread = DockerThread(xserver_cmd)
         xserver_thread.start()
         self.threads.append(xserver_thread)
-        
-        LevelSelect=f'echo "LoadLevel Levels/{self.launch_file}" > data/workspace/ROS2Demo/autoexec.cfg'
-        
+
+        LevelSelect = f'echo "LoadLevel Levels/{self.launch_file}" > data/workspace/ROS2Demo/autoexec.cfg'
+
         LevelSelect_thread = DockerThread(LevelSelect)
         LevelSelect_thread.start()
         self.threads.append(LevelSelect_thread)
-        
+
         if ACCELERATION_ENABLED:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc_gpu(
@@ -61,7 +62,7 @@ class LauncherO3deApi(ILauncher):
         gzclient_thread.start()
         self.threads.append(gzclient_thread)
 
-        process_name = 'ROS2Demo.GameLauncher'
+        process_name = "ROS2Demo.GameLauncher"
         wait_for_process_to_start(process_name, timeout=360)
 
     def terminate(self):

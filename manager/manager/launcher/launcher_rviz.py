@@ -23,8 +23,8 @@ class LauncherRviz(ILauncher):
         config = "ros2 run rviz2 rviz2"
 
         if config_file != None:
-            config = f'ros2 launch {config_file}'
-        
+            config = f"ros2 launch {config_file}"
+
         print(config)
         if ACCELERATION_ENABLED:
             self.console_vnc.start_vnc_gpu(
@@ -69,7 +69,6 @@ class LauncherRviz(ILauncher):
     def died(self):
         pass
 
-
     # rviz_node_full = Node(
     #     package="rviz2",
     #     executable="rviz2",
@@ -80,7 +79,7 @@ class LauncherRviz(ILauncher):
     #         robot_description,
     #         robot_description_semantic,
     #         kinematics_yaml,
-            
+
     #         pilz_planning_pipeline_config,
 
     #         joint_limits,

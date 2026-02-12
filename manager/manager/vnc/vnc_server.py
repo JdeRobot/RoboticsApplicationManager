@@ -40,9 +40,9 @@ class Vnc_server:
         wait_for_xserver(display)
 
         certs = ""
-        
+
         if os.path.isfile("/etc/certs/cert.pem"):
-           certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
+            certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
         if self.get_ros_version() == "2":
@@ -89,9 +89,9 @@ class Vnc_server:
         wait_for_xserver(display)
 
         certs = ""
-        
+
         if os.path.isfile("/etc/certs/cert.pem"):
-           certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
+            certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
         if self.get_ros_version() == "2":
