@@ -115,13 +115,13 @@ class Vnc_server:
         self.wait_for_port("localhost", internal_port)
         self.wait_for_port("localhost", external_port)
 
-    def wait_for_port(self, host, port, timeout=20):
+    def wait_for_port(self, host, port, timeout=120):
         """Wait for a TCP port on a host to become available within a timeout period.
 
         Args:
             host (str): Hostname or IP address to check.
             port (int): Port number to check.
-            timeout (int, optional): Maximum time to wait in seconds. Defaults to 20.
+            timeout (int, optional): Maximum time to wait in seconds. Defaults to 120.
 
         Raises:
             TimeoutError: If the port does not become available within the timeout.

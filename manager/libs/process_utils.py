@@ -75,7 +75,7 @@ def is_xserver_running(display):
     return os.path.exists(x_socket_path)
 
 
-def wait_for_xserver(display, timeout=30):
+def wait_for_xserver(display, timeout=120):
     """
     Wait for the X server to start within a specified timeout period.
 

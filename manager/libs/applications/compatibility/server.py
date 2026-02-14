@@ -14,7 +14,7 @@ class Server(threading.Thread):
     ):
         super().__init__()
         self.update_callback = callback
-        self.server = WebsocketServer(port=port, host="127.0.0.1")
+        self.server = WebsocketServer(port=port, host="0.0.0.0")
         self.server.set_fn_new_client(self.on_open)
         self.server.set_fn_client_left(self.on_close)
         self.server.set_fn_message_received(self.on_message)
