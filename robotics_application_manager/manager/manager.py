@@ -777,6 +777,7 @@ class Manager:
         This method stops all running processes,
         terminates launchers, and restarts the script.
         """
+        LogManager.logger.exception("Disconected")
 
         try:
             self.consumer.stop()
@@ -801,6 +802,7 @@ class Manager:
                 self.robot_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating robot launcher")
+
         if self.world_launcher:
             try:
                 self.world_launcher.terminate()
@@ -912,6 +914,8 @@ class Manager:
         self.consumer.start()
 
         def signal_handler(sign, frame):
+            LogManager.logger.exception("why")
+
             print("\nprogram exiting gracefully")
             self.running = False
 
@@ -968,3 +972,17 @@ class Manager:
                     )
                 self.consumer.send_message(ex)
                 LogManager.logger.error(e, exc_info=True)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "host", type=str, help="Host to listen to  (0.0.0.0 or all hosts)"
+    )
+    parser.add_argument("port", type=int, help="Port to listen to")
+    args = parser.parse_args()
+
+    RAM = Manager(args.host, args.port)
+    RAM.start()
