@@ -35,16 +35,16 @@ from transitions import Machine
 
 from manager.comms.consumer_message import ManagerConsumerMessageException
 from manager.comms.new_consumer import ManagerConsumer
-from manager.libs.process_utils import check_gpu_acceleration, get_class_from_file
+from manager.libs.process_utils import (
+    check_gpu_acceleration,
+    get_class_from_file,
+    stop_process_and_children,
+)
 from manager.libs.launch_world_model import ConfigurationManager
+from manager.ram_logging.log_manager import LogManager
 from manager.manager.launcher.launcher_world import LauncherWorld
 from manager.manager.launcher.launcher_robot import LauncherRobot
 from manager.manager.launcher.launcher_tools import LauncherTools
-from manager.ram_logging.log_manager import LogManager
-from manager.manager.application.robotics_python_application_interface import (
-    IRoboticsPythonApplication,
-)
-from manager.libs.process_utils import stop_process_and_children
 from manager.manager.lint.linter import Lint
 from manager.manager.editor.serializers import serialize_completions
 
@@ -442,6 +442,8 @@ class Manager:
         Raises:
             Exception: with the errors found in the linter
         """
+        # TODO: redo
+
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         try:
@@ -962,17 +964,3 @@ class Manager:
                     )
                 self.consumer.send_message(ex)
                 LogManager.logger.error(e, exc_info=True)
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "host", type=str, help="Host to listen to  (0.0.0.0 or all hosts)"
-    )
-    parser.add_argument("port", type=int, help="Port to listen to")
-    args = parser.parse_args()
-
-    RAM = Manager(args.host, args.port)
-    RAM.start()

@@ -18,16 +18,6 @@ from manager.comms.websocket_server import WebsocketServer
 from manager.ram_logging.log_manager import LogManager
 
 
-class Client:
-    """Represents a client connected to the WebSocket server."""
-
-    def __init__(self, **kwargs):
-        """Initialize a Client instance with id, handler, and address."""
-        self.id = kwargs["id"]
-        self.handler = kwargs["handler"]
-        self.address = kwargs["address"]
-
-
 class ManagerConsumer:
     """
     Websocket server consumer for new Robotics Application Manager aka: RAM.

@@ -1,8 +1,8 @@
-from manager.libs.applications.compatibility.server import Server
+from manager.libs.server import Server
 from manager.ram_logging.log_manager import LogManager
 from manager.comms.new_consumer import ManagerConsumer
 from typing import Optional
-from manager.libs.applications.compatibility.file_watchdog import FileWatchdog
+from manager.libs.file_watchdog import FileWatchdog
 
 
 class LauncherStateMonitor:
