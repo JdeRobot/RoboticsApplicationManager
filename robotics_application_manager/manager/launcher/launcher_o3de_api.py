@@ -4,16 +4,20 @@ from typing import List, Any
 import time
 import stat
 
-from manager.manager.launcher.launcher_interface import ILauncher, LauncherException
-from manager.manager.docker_thread.docker_thread import DockerThread
-from manager.manager.vnc.vnc_server import Vnc_server
-from manager.libs.process_utils import (
+from .launcher_interface import (
+    ILauncher,
+    LauncherException,
+)
+from robotics_application_manager.manager.docker_thread import DockerThread
+from robotics_application_manager.manager.vnc import Vnc_server
+from robotics_application_manager.libs import (
     wait_for_process_to_start,
     check_gpu_acceleration,
 )
 import subprocess
 
 import logging
+
 
 class LauncherO3deApi(ILauncher):
     display: str
@@ -31,19 +35,19 @@ class LauncherO3deApi(ILauncher):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
-        #TODO: add run here
+        # TODO: add run here
 
         xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf :0"
         xserver_thread = DockerThread(xserver_cmd)
         xserver_thread.start()
         self.threads.append(xserver_thread)
-        
-        LevelSelect=f'echo "LoadLevel Levels/{self.launch_file}" > data/workspace/ROS2Demo/autoexec.cfg'
-        
+
+        LevelSelect = f'echo "LoadLevel Levels/{self.launch_file}" > data/workspace/ROS2Demo/autoexec.cfg'
+
         LevelSelect_thread = DockerThread(LevelSelect)
         LevelSelect_thread.start()
         self.threads.append(LevelSelect_thread)
-        
+
         if ACCELERATION_ENABLED:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc_gpu(
@@ -61,7 +65,7 @@ class LauncherO3deApi(ILauncher):
         gzclient_thread.start()
         self.threads.append(gzclient_thread)
 
-        process_name = 'ROS2Demo.GameLauncher'
+        process_name = "ROS2Demo.GameLauncher"
         wait_for_process_to_start(process_name, timeout=360)
 
     def terminate(self):

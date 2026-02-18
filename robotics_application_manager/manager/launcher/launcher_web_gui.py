@@ -1,6 +1,6 @@
-from manager.libs.server import Server
-from manager.ram_logging.log_manager import LogManager
-from manager.comms.new_consumer import ManagerConsumer
+from robotics_application_manager.libs import Server
+from robotics_application_manager import LogManager
+from robotics_application_manager.comms import ManagerConsumer
 from typing import Optional
 
 

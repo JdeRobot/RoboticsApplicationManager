@@ -1,2 +1,1 @@
-from .manager.manager import Manager
-from .ram_logging.log_manager import LogManager
+from robotics_application_manager.ram_logging.log_manager import LogManager

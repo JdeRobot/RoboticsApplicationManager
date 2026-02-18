@@ -1,11 +1,10 @@
-from manager.libs.process_utils import get_class, class_from_module
+from robotics_application_manager.libs import get_class, class_from_module
 from typing import Optional
 from pydantic import BaseModel
 
 
-from manager.libs.process_utils import get_class, class_from_module
-from manager.ram_logging.log_manager import LogManager
-from manager.manager.launcher.launcher_interface import ILauncher
+from robotics_application_manager import LogManager
+from .launcher_interface import ILauncher
 
 tools = {
     "console": {

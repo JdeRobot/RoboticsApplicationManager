@@ -33,20 +33,24 @@ from uuid import uuid4
 
 from transitions import Machine
 
-from manager.comms.consumer_message import ManagerConsumerMessageException
-from manager.comms.new_consumer import ManagerConsumer
-from manager.libs.process_utils import (
+from robotics_application_manager.comms import (
+    ManagerConsumerMessageException,
+    ManagerConsumer,
+)
+from robotics_application_manager.libs import (
     check_gpu_acceleration,
     get_class_from_file,
     stop_process_and_children,
+    ConfigurationManager,
 )
-from manager.libs.launch_world_model import ConfigurationManager
-from manager.ram_logging.log_manager import LogManager
-from manager.manager.launcher.launcher_world import LauncherWorld
-from manager.manager.launcher.launcher_robot import LauncherRobot
-from manager.manager.launcher.launcher_tools import LauncherTools
-from manager.manager.lint.linter import Lint
-from manager.manager.editor.serializers import serialize_completions
+from robotics_application_manager.ram_logging import LogManager
+from robotics_application_manager.manager.launcher import (
+    LauncherWorld,
+    LauncherRobot,
+    LauncherTools,
+)
+from robotics_application_manager.manager.lint import Lint
+from robotics_application_manager.manager.editor import serialize_completions
 
 
 class Manager:

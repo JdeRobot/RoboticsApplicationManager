@@ -6,11 +6,11 @@ including GPU-accelerated sessions and desktop icon creation.
 
 import time
 import socket
-from manager.manager.docker_thread.docker_thread import DockerThread
+from robotics_application_manager.manager.docker_thread import DockerThread
 import subprocess
 from typing import List, Any
 import os
-from manager.libs.process_utils import wait_for_xserver
+from robotics_application_manager.libs import wait_for_xserver
 
 
 class Vnc_server:
@@ -40,9 +40,9 @@ class Vnc_server:
         wait_for_xserver(display)
 
         certs = ""
-        
+
         if os.path.isfile("/etc/certs/cert.pem"):
-           certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
+            certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
         if self.get_ros_version() == "2":
@@ -89,9 +89,9 @@ class Vnc_server:
         wait_for_xserver(display)
 
         certs = ""
-        
+
         if os.path.isfile("/etc/certs/cert.pem"):
-           certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
+            certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
 
         # Start noVNC with default port 6080 listening to VNC server on 5900
         if self.get_ros_version() == "2":
