@@ -1,8 +1,8 @@
 import sys
-from manager.manager.launcher.launcher_interface import ILauncher
-from manager.manager.docker_thread.docker_thread import DockerThread
-from manager.manager.vnc.vnc_server import Vnc_server
-from manager.libs.process_utils import (
+from .launcher_interface import ILauncher
+from robotics_application_manager.manager.docker_thread import DockerThread
+from robotics_application_manager.manager.vnc import Vnc_server
+from robotics_application_manager.libs import (
     wait_for_process_to_start,
     check_gpu_acceleration,
 )
@@ -11,7 +11,8 @@ import time
 import os
 import stat
 from typing import List, Any
-from manager.ram_logging.log_manager import LogManager
+from robotics_application_manager import LogManager
+
 
 class LauncherO3de(ILauncher):
     running: bool = False
@@ -50,7 +51,7 @@ class LauncherO3de(ILauncher):
         pass
 
     def reset(self):
-        #TODO: add reset
+        # TODO: add reset
         pass
 
     def get_dri_path(self):

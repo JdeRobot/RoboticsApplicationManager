@@ -4,8 +4,11 @@ from typing import List, Any
 import time
 import stat
 
-from manager.manager.launcher.launcher_interface import ILauncher, LauncherException
-from manager.manager.docker_thread.docker_thread import DockerThread
+from .launcher_interface import (
+    ILauncher,
+    LauncherException,
+)
+from robotics_application_manager.manager.docker_thread import DockerThread
 import subprocess
 
 import logging

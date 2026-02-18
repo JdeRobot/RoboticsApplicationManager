@@ -14,7 +14,7 @@ import errno
 import threading
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 
-from manager.comms.thread import WebsocketServerThread
+from .thread import WebsocketServerThread
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()

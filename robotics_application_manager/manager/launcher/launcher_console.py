@@ -1,7 +1,7 @@
-from manager.manager.launcher.launcher_interface import ILauncher
-from manager.manager.docker_thread.docker_thread import DockerThread
-from manager.manager.vnc.vnc_server import Vnc_server
-from manager.libs.process_utils import check_gpu_acceleration
+from .launcher_interface import ILauncher
+from robotics_application_manager.manager.docker_thread import DockerThread
+from robotics_application_manager.manager.vnc import Vnc_server
+from robotics_application_manager.libs import check_gpu_acceleration
 import os
 import stat
 from typing import List, Any

@@ -7,7 +7,16 @@ Has support for colored and length-limited log formatting.
 import logging
 import os
 
-from manager.libs.singleton import singleton
+
+def singleton(cls):
+    instances = {}
+
+    def get_instance():
+        if cls not in instances:
+            instances[cls] = cls()
+        return instances[cls]
+
+    return get_instance()
 
 
 # Clase para un Formatter personalizado que añade colores

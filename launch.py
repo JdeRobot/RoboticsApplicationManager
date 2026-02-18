@@ -1,4 +1,4 @@
-from .robotics_application_manager import Manager
+from robotics_application_manager.manager.manager import Manager
 
 if __name__ == "__main__":
     import argparse

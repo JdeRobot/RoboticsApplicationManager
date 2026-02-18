@@ -10,12 +10,12 @@ from queue import Queue
 from uuid import uuid4
 from datetime import datetime
 
-from manager.comms.consumer_message import (
+from .consumer_message import (
     ManagerConsumerMessageException,
     ManagerConsumerMessage,
 )
-from manager.comms.websocket_server import WebsocketServer
-from manager.ram_logging.log_manager import LogManager
+from .websocket_server import WebsocketServer
+from robotics_application_manager import LogManager
 
 
 class ManagerConsumer:
