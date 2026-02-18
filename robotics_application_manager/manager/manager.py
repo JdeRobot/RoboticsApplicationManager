@@ -777,7 +777,6 @@ class Manager:
         This method stops all running processes,
         terminates launchers, and restarts the script.
         """
-        LogManager.logger.exception("Disconected")
 
         try:
             self.consumer.stop()
@@ -914,8 +913,6 @@ class Manager:
         self.consumer.start()
 
         def signal_handler(sign, frame):
-            LogManager.logger.exception("why")
-
             print("\nprogram exiting gracefully")
             self.running = False
 
