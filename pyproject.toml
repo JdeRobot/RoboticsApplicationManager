@@ -1,12 +1,12 @@
 [project]
 name = "robotics_application_manager"
-version = "0.0.3"
+version = "5.6.7"
 authors = [
   { name="Example Author", email="author@example.com" },
 ]
 description = "Robotics Application Manager"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
