@@ -754,6 +754,7 @@ class Manager:
     def on_terminate_tools(self, event):
 
         self.tools_launcher.terminate()
+        self.tools_launcher = None
 
     def on_terminate_universe(self, event):
         """
@@ -767,8 +768,11 @@ class Manager:
         """
         if self.world_launcher is not None:
             self.world_launcher.terminate()
+            self.world_launcher = None
+            self.world_type = None
         if self.robot_launcher is not None:
             self.robot_launcher.terminate()
+            self.robot_launcher = None
 
     def on_disconnect(self, event):
         """
@@ -777,11 +781,6 @@ class Manager:
         This method stops all running processes,
         terminates launchers, and restarts the script.
         """
-
-        try:
-            self.consumer.stop()
-        except Exception as e:
-            LogManager.logger.exception("Exception stopping consumer")
 
         if self.application_process:
             try:
@@ -807,10 +806,6 @@ class Manager:
                 self.world_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")
-
-        # Reiniciar el script
-        python = sys.executable
-        os.execl(python, python, *sys.argv)
 
     def process_message(self, message):
         if message.command == "gui":
