@@ -5,20 +5,16 @@ including launching worlds, robots, visualizations,
 and handling code analysis and formatting.
 """
 
-from __future__ import annotations
-import json
 import sys
-import tempfile
-
-import black
-
 
 sys.path.insert(0, "/RoboticsApplicationManager")
 
+import json
+import tempfile
+import black
 import os
 import signal
 import subprocess
-import sys
 import re
 import psutil
 import shutil
@@ -26,13 +22,11 @@ import time
 import base64
 import zipfile
 import jedi
-
 import traceback
+
 from queue import Queue
 from uuid import uuid4
-
 from transitions import Machine
-
 from robotics_application_manager.comms import (
     ManagerConsumerMessageException,
     ManagerConsumer,
