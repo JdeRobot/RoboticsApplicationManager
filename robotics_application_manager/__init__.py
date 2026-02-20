@@ -1,0 +1,1 @@
+from robotics_application_manager.ram_logging.log_manager import LogManager
