@@ -1,1 +1,0 @@
-robotics_application_manager
