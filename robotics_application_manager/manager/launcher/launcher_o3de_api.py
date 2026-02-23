@@ -42,30 +42,24 @@ class LauncherO3deApi(ILauncher):
         xserver_thread.start()
         self.threads.append(xserver_thread)
 
-        LevelSelect = f'echo "LoadLevel Levels/{self.launch_file}" > data/workspace/ROS2Demo/autoexec.cfg'
-
-        LevelSelect_thread = DockerThread(LevelSelect)
-        LevelSelect_thread.start()
-        self.threads.append(LevelSelect_thread)
-
         if ACCELERATION_ENABLED:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc_gpu(
                 self.display, self.internal_port, self.external_port, DRI_PATH
             )
             # Write display config
-            o3decmd = f'export DISPLAY={self.display}; data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher --forceAdapter="NVIDIA"'
+            o3decmd = f'export DISPLAY={self.display}; data/workspace/o3de/gme_o3de/bin/Linux/release/Monolithic/MySimulationProject2.GameLauncher +LoadLevel "{self.launch_file}" --forceAdapter="NVIDIA"'
         else:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config
-            o3decmd = f'export DISPLAY={self.display}; data/workspace/ROS2Demo/build/linux/bin/profile/ROS2Demo.GameLauncher --forceAdapter="NVIDIA"'
+            o3decmd = f'export DISPLAY={self.display}; data/workspace/o3de/gme_o3de/bin/Linux/release/Monolithic/MySimulationProject2.GameLauncher +LoadLevel "{self.launch_file}" --forceAdapter="NVIDIA"'
 
         gzclient_thread = DockerThread(o3decmd)
         gzclient_thread.start()
         self.threads.append(gzclient_thread)
 
-        process_name = "ROS2Demo.GameLauncher"
+        process_name = "MySimulationProject2.GameLauncher"
         wait_for_process_to_start(process_name, timeout=360)
 
     def terminate(self):
@@ -78,7 +72,7 @@ class LauncherO3deApi(ILauncher):
                 self.threads.remove(thread)
 
         # TODO: processes to kill
-        to_kill = ["ROS2Demo.GameLauncher"]
+        to_kill = ["MySimulationProject2.GameLauncher"]
 
         kill_cmd = "pkill -9 -f "
         for i in to_kill:
