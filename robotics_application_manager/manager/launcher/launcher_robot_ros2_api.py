@@ -48,31 +48,30 @@ class LauncherRobotRos2Api(ILauncher):
                     thread.join()
                 self.threads.remove(thread)
 
-        kill_cmd = "pkill -9 -f "
-        cmd = kill_cmd + "spawn_robot.launch.py"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
+        # kill_cmd = "pkill -9 -f "
+        # cmd = kill_cmd + "spawn_robot_warehouse.launch.py"
+        # subprocess.call(
+        #     cmd,
+        #     shell=True,
+        #     stdout=subprocess.PIPE,
+        #     bufsize=1024,
+        #     universal_newlines=True,
+        # )
 
-        kill_cmd = "pkill -9 "
-        cmd = kill_cmd + "bridg"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
+        # cmd = kill_cmd + "/opt/ros/humble"
+        # subprocess.call(
+        #     cmd,
+        #     shell=True,
+        #     stdout=subprocess.PIPE,
+        #     bufsize=1024,
+        #     universal_newlines=True,
+        # )
 
-        cmd = kill_cmd + "robot_state_publisher"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
+        # cmd = kill_cmd + "robot_state_publisher"
+        # subprocess.call(
+        #     cmd,
+        #     shell=True,
+        #     stdout=subprocess.PIPE,
+        #     bufsize=1024,
+        #     universal_newlines=True,
+        # )

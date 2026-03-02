@@ -20,7 +20,7 @@ class DockerThread(threading.Thread):
         self.process = subprocess.Popen(
             self.cmd,
             shell=self.shell,
-            stdout=subprocess.PIPE,
+            stdout=sys.stdout,
             stderr=subprocess.PIPE,
             start_new_session=True,
             bufsize=1024,

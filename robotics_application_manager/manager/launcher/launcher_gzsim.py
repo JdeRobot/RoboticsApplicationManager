@@ -13,6 +13,10 @@ import stat
 from typing import List, Any
 from robotics_application_manager import LogManager
 
+from gz.msgs10.world_control_pb2 import WorldControl
+from gz.msgs10.boolean_pb2 import Boolean
+from gz.transport13 import Node
+
 
 def call_gzservice(service, reqtype, reptype, timeout, req):
     command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
@@ -162,8 +166,17 @@ class LauncherGzsim(ILauncher):
             "gz.msgs.WorldControl",
             "gz.msgs.Boolean",
             "3000",
-            "reset: {all: true}",
+            "reset: {model_only: true}",
         )
+
+        # node = Node()
+        # simControl_service = "/world/default/control"
+        # simControl_msg = WorldControl()
+        # simControl_msg.reset = "model_only"
+        # response = node.request(
+        #     simControl_service, simControl_msg, WorldControl, Boolean, 3000
+        # )
+
         if is_ros_service_available("/drone0/controller/_reset"):
             call_service("/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}")
 

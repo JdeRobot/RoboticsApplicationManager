@@ -211,6 +211,7 @@ class Manager:
         self.world_launcher = None
         self.world_type = None
         self.robot_launcher = None
+        self.robot_pose = None
         self.tools_launcher = None
         self.application_process = None
         self.running = True
@@ -349,7 +350,8 @@ class Manager:
 
         self.robot_launcher = LauncherRobot(**cfg.model_dump())
         LogManager.logger.info(str(self.robot_launcher))
-        self.robot_launcher.run(robot_cfg["start_pose"])
+        self.robot_pose = robot_cfg["start_pose"]
+        self.robot_launcher.run(self.robot_pose)
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
@@ -767,6 +769,7 @@ class Manager:
         if self.robot_launcher is not None:
             self.robot_launcher.terminate()
             self.robot_launcher = None
+            self.robot_pose = None
 
     def on_disconnect(self, event):
         """
@@ -790,6 +793,7 @@ class Manager:
                 LogManager.logger.exception("Exception terminating tools launcher")
 
         if self.robot_launcher:
+            self.robot_pose = None
             try:
                 self.robot_launcher.terminate()
             except Exception as e:
@@ -873,8 +877,8 @@ class Manager:
         the appropriate ROS or Gazebo services based on the visualization type,
         and relaunches the robot if a launcher is available.
         """
-        if self.robot_launcher:
-            self.robot_launcher.terminate()
+        # if self.robot_launcher:
+        #     self.robot_launcher.terminate()
 
         try:
             self.tools_launcher.reset()
@@ -882,11 +886,12 @@ class Manager:
             self.write_to_tool_terminal(f"{e}\n\n")
             raise Exception("Failed to reset simulator")
 
-        if self.robot_launcher:
-            try:
-                self.robot_launcher.run()
-            except Exception as e:
-                LogManager.logger.exception("Exception terminating world launcher")
+        # if self.robot_launcher:
+        #     try:
+        #         LogManager.logger.exception("Relaunching robot launcher")
+        #         self.robot_launcher.run(self.robot_pose)
+        #     except Exception as e:
+        #         LogManager.logger.exception("Exception terminating world launcher")
 
     def start(self):
         """
