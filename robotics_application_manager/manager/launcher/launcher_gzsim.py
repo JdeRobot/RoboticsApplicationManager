@@ -166,7 +166,7 @@ class LauncherGzsim(ILauncher):
             "gz.msgs.WorldControl",
             "gz.msgs.Boolean",
             "3000",
-            "reset: {model_only: true}",
+            "reset: {all: true}",
         )
 
         # node = Node()
