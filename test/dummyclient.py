@@ -3,8 +3,7 @@ import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from manager.comms.consumer_message import ManagerConsumerMessage
-from manager.libs.launch_world_model import ConfigurationModel
+from robotics_application_manager.comms.consumer_message import ManagerConsumerMessage
 
 
 class ConnectCmd(ManagerConsumerMessage):
@@ -15,16 +14,24 @@ class ConnectCmd(ManagerConsumerMessage):
 class LaunchWorldCmd(ManagerConsumerMessage):
     id: str = "2"
     command: str = "launch_world"
-    data: ConfigurationModel = ConfigurationModel(
-        world="gazebo",
-        launch_file_path="/opt/jderobot/Launchers/simple_circuit_followingcam.launch.py",
-    )
+    data: dict = {
+        "world": {
+            "type": "gazebo",
+            "launch_file_path": "/opt/jderobot/Launchers/simple_circuit_followingcam.launch.py",
+        },
+        "robot": {
+            "type": None,
+        },
+    }
 
 
-class LaunchPrepareViz(ManagerConsumerMessage):
+class LaunchPrepareTools(ManagerConsumerMessage):
     id: str = "3"
-    command: str = "prepare_visualization"
-    data: str = "gazebo_rae"
+    command: str = "prepare_tools"
+    data: dict = {
+        "tools": ["console", "gazebo_view"],
+        "config": {},
+    }
 
 
 websocket.enableTrace(True)
@@ -32,7 +39,7 @@ ws = websocket.create_connection("ws://localhost:7163")
 
 ws.send(ConnectCmd().json())
 ws.send(LaunchWorldCmd().json())
-ws.send(LaunchPrepareViz().json())
+ws.send(LaunchPrepareTools().json())
 
 
 while True:
