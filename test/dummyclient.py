@@ -29,7 +29,7 @@ class LaunchPrepareTools(ManagerConsumerMessage):
     id: str = "3"
     command: str = "prepare_tools"
     data: dict = {
-        "tools": ["console", "gazebo_view"],
+        "tools": ["console", "simulator"],
         "config": {},
     }
 
