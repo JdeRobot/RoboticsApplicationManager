@@ -1,10 +1,10 @@
 # Dummy RAM Client Guide
 
-The dummy client can be used for developing and debugging new RAM launchers. It executes the transitions `connect`, `launch_world`, and `prepare_visualization`. 
+The dummy client can be used for developing and debugging new RAM launchers. It executes the transitions `connect`, `launch_world`, and `prepare_tools`. 
 
 Contributors can test their new launchers by replacing the code in the files executed during these transitions with their own code. This allows for testing to ensure everything functions correctly before creating new launchers. 
 
-During the `launch_world` step of the dummy client, the file executed is `simple_circuit_followingcam.launch.py`, and during the `prepare_visualization` transition, it is `launcher_gazebo_view.py`. The exercise simulation can be viewed via a VNC display at [http://127.0.0.1:6080/vnc.html](http://127.0.0.1:6080/vnc.html).
+During the `launch_world` step of the dummy client, the file executed is `simple_circuit_followingcam.launch.py`, and during the `prepare_tools` transition, it is `launcher_gazebo_view.py`. The exercise simulation can be viewed via a VNC display at [http://127.0.0.1:6080/vnc.html](http://127.0.0.1:6080/vnc.html).
 
 ## Using the Dummy Client
 
