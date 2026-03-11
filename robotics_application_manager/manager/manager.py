@@ -185,6 +185,20 @@ class Manager:
             "dest": "=",
             "before": "on_code_autocomplete",
         },
+        # Theme change
+        {
+            "trigger": "change_style",
+            "source": [
+                "idle",
+                "connected",
+                "paused",
+                "world_ready",
+                "tools_ready",
+                "application_running",
+            ],
+            "dest": "=",
+            "before": "on_change_style",
+        },
     ]
 
     def __init__(self, host: str, port: int):
@@ -617,6 +631,93 @@ class Manager:
             )
         except Exception as e:
             LogManager.logger.info("Error formating code" + str(e))
+
+    def on_change_style(self, event):
+        """
+        Handle the 'change_style' event.
+
+        This method changes the GTK theme and xterm colors without restarting.
+
+        Parameters:
+            event (Event): Has the field 'theme' (dark or light) in data.
+        """
+        app_cfg = event.kwargs.get("data", {})
+        theme = app_cfg.get("theme", "dark")
+        LogManager.logger.info(f"Changing style to {theme}")
+
+        if theme == "dark":
+            # Xterm dark theme: background black, foreground white
+            xterm_cmd = "\033]11;black\007\033]10;white\007"
+            gtk_theme = "Adwaita-dark"
+        else:
+            # Xterm light theme: background white, foreground black
+            xterm_cmd = "\033]11;white\007\033]10;black\007"
+            gtk_theme = "Adwaita"
+
+        # Apply xterm theme to all active pseudoterminals
+        try:
+            self.write_to_tool_terminal(xterm_cmd)
+        except Exception as e:
+            LogManager.logger.exception(f"Error changing xterm style: {e}")
+
+        # Update GTK settings for new windows
+        # Write ~/.gtkrc-2.0
+        gtkrc_path = os.path.expanduser("~/.gtkrc-2.0")
+        try:
+            with open(gtkrc_path, "w") as f:
+                f.write(f'gtk-theme-name="{gtk_theme}"\n')
+        except Exception as e:
+            LogManager.logger.exception(f"Error writing {gtkrc_path}: {e}")
+
+        # Write ~/.config/gtk-3.0/settings.ini
+        gtk3_dir = os.path.expanduser("~/.config/gtk-3.0")
+        gtk3_path = os.path.join(gtk3_dir, "settings.ini")
+        try:
+            os.makedirs(gtk3_dir, exist_ok=True)
+            with open(gtk3_path, "w") as f:
+                f.write("[Settings]\n")
+                f.write(f"gtk-theme-name={gtk_theme}\n")
+        except Exception as e:
+            LogManager.logger.exception(f"Error writing {gtk3_path}: {e}")
+
+        # Send a signal to force GTK applications to reload their theme
+        try:
+            # Also write to lxsession config which is what LXDE actually uses
+            lxde_conf_dir = os.path.expanduser("~/.config/lxsession/LXDE")
+            lxde_conf_path = os.path.join(lxde_conf_dir, "desktop.conf")
+            os.makedirs(lxde_conf_dir, exist_ok=True)
+            
+            # Read existing or create new
+            conf_lines = []
+            if os.path.exists(lxde_conf_path):
+                with open(lxde_conf_path, "r") as f:
+                    conf_lines = f.readlines()
+            
+            # Ensure GTK section exists and update theme name
+            gtk_section_found = False
+            for i, line in enumerate(conf_lines):
+                if line.strip() == "[GTK]":
+                    gtk_section_found = True
+                elif gtk_section_found and line.startswith("sNet/ThemeName="):
+                    conf_lines[i] = f"sNet/ThemeName={gtk_theme}\\n"
+                    break
+            else:
+                if not gtk_section_found:
+                    conf_lines.append("[GTK]\\n")
+                conf_lines.append(f"sNet/ThemeName={gtk_theme}\\n")
+                
+            with open(lxde_conf_path, "w") as f:
+                f.writelines(conf_lines)
+
+            # Reload window manager (Openbox) and LXPanel
+            subprocess.run(
+                ["bash", "-c", "export DISPLAY=:1; lxpanelctl restart; openbox --reconfigure"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+        except Exception as e:
+            LogManager.logger.exception(f"Error refreshing GTK applications: {e}")
+
 
     def on_run_application(self, event):
         """
