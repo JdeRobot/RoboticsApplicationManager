@@ -1,3 +1,9 @@
+"""
+Utility library module for Robotics Application Manager.
+
+Contains helper functions for configuration handling,
+process management, and GPU acceleration detection.
+"""
 from .file_watchdog import FileWatchdog
 from .launch_world_model import ConfigurationModel, ConfigurationManager
 from .process_utils import (
