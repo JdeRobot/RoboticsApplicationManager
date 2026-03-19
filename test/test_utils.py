@@ -107,6 +107,8 @@ def setup_manager_to_application_running(manager, monkeypatch):
                 return io.BytesIO()
             elif "r" in mode:
                 return io.BytesIO(b"fake zip content")
+        if isinstance(file, str) and file.startswith("/dev/pts/"):
+            return io.BytesIO() if "b" in mode else io.StringIO()
         return original_open(file, mode, *args, **kwargs)
 
     # Mock file system and subprocess operations

@@ -38,6 +38,8 @@ def test_tools_ready_to_application_running_valid(manager, monkeypatch):
                 return io.BytesIO()
             elif "r" in mode:
                 return io.BytesIO(b"fake zip content")
+        if isinstance(file, str) and file.startswith("/dev/pts/"):
+            return io.BytesIO() if "b" in mode else io.StringIO()
         return original_open(file, mode, *args, **kwargs)
 
     # Mock file system and subprocess operations
@@ -86,6 +88,8 @@ def test_on_run_application_missing_code(manager, monkeypatch):
             import io
 
             return io.BytesIO()
+        if isinstance(file, str) and file.startswith("/dev/pts/"):
+            return io.BytesIO() if "b" in mode else io.StringIO()
         return original_open(file, mode, *args, **kwargs)
 
     monkeypatch.setattr("builtins.open", fake_open)
@@ -138,6 +142,8 @@ def test_on_run_application_corrupt_zip(manager, monkeypatch):
             import io
 
             return io.BytesIO()
+        if isinstance(file, str) and file.startswith("/dev/pts/"):
+            return io.BytesIO() if "b" in mode else io.StringIO()
         return original_open(file, mode, *args, **kwargs)
 
     monkeypatch.setattr("builtins.open", fake_open)
