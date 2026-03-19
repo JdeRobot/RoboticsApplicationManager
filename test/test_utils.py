@@ -3,7 +3,7 @@
 import builtins
 import io
 
-from manager.manager.launcher.launcher_robot import worlds
+from robotics_application_manager.manager.launcher.launcher_robot import worlds
 
 
 def setup_manager_to_connected(manager, monkeypatch):
@@ -18,7 +18,7 @@ def setup_manager_to_world_ready(manager, monkeypatch):
     setup_manager_to_connected(manager, monkeypatch)
 
     # Use ConfigurationModel for valid world config
-    from manager.libs.launch_world_model import ConfigurationModel
+    from robotics_application_manager.libs.launch_world_model import ConfigurationModel
 
     valid_world_cfg = ConfigurationModel(
         type=next(iter(worlds)),  # Use the first world type
@@ -70,7 +70,7 @@ def setup_manager_to_tools_ready(manager, monkeypatch):
         def terminate(self):
             pass
 
-    monkeypatch.setattr("manager.manager.manager.LauncherTools", DummyToolsLauncher)
+    monkeypatch.setattr("robotics_application_manager.manager.manager.LauncherTools", DummyToolsLauncher)
 
     # Trigger visualization ready state
     manager.trigger(
@@ -116,7 +116,7 @@ def setup_manager_to_application_running(manager, monkeypatch):
     monkeypatch.setattr("subprocess.Popen", lambda *a, **k: DummyProc())
     monkeypatch.setattr("os.mkdir", lambda path: None)
     monkeypatch.setattr("os.path.exists", lambda path: True)
-    monkeypatch.setattr("shutil.rmtree", lambda path: None)
+    monkeypatch.setattr("shutil.rmtree", lambda path, ignore_errors=False: None)
     monkeypatch.setattr(
         "zipfile.ZipFile",
         lambda *a, **k: type(
@@ -127,7 +127,7 @@ def setup_manager_to_application_running(manager, monkeypatch):
     )
     monkeypatch.setattr("base64.b64decode", lambda s: b"print('hello')")
     monkeypatch.setattr(
-        "manager.manager.manager.Manager.unpause_sim", lambda self: None
+        "robotics_application_manager.manager.manager.Manager.unpause_sim", lambda self: None
     )
     # Mock linter to return no errors
     manager.linter.evaluate_code = lambda code, ros_version: ""

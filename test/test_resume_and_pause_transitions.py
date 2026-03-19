@@ -9,6 +9,10 @@ from test_utils import setup_manager_to_tools_ready
 class DummyProc:
     """Dummy process class for testing suspend and resume methods."""
 
+    def children(self, recursive=True):
+        """Simulate psutil child-process lookup."""
+        return []
+
     def suspend(self):
         """Simulate suspending the process."""
         pass
