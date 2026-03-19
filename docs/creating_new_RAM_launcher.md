@@ -2,13 +2,13 @@
 
 This guide outlines the steps involved in creating a new RAM launcher. 
 
-For the `launch_world` transition, which transitions the application from the connected state to the world_ready state, the file executed is `launcher_world.py`, and for the `prepare_visualization` transition, the file executed is `launcher_visualization.py`.
+For the `launch_world` transition, which transitions the application from the connected state to the world_ready state, the file executed is `launcher_world.py`, and for the `prepare_tools` transition, the file executed is `launcher_tools.py`.
 
-To create a new RAM launcher for the `prepare_visualization` transition, follow these steps:
+To create a new RAM launcher for the `prepare_tools` transition, follow these steps:
 
 1. Define the New Visualization Configuration
 
-First, add a new entry to the `visualization` dictionary in `launcher_visualization.py`. Let's call this new entry `custom_visualization` and assume it uses two modules: `abc_module` and `xyz_module`.
+First, add a new entry to the `visualization` dictionary in `launcher_tools.py`. Let's call this new entry `custom_visualization` and assume it uses two modules: `abc_module` and `xyz_module`.
 
 ```python
 visualization = {
