@@ -46,7 +46,7 @@ def test_terminate_application_valid(manager, monkeypatch):
         pass
 
     monkeypatch.setattr(
-        "manager.manager.manager.stop_process_and_children",
+        "robotics_application_manager.manager.manager.stop_process_and_children",
         dummy_stop_process_and_children,
     )
     manager.pause_sim = lambda: None
@@ -72,7 +72,7 @@ def test_terminate_application_invalid_machine_error(manager, monkeypatch):
         pass
 
     monkeypatch.setattr(
-        "manager.manager.manager.stop_process_and_children",
+        "robotics_application_manager.manager.manager.stop_process_and_children",
         dummy_stop_process_and_children,
     )
     manager.pause_sim = lambda: None
@@ -106,7 +106,7 @@ def test_terminate_tools_invalid_machine_error(manager, monkeypatch):
     Ensure that the transition raises an error when executed from an invalid state.
     """
     monkeypatch.setattr(
-        "manager.libs.applications.compatibility.server.Server", DummyServer
+        "robotics_application_manager.libs.server.Server", DummyServer
     )
     # Ensure the manager is in a state where it can stop
     setup_manager_to_application_running(manager, monkeypatch)

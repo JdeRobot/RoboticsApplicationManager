@@ -1,7 +1,7 @@
 """Utility functions to transition the Manager to a specific state for testing."""
 
 import pytest
-from manager.manager.manager import Manager
+from robotics_application_manager.manager.manager import Manager
 
 
 class DummyServer:
@@ -76,8 +76,8 @@ class DummyConsumer:
 def manager(monkeypatch):
     """Fixture to provide a Manager instance with patched dependencies for testing."""
 
-    monkeypatch.setattr("manager.comms.websocket_server.WebsocketServer", DummyServer)
-    monkeypatch.setattr("manager.manager.manager.ManagerConsumer", DummyConsumer)
+    monkeypatch.setattr("robotics_application_manager.comms.websocket_server.WebsocketServer", DummyServer)
+    monkeypatch.setattr("robotics_application_manager.manager.manager.ManagerConsumer", DummyConsumer)
 
     # Patch subprocess.check_output for ROS_DISTRO and IMAGE_TAG
     def fake_check_output(cmd, *a, **k):
@@ -91,14 +91,14 @@ def manager(monkeypatch):
 
     # Patch check_gpu_acceleration where it is used
     monkeypatch.setattr(
-        "manager.manager.manager.check_gpu_acceleration", lambda x=None: "OFF"
+        "robotics_application_manager.manager.manager.check_gpu_acceleration", lambda x=None: "OFF"
     )
 
     def dummy_run(self, start_pose=None):
         print("run around")
 
     monkeypatch.setattr(
-        "manager.manager.launcher.launcher_robot.LauncherRobot.run", dummy_run
+        "robotics_application_manager.manager.launcher.launcher_robot.LauncherRobot.run", dummy_run
     )
 
     # Patch os.makedirs and os.path.isdir to avoid real FS operations
@@ -121,7 +121,7 @@ def manager(monkeypatch):
         def terminate(self):
             pass
 
-    monkeypatch.setattr("manager.manager.manager.LauncherWorld", DummyLauncherWorld)
+    monkeypatch.setattr("robotics_application_manager.manager.manager.LauncherWorld", DummyLauncherWorld)
 
     class DummyFileWatchdog:
         def __init__(self, path, update_callback):
@@ -146,10 +146,10 @@ def manager(monkeypatch):
         def terminate(self):
             pass
 
-    monkeypatch.setattr("manager.manager.manager.LauncherTools", DummyToolsLauncher)
+    monkeypatch.setattr("robotics_application_manager.manager.manager.LauncherTools", DummyToolsLauncher)
     # Deprecated
-    # monkeypatch.setattr("manager.manager.manager.Server", DummyServer)
-    # monkeypatch.setattr("manager.manager.manager.FileWatchdog", DummyFileWatchdog)
+    # monkeypatch.setattr("robotics_application_manager.manager.manager.Server", DummyServer)
+    # monkeypatch.setattr("robotics_application_manager.manager.manager.FileWatchdog", DummyFileWatchdog)
 
     # Setup Manager with dummy consumer
     m = Manager(host="localhost", port=12345)

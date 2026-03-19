@@ -38,6 +38,8 @@ def test_tools_ready_to_application_running_valid(manager, monkeypatch):
                 return io.BytesIO()
             elif "r" in mode:
                 return io.BytesIO(b"fake zip content")
+        if isinstance(file, str) and file.startswith("/dev/pts/"):
+            return io.BytesIO() if "b" in mode else io.StringIO()
         return original_open(file, mode, *args, **kwargs)
 
     # Mock file system and subprocess operations
@@ -47,7 +49,7 @@ def test_tools_ready_to_application_running_valid(manager, monkeypatch):
     monkeypatch.setattr("subprocess.Popen", lambda *a, **k: DummyProc())
     monkeypatch.setattr("os.mkdir", lambda path: None)
     monkeypatch.setattr("os.path.exists", lambda path: True)
-    monkeypatch.setattr("shutil.rmtree", lambda path: None)
+    monkeypatch.setattr("shutil.rmtree", lambda path, ignore_errors=False: None)
     monkeypatch.setattr(
         "zipfile.ZipFile",
         lambda *a, **k: type(
@@ -58,7 +60,8 @@ def test_tools_ready_to_application_running_valid(manager, monkeypatch):
     )
     monkeypatch.setattr("base64.b64decode", lambda s: b"print('hello')")
     monkeypatch.setattr(
-        "manager.manager.manager.Manager.unpause_sim", lambda self: None
+        "robotics_application_manager.manager.manager.Manager.unpause_sim",
+        lambda self: None,
     )
     # Mock linter to return no errors
     manager.linter.evaluate_code = lambda code, ros_version: ""
@@ -85,6 +88,8 @@ def test_on_run_application_missing_code(manager, monkeypatch):
             import io
 
             return io.BytesIO()
+        if isinstance(file, str) and file.startswith("/dev/pts/"):
+            return io.BytesIO() if "b" in mode else io.StringIO()
         return original_open(file, mode, *args, **kwargs)
 
     monkeypatch.setattr("builtins.open", fake_open)
@@ -93,7 +98,7 @@ def test_on_run_application_missing_code(manager, monkeypatch):
     monkeypatch.setattr("subprocess.Popen", lambda *a, **k: None)
     monkeypatch.setattr("os.mkdir", lambda path: None)
     monkeypatch.setattr("os.path.exists", lambda path: True)
-    monkeypatch.setattr("shutil.rmtree", lambda path: None)
+    monkeypatch.setattr("shutil.rmtree", lambda path, ignore_errors=False: None)
     monkeypatch.setattr(
         "zipfile.ZipFile",
         lambda *a, **k: type(
@@ -104,7 +109,8 @@ def test_on_run_application_missing_code(manager, monkeypatch):
     )
     monkeypatch.setattr("base64.b64decode", lambda s: b"print('hello')")
     monkeypatch.setattr(
-        "manager.manager.manager.Manager.unpause_sim", lambda self: None
+        "robotics_application_manager.manager.manager.Manager.unpause_sim",
+        lambda self: None,
     )
     # Mock linter to return no errors
     manager.linter.evaluate_code = lambda code, ros_version: ""
@@ -127,7 +133,7 @@ def test_on_run_application_corrupt_zip(manager, monkeypatch):
     monkeypatch.setattr("os.path.exists", lambda path: True)
     monkeypatch.setattr("os.mkdir", lambda path: None)
     monkeypatch.setattr("os.listdir", lambda path: ["0", "1", "2"])
-    monkeypatch.setattr("shutil.rmtree", lambda path: None)
+    monkeypatch.setattr("shutil.rmtree", lambda path, ignore_errors=False: None)
     # Mock open for app.zip to avoid FileNotFoundError
     original_open = builtins.open
 
@@ -136,6 +142,8 @@ def test_on_run_application_corrupt_zip(manager, monkeypatch):
             import io
 
             return io.BytesIO()
+        if isinstance(file, str) and file.startswith("/dev/pts/"):
+            return io.BytesIO() if "b" in mode else io.StringIO()
         return original_open(file, mode, *args, **kwargs)
 
     monkeypatch.setattr("builtins.open", fake_open)
@@ -153,7 +161,8 @@ def test_on_run_application_corrupt_zip(manager, monkeypatch):
         )(),
     )
     monkeypatch.setattr(
-        "manager.manager.manager.Manager.unpause_sim", lambda self: None
+        "robotics_application_manager.manager.manager.Manager.unpause_sim",
+        lambda self: None,
     )
     manager.linter.evaluate_code = lambda code, ros_version: ""
     data = valid_app_data

@@ -84,7 +84,7 @@ def test_disconnect_invalid_process(manager, monkeypatch):
     # Mock needed methods and attributes
     monkeypatch.setattr("os.execl", lambda *args: None)
     monkeypatch.setattr(
-        "manager.manager.manager.stop_process_and_children",
+        "robotics_application_manager.manager.manager.stop_process_and_children",
         lambda proc: (_ for _ in ()).throw(Exception("Process cannot be stopped")),
     )
     manager.application_process = DummyProc()

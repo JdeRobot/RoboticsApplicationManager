@@ -1,9 +1,9 @@
 """Tests for transitioning Manager from 'connected' to 'world_ready' state."""
 
 import pytest
-from manager.libs.launch_world_model import ConfigurationModel
+from robotics_application_manager.libs.launch_world_model import ConfigurationModel
 from test_utils import setup_manager_to_connected
-from manager.manager.launcher.launcher_robot import worlds
+from robotics_application_manager.manager.launcher.launcher_robot import worlds
 
 valid_world_cfg = ConfigurationModel(
     type=next(iter(worlds)), launch_file_path="/path/to/launch_file.launch"
@@ -62,7 +62,8 @@ def test_launch_world_with_invalid_world_config(manager, monkeypatch):
         raise ValueError("Invalid world configuration")
 
     monkeypatch.setattr(
-        "manager.libs.launch_world_model.ConfigurationManager.validate", fake_validate
+        "robotics_application_manager.libs.launch_world_model.ConfigurationManager.validate",
+        fake_validate,
     )
     manager.prepare_custom_universe = fake_prepare_custom_universe
 
@@ -94,7 +95,8 @@ def test_launch_world_with_invalid_robot_config(manager, monkeypatch):
         return DummyConfig()
 
     monkeypatch.setattr(
-        "manager.libs.launch_world_model.ConfigurationManager.validate", fake_validate
+        "robotics_application_manager.libs.launch_world_model.ConfigurationManager.validate",
+        fake_validate,
     )
 
     invalid_robot_cfg = {"name": "", "type": ""}  # Invalid robot config
