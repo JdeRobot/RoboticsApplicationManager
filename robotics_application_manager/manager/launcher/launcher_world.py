@@ -45,7 +45,16 @@ worlds = {
             }
         ],
     },
-    "physical": {},
+    "physical": {
+        "2": [
+            {
+                "type": "real",
+                "module": "ros2_api",
+                "parameters": [],
+                "launch_file": [],
+            }
+        ],
+    },
 }
 
 
