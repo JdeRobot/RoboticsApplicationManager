@@ -1,3 +1,12 @@
+"""
+Gazebo Classic Launcher and Lifecycle Manager.
+
+Handles the initialization, state management, and cleanup of the 
+Gazebo GUI client (gzclient). Orchestrates display routing via 
+VNC and provides hardware-accelerated rendering through VirtualGL 
+when compatible DRI devices are detected.
+"""
+
 import sys
 from .launcher_interface import ILauncher
 from robotics_application_manager.manager.docker_thread import DockerThread
@@ -32,6 +41,13 @@ def call_service(service, service_type, request_data="{}"):
 
 
 class LauncherGazebo(ILauncher):
+    """
+    Orchestrator for Gazebo simulation visualization.
+
+    Manages the 'gzclient' lifecycle, including resolution configuration, 
+    X11 display mapping, and background thread monitoring.
+    """
+    
     display: str
     internal_port: int
     external_port: int
@@ -43,6 +59,17 @@ class LauncherGazebo(ILauncher):
     gz_vnc: Any = Vnc_server()
 
     def run(self, config_file, callback):
+        """
+        Launches the Gazebo client with appropriate display settings.
+
+        Checks for hardware acceleration support (DRI) and initializes the 
+        VNC server. Dynamically generates a 'gui.ini' file to ensure the 
+        simulation resolution matches the web frontend dimensions.
+
+        Args:
+            config_file (str): Path to the exercise configuration.
+            callback (function): Completion or state-change callback.
+        """
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
@@ -72,9 +99,11 @@ class LauncherGazebo(ILauncher):
         self.running = True
 
     def pause(self):
+        """Suspends the physics engine via the /pause_physics ROS 2 service."""
         call_service("/pause_physics", "std_srvs/srv/Empty")
 
     def unpause(self):
+        """Resumes the physics engine via the /unpause_physics ROS 2 service."""
         call_service("/unpause_physics", "std_srvs/srv/Empty")
 
     def reset(self):
