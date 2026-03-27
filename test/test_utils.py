@@ -70,7 +70,9 @@ def setup_manager_to_tools_ready(manager, monkeypatch):
         def terminate(self):
             pass
 
-    monkeypatch.setattr("robotics_application_manager.manager.manager.LauncherTools", DummyToolsLauncher)
+    monkeypatch.setattr(
+        "robotics_application_manager.manager.manager.LauncherTools", DummyToolsLauncher
+    )
 
     # Trigger visualization ready state
     manager.trigger(
@@ -129,7 +131,8 @@ def setup_manager_to_application_running(manager, monkeypatch):
     )
     monkeypatch.setattr("base64.b64decode", lambda s: b"print('hello')")
     monkeypatch.setattr(
-        "robotics_application_manager.manager.manager.Manager.unpause_sim", lambda self: None
+        "robotics_application_manager.manager.manager.Manager.unpause_sim",
+        lambda self: None,
     )
     # Mock linter to return no errors
     manager.linter.evaluate_code = lambda code, ros_version: ""
