@@ -686,13 +686,13 @@ class Manager:
             lxde_conf_dir = os.path.expanduser("~/.config/lxsession/LXDE")
             lxde_conf_path = os.path.join(lxde_conf_dir, "desktop.conf")
             os.makedirs(lxde_conf_dir, exist_ok=True)
-            
+
             # Read existing or create new
             conf_lines = []
             if os.path.exists(lxde_conf_path):
                 with open(lxde_conf_path, "r") as f:
                     conf_lines = f.readlines()
-            
+
             # Ensure GTK section exists and update theme name
             gtk_section_found = False
             for i, line in enumerate(conf_lines):
@@ -705,19 +705,22 @@ class Manager:
                 if not gtk_section_found:
                     conf_lines.append("[GTK]\\n")
                 conf_lines.append(f"sNet/ThemeName={gtk_theme}\\n")
-                
+
             with open(lxde_conf_path, "w") as f:
                 f.writelines(conf_lines)
 
             # Reload window manager (Openbox) and LXPanel
             subprocess.run(
-                ["bash", "-c", "export DISPLAY=:1; lxpanelctl restart; openbox --reconfigure"],
+                [
+                    "bash",
+                    "-c",
+                    "export DISPLAY=:1; lxpanelctl restart; openbox --reconfigure",
+                ],
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
             )
         except Exception as e:
             LogManager.logger.exception(f"Error refreshing GTK applications: {e}")
-
 
     def on_run_application(self, event):
         """
@@ -763,7 +766,7 @@ class Manager:
 
         _, file_extension = os.path.splitext(entrypoint)
 
-        if file_extension == ".cpp":
+        if file_extension == ".cpp" or entrypoint.endswith(".launch.py"):
             fds = os.listdir("/dev/pts/")
             console_fd = str(max(map(int, fds[:-1])))
 
@@ -780,23 +783,37 @@ class Manager:
                 executable="/bin/bash",
             )
             returncode = compile_process.wait()
-            print(returncode)
             if returncode != 0:
                 raise Exception("Failed to compile")
 
             self.unpause_sim()
-            self.application_process = subprocess.Popen(
-                [
-                    "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
-                ],
-                stdin=open("/dev/pts/" + console_fd, "r"),
-                stdout=open("/dev/pts/" + console_fd, "w"),
-                stderr=sys.stdout,
-                bufsize=1024,
-                universal_newlines=True,
-                shell=True,
-                executable="/bin/bash",
-            )
+            if entrypoint.endswith(".launch.py"):
+                self.application_process = subprocess.Popen(
+                    [
+                        f"source /workspace/code/install/setup.bash && ros2 launch {entrypoint}"
+                    ],
+                    stdin=open("/dev/pts/" + console_fd, "r"),
+                    stdout=open("/dev/pts/" + console_fd, "w"),
+                    stderr=sys.stdout,
+                    bufsize=1024,
+                    universal_newlines=True,
+                    shell=True,
+                    executable="/bin/bash",
+                )
+            else:
+
+                self.application_process = subprocess.Popen(
+                    [
+                        "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
+                    ],
+                    stdin=open("/dev/pts/" + console_fd, "r"),
+                    stdout=open("/dev/pts/" + console_fd, "w"),
+                    stderr=sys.stdout,
+                    bufsize=1024,
+                    universal_newlines=True,
+                    shell=True,
+                    executable="/bin/bash",
+                )
             return
 
         # Pass the linter

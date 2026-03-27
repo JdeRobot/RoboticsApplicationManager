@@ -105,9 +105,7 @@ def test_terminate_tools_invalid_machine_error(manager, monkeypatch):
 
     Ensure that the transition raises an error when executed from an invalid state.
     """
-    monkeypatch.setattr(
-        "robotics_application_manager.libs.server.Server", DummyServer
-    )
+    monkeypatch.setattr("robotics_application_manager.libs.server.Server", DummyServer)
     # Ensure the manager is in a state where it can stop
     setup_manager_to_application_running(manager, monkeypatch)
 
