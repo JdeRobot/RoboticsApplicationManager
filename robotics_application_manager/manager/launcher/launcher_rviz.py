@@ -1,11 +1,12 @@
 """
 RViz Visualization Launcher for ROS 2.
 
-Handles the initialization and lifecycle of the ROS 2 Visualization tool (RViz). 
-Orchestrates the loading of .rviz configuration files and manages the X11 
-display environment to project sensor data (Lidar, Cameras, TF frames) 
+Handles the initialization and lifecycle of the ROS 2 Visualization tool (RViz).
+Orchestrates the loading of .rviz configuration files and manages the X11
+display environment to project sensor data (Lidar, Cameras, TF frames)
 to the web frontend.
 """
+
 from .launcher_interface import ILauncher
 from robotics_application_manager.manager.docker_thread import DockerThread
 from robotics_application_manager.manager.vnc import Vnc_server
@@ -29,7 +30,7 @@ class LauncherRviz(ILauncher):
         Launches an RViz instance with a specific display configuration.
 
         Args:
-            config_file (str): Path to the .rviz file defining the 
+            config_file (str): Path to the .rviz file defining the
                                displays and robot model.
             callback (function): Lifecycle state-change callback.
         """
