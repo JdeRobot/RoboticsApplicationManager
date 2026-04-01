@@ -44,10 +44,10 @@ class LauncherGazebo(ILauncher):
     """
     Orchestrator for Gazebo simulation visualization.
 
-    Manages the 'gzclient' lifecycle, including resolution configuration, 
+    Manages the 'gzclient' lifecycle, including resolution configuration,
     X11 display mapping, and background thread monitoring.
     """
-    
+
     display: str
     internal_port: int
     external_port: int
@@ -62,8 +62,8 @@ class LauncherGazebo(ILauncher):
         """
         Launches the Gazebo client with appropriate display settings.
 
-        Checks for hardware acceleration support (DRI) and initializes the 
-        VNC server. Dynamically generates a 'gui.ini' file to ensure the 
+        Checks for hardware acceleration support (DRI) and initializes the
+        VNC server. Dynamically generates a 'gui.ini' file to ensure the
         simulation resolution matches the web frontend dimensions.
 
         Args:
