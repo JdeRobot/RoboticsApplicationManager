@@ -13,55 +13,20 @@ from .launcher_interface import ILauncher
 
 worlds = {
     "gazebo": {
-        "1": [
-            {
-                "type": "module",
-                "module": "ros_api",
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
         "2": [
             {
-                "type": "module",
+                "type": "gazebo",
                 "module": "robot_ros2_api",
                 "parameters": [],
                 "launch_file": [],
             }
         ],
     },
-    "drones": {
-        "1": [
-            {
-                "type": "module",
-                "module": "drones",
-                "resource_folders": [],
-                "model_folders": [],
-                "plugin_folders": [],
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
+    "gz": {
         "2": [
             {
-                "type": "module",
-                "module": "drones_ros2",
-                "resource_folders": [],
-                "model_folders": [],
-                "plugin_folders": [],
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
-    },
-    "gzsimdrones": {
-        "2": [
-            {
-                "type": "module",
-                "module": "drones_gzsim",
-                "resource_folders": [],
-                "model_folders": [],
-                "plugin_folders": [],
+                "type": "gz",
+                "module": "robot_ros2_api",
                 "parameters": [],
                 "launch_file": [],
             }
