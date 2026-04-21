@@ -1,6 +1,6 @@
 [project]
 name = "robotics_application_manager"
-version = "5.6.9"
+version = "5.6.10"
 authors = [
   { name="JdeRobot", email="jderobot@gmail.com" },
 ]
