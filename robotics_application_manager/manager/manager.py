@@ -363,7 +363,7 @@ class Manager:
 
         self.world_launcher.run()
         if self.robot_launcher is not None:
-            self.robot_launcher.run(robot_cfg["start_pose"])
+            self.robot_launcher.run(robot_cfg["start_pose"], robot_cfg["extra_config"])
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
