@@ -156,7 +156,7 @@ class LauncherGzsim(ILauncher):
             "pause: false",
         )
 
-    def reset(self):
+    def reset(self, robot_entity=None):
         if is_ros_service_available("/drone0/platform/state_machine/_reset"):
             call_service(
                 "/drone0/platform/state_machine/_reset",
@@ -165,13 +165,14 @@ class LauncherGzsim(ILauncher):
             )
         node = Node()
 
-        node.request(
-            f"/world/default/remove",
-            Entity(name="f1", type=Entity.MODEL),
-            Entity,
-            Boolean,
-            1000,
-        )
+        if robot_entity is not None:
+            node.request(
+                f"/world/default/remove",
+                Entity(name=robot_entity, type=Entity.MODEL),
+                Entity,
+                Boolean,
+                1000,
+            )
 
         node.request(
             f"/world/default/control",

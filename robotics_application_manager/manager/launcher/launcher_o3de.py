@@ -50,7 +50,7 @@ class LauncherO3de(ILauncher):
         self.running = True
         pass
 
-    def reset(self):
+    def reset(self, robot_entity=None):
         # TODO: add reset
         pass
 

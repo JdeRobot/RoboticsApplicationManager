@@ -1,9 +1,9 @@
 """
 Gazebo Classic Launcher and Lifecycle Manager.
 
-Handles the initialization, state management, and cleanup of the 
-Gazebo GUI client (gzclient). Orchestrates display routing via 
-VNC and provides hardware-accelerated rendering through VirtualGL 
+Handles the initialization, state management, and cleanup of the
+Gazebo GUI client (gzclient). Orchestrates display routing via
+VNC and provides hardware-accelerated rendering through VirtualGL
 when compatible DRI devices are detected.
 """
 
@@ -106,7 +106,7 @@ class LauncherGazebo(ILauncher):
         """Resumes the physics engine via the /unpause_physics ROS 2 service."""
         call_service("/unpause_physics", "std_srvs/srv/Empty")
 
-    def reset(self):
+    def reset(self, robot_entity=None):
         call_service("/reset_world", "std_srvs/srv/Empty")
 
     def is_running(self):
