@@ -225,7 +225,7 @@ class Manager:
         self.world_launcher = None
         self.world_type = None
         self.robot_launcher = None
-        self.robot_entity = None
+        self.robot_config = None
         self.tools_launcher = None
         self.application_process = None
         self.running = True
@@ -358,7 +358,7 @@ class Manager:
                 LogManager.logger.error(f"Configuration validation failed: {e}")
 
             self.robot_launcher = LauncherRobot(**cfg.model_dump())
-            self.robot_entity = robot_cfg["entity"]
+            self.robot_config = robot_cfg
             LogManager.logger.info(str(self.robot_launcher))
 
         self.world_launcher.run()
@@ -995,14 +995,16 @@ class Manager:
             self.robot_launcher.terminate()
 
         try:
-            self.tools_launcher.reset(self.robot_entity)
+            self.tools_launcher.reset(self.robot_config["entity"])
         except subprocess.TimeoutExpired as e:
             self.write_to_tool_terminal(f"{e}\n\n")
             raise Exception("Failed to reset simulator")
 
         if self.robot_launcher:
             try:
-                self.robot_launcher.run()
+                self.robot_launcher.run(
+                    self.robot_config["start_pose"], self.robot_config["extra_config"]
+                )
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")
 
