@@ -14,6 +14,7 @@ valid_robot_cfg = {
     "type": next(iter(worlds)),  # Use the first world type
     "start_pose": [0, 0, 0, 0, 0, 0],
     "launch_file_path": "/path/to/robot_launch_file.launch",
+    "extra_config": None,
 }
 
 invalid_world_cfg = {
