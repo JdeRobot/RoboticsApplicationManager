@@ -9,8 +9,31 @@ from .launcher_interface import (
 )
 from robotics_application_manager.manager.docker_thread import DockerThread
 import subprocess
+import sys
 
 import logging
+from robotics_application_manager import LogManager
+
+
+def call_service(service, service_type, request_data="{}"):
+    command = f"ros2 service call {service} {service_type} '{request_data}'"
+    try:
+        p = subprocess.Popen(
+            [
+                f"{command}",
+            ],
+            shell=True,
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            bufsize=1024,
+            universal_newlines=True,
+        )
+        p.wait(10)
+    except:
+        p.kill()
+
+        LogManager.logger.exception(f"Unable to complete call: {service}")
+        raise Exception(f"Unable to complete call: {service}")
 
 
 class LauncherRobotRos2Api(ILauncher):
@@ -19,7 +42,7 @@ class LauncherRobotRos2Api(ILauncher):
     launch_file: str
     threads: List[Any] = []
 
-    def run(self, robot_pose, callback):
+    def run(self, robot_pose, extra_config, callback):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
@@ -30,12 +53,15 @@ class LauncherRobotRos2Api(ILauncher):
         xserver_thread.start()
         self.threads.append(xserver_thread)
 
-        ROBOT_POSE = f"ROBOT_X={robot_pose[0]} ROBOT_Y={robot_pose[1]} ROBOT_Z={robot_pose[2]} ROBOT_ROLL={robot_pose[3]} ROBOT_PITCH={robot_pose[4]} ROBOT_YAW={robot_pose[5]}"
+        x, y, z, R, P, Y = robot_pose
+
+        if extra_config == "None":
+            extra_config = ""
 
         if ACCELERATION_ENABLED:
-            exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun {ROBOT_POSE} ros2 launch {self.launch_file}"
+            exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} {extra_config}"
         else:
-            exercise_launch_cmd = f"{ROBOT_POSE} ros2 launch {self.launch_file}"
+            exercise_launch_cmd = f"ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} {extra_config}"
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
@@ -58,8 +84,7 @@ class LauncherRobotRos2Api(ILauncher):
             universal_newlines=True,
         )
 
-        kill_cmd = "pkill -9 "
-        cmd = kill_cmd + "bridg"
+        cmd = kill_cmd + "bridge"
         subprocess.call(
             cmd,
             shell=True,

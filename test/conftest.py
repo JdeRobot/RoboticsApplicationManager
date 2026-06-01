@@ -100,7 +100,7 @@ def manager(monkeypatch):
         lambda x=None: "OFF",
     )
 
-    def dummy_run(self, start_pose=None):
+    def dummy_run(self, start_pose=None, extra_config=None):
         print("run around")
 
     monkeypatch.setattr(

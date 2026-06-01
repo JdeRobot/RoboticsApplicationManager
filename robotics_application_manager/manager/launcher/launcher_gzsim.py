@@ -13,6 +13,12 @@ import stat
 from typing import List, Any
 from robotics_application_manager import LogManager
 
+from gz.msgs10.world_control_pb2 import WorldControl
+from gz.msgs10.world_reset_pb2 import WorldReset
+from gz.msgs10.entity_pb2 import Entity
+from gz.msgs10.boolean_pb2 import Boolean
+from gz.transport13 import Node
+
 
 def call_gzservice(service, reqtype, reptype, timeout, req):
     command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
@@ -150,20 +156,32 @@ class LauncherGzsim(ILauncher):
             "pause: false",
         )
 
-    def reset(self):
+    def reset(self, robot_entity=None):
         if is_ros_service_available("/drone0/platform/state_machine/_reset"):
             call_service(
                 "/drone0/platform/state_machine/_reset",
                 "std_srvs/srv/Trigger",
                 "{}",
             )
-        call_gzservice(
-            "/world/default/control",
-            "gz.msgs.WorldControl",
-            "gz.msgs.Boolean",
-            "3000",
-            "reset: {all: true}",
+        node = Node()
+
+        if robot_entity is not None:
+            node.request(
+                f"/world/default/remove",
+                Entity(name=robot_entity, type=Entity.MODEL),
+                Entity,
+                Boolean,
+                1000,
+            )
+
+        node.request(
+            f"/world/default/control",
+            WorldControl(pause=True, reset=WorldReset(all=True)),
+            WorldControl,
+            Boolean,
+            1000,
         )
+
         if is_ros_service_available("/drone0/controller/_reset"):
             call_service("/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}")
 

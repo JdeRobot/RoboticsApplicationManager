@@ -32,6 +32,7 @@ def setup_manager_to_world_ready(manager, monkeypatch):
             "type": next(iter(worlds)),  # Use the first world type
             "start_pose": [0, 0, 0, 0, 0, 0],
             "launch_file_path": "/path/to/robot_launch_file.launch",
+            "extra_config": None,
             # "robot_config": {"name": "test_robot", "type": worlds[0].robot_type},
         },
     }

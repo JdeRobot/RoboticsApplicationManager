@@ -13,55 +13,20 @@ from .launcher_interface import ILauncher
 
 worlds = {
     "gazebo": {
-        "1": [
-            {
-                "type": "module",
-                "module": "ros_api",
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
         "2": [
             {
-                "type": "module",
+                "type": "gazebo",
                 "module": "robot_ros2_api",
                 "parameters": [],
                 "launch_file": [],
             }
         ],
     },
-    "drones": {
-        "1": [
-            {
-                "type": "module",
-                "module": "drones",
-                "resource_folders": [],
-                "model_folders": [],
-                "plugin_folders": [],
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
+    "gz": {
         "2": [
             {
-                "type": "module",
-                "module": "drones_ros2",
-                "resource_folders": [],
-                "model_folders": [],
-                "plugin_folders": [],
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
-    },
-    "gzsimdrones": {
-        "2": [
-            {
-                "type": "module",
-                "module": "drones_gzsim",
-                "resource_folders": [],
-                "model_folders": [],
-                "plugin_folders": [],
+                "type": "gz",
+                "module": "robot_ros2_api",
                 "parameters": [],
                 "launch_file": [],
             }
@@ -81,13 +46,17 @@ class LauncherRobot(BaseModel):
     launchers: Optional[ILauncher] = []
     start_pose: Optional[list] = []
 
-    def run(self, start_pose=None):
+    def run(self, start_pose=None, extra_config=None):
         """Run the robot launcher with an optional start pose."""
         if start_pose is not None:
             self.start_pose = start_pose
+
+        if extra_config is None:
+            extra_config = ""
+
         for module in worlds[self.type][str(self.ros_version)]:
             module["launch_file"] = self.launch_file_path
-            launcher = self.launch_module(module)
+            launcher = self.launch_module(module, extra_config)
             self.launchers.append(launcher)
         LogManager.logger.info(self.launchers)
 
@@ -99,7 +68,7 @@ class LauncherRobot(BaseModel):
                 launcher.terminate()
         self.launchers = []
 
-    def launch_module(self, configuration):
+    def launch_module(self, configuration, extra_config=None):
         """Launch a robot module based on the provided configuration."""
 
         def process_terminated(name, exit_code):
@@ -117,7 +86,7 @@ class LauncherRobot(BaseModel):
         launcher_class = get_class(launcher_module)
         launcher = launcher_class.from_config(launcher_class, configuration)
 
-        launcher.run(self.start_pose, process_terminated)
+        launcher.run(self.start_pose, extra_config, process_terminated)
         return launcher
 
     def launch_command(self, configuration):
