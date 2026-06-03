@@ -16,7 +16,6 @@ import os
 import signal
 import subprocess
 import re
-import psutil
 import shutil
 import time
 import base64
@@ -34,7 +33,6 @@ from robotics_application_manager.comms import (
 from robotics_application_manager.libs import (
     check_gpu_acceleration,
     get_class_from_file,
-    stop_process_and_children,
     ConfigurationManager,
 )
 from robotics_application_manager.ram_logging import LogManager
@@ -45,6 +43,7 @@ from robotics_application_manager.manager.launcher import (
 )
 from robotics_application_manager.manager.lint import Lint
 from robotics_application_manager.manager.editor import serialize_completions
+from robotics_application_manager.manager.agent_group import AgentGroup
 
 
 class Manager:
@@ -226,7 +225,10 @@ class Manager:
         self.world_type = None
         self.robot_launcher = None
         self.tools_launcher = None
-        self.application_process = None
+        # Group of agent processes (1 for single-agent exercises, 2+ for
+        # multi-agent ones like drone cat-mouse). Lifecycle ops fan out over
+        # all members; the FSM stays single-target. See AgentGroup.
+        self.application_processes = AgentGroup()
         self.running = True
         self.linter = Lint()
 
@@ -722,6 +724,10 @@ class Manager:
         except Exception as e:
             LogManager.logger.exception(f"Error refreshing GTK applications: {e}")
 
+    def _kill_all_applications(self):
+        # Fan kill out over every agent in the group, then empty it.
+        self.application_processes.kill_all()
+
     def on_run_application(self, event):
         """
         Handle the 'run_application' event.
@@ -734,12 +740,7 @@ class Manager:
             event: The event object containing application configuration and code data.
         """
         # Kill already running code
-        try:
-            proc = psutil.Process(self.application_process.pid)
-            proc.suspend()
-            proc.kill()
-        except Exception:
-            pass
+        self._kill_all_applications()
 
         # Delete old files
         if os.path.exists("/workspace/code"):
@@ -751,11 +752,14 @@ class Manager:
         entrypoint = app_cfg["entrypoint"]
         to_lint = app_cfg["linter"]
 
-        # Unzip the app
+        # the code comes as a base64 data-uri from the browser, strip the header part
         if app_cfg["code"].startswith("data:"):
             _, _, code = app_cfg["code"].partition("base64,")
         with open("/workspace/code/app.zip", "wb") as result:
             result.write(base64.b64decode(code))
+
+        # just extract evrything to /workspace/code — if theres a processB/ folder
+        # inside the zip it'll end up at /workspace/code/processB/ on its own
         zip_ref = zipfile.ZipFile("/workspace/code/app.zip", "r")
         zip_ref.extractall("/workspace/code")
         zip_ref.close()
@@ -786,9 +790,8 @@ class Manager:
             if returncode != 0:
                 raise Exception("Failed to compile")
 
-            self.unpause_sim()
             if entrypoint.endswith(".launch.py"):
-                self.application_process = subprocess.Popen(
+                proc = subprocess.Popen(
                     [
                         f"source /workspace/code/install/setup.bash && ros2 launch {entrypoint}"
                     ],
@@ -801,8 +804,7 @@ class Manager:
                     executable="/bin/bash",
                 )
             else:
-
-                self.application_process = subprocess.Popen(
+                proc = subprocess.Popen(
                     [
                         "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
                     ],
@@ -814,6 +816,8 @@ class Manager:
                     shell=True,
                     executable="/bin/bash",
                 )
+            self.application_processes.add("agentA", proc)
+            self.unpause_sim()
             return
 
         # Pass the linter
@@ -831,8 +835,7 @@ class Manager:
         fds = os.listdir("/dev/pts/")
         console_fd = str(max(map(int, fds[:-1])))
 
-        self.unpause_sim()
-        self.application_process = subprocess.Popen(
+        proc = subprocess.Popen(
             ["python3", entrypoint],
             stdin=open("/dev/pts/" + console_fd, "r"),
             stdout=open("/dev/pts/" + console_fd, "w"),
@@ -840,6 +843,39 @@ class Manager:
             bufsize=1024,
             universal_newlines=True,
         )
+        self.application_processes.add("agentA", proc)
+
+        # check if theres a second agent in processB/ subdir — this one is
+        # pre-programmed from the server side so no need to lint it
+        processb_entrypoint = os.path.join(
+            "/workspace/code/processB", os.path.basename(entrypoint)
+        )
+        if os.path.isfile(processb_entrypoint):
+            # PYTHONPATH must include /workspace/code so processB can import
+            # commons (hal_interfaces, gui_interfaces, etc.) which extract there.
+            # Python only adds the script's own directory to sys.path, not parent.
+            proc_b_env = os.environ.copy()
+            proc_b_env["PYTHONPATH"] = "/workspace/code:" + proc_b_env.get("PYTHONPATH", "")
+            proc_b = subprocess.Popen(
+                ["python3", processb_entrypoint],
+                env=proc_b_env,
+                stdin=open("/dev/pts/" + console_fd, "r"),
+                stdout=open("/dev/pts/" + console_fd, "w"),
+                stderr=sys.stdout,
+                bufsize=1024,
+                universal_newlines=True,
+            )
+            self.application_processes.add("agentB", proc_b)
+
+        # SIGSTOP every agent first, then unpause gazebo, then SIGCONT them all
+        # together — so no agent acts on a still-paused world and they start in
+        # lockstep. using finally so even if unpause fails we dont leave frozen
+        # processes behind. Fans out over the whole group (1 agent or N).
+        self.application_processes.signal_stop_all()
+        try:
+            self.unpause_sim()
+        finally:
+            self.application_processes.signal_cont_all()
 
         LogManager.logger.info("Run application transition finished")
 
@@ -853,11 +889,16 @@ class Manager:
         Parameters:
             event: The event object associated with the termination request.
         """
-        if self.application_process:
+        if self.application_processes:
             try:
-                stop_process_and_children(self.application_process)
-                self.application_process = None
+                # Pause sim first — freezes Gazebo physics immediately so every
+                # agent in the group (drones, robots, etc.) stops mid-motion
+                # before its process is killed. Then kill_all() fans the kill
+                # out over the whole group and reset_sim() resets every agent.
+                # General: works for N agents across all exercises with no
+                # exercise-specific zero-velocity code.
                 self.pause_sim()
+                self._kill_all_applications()
                 self.reset_sim()
             except Exception:
                 LogManager.logger.exception("No application running")
@@ -894,10 +935,9 @@ class Manager:
         terminates launchers, and restarts the script.
         """
 
-        if self.application_process:
+        if self.application_processes:
             try:
-                stop_process_and_children(self.application_process)
-                self.application_process = None
+                self._kill_all_applications()
             except Exception as e:
                 LogManager.logger.exception("Exception stopping application process")
 
@@ -929,15 +969,9 @@ class Manager:
         self.consumer.send_message(message.response(response))
 
     def on_pause(self, msg):
-        if self.application_process is not None:
-            proc = psutil.Process(self.application_process.pid)
-            children = proc.children(recursive=True)
-            children.append(proc)
-            for p in children:
-                try:
-                    p.suspend()
-                except psutil.NoSuchProcess:
-                    pass
+        if self.application_processes:
+            # Suspend every agent in the group, then freeze the shared world.
+            self.application_processes.pause_all()
             self.pause_sim()
         else:
             LogManager.logger.warning(
@@ -953,15 +987,9 @@ class Manager:
         Parameters:
             msg: The event or message triggering the resume action.
         """
-        if self.application_process is not None:
-            proc = psutil.Process(self.application_process.pid)
-            children = proc.children(recursive=True)
-            children.append(proc)
-            for p in children:
-                try:
-                    p.resume()
-                except psutil.NoSuchProcess:
-                    pass
+        if self.application_processes:
+            # Unfreeze the shared world, then resume every agent in the group.
+            self.application_processes.resume_all()
             self.unpause_sim()
         else:
             LogManager.logger.warning(
@@ -1028,10 +1056,9 @@ class Manager:
             except Exception as e:
                 LogManager.logger.exception("Exception stopping consumer")
 
-            if self.application_process:
+            if self.application_processes:
                 try:
-                    stop_process_and_children(self.application_process)
-                    self.application_process = None
+                    self._kill_all_applications()
                 except Exception as e:
                     LogManager.logger.exception(
                         "Exception stopping application process"

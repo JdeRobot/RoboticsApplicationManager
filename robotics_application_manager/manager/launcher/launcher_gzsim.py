@@ -1,3 +1,4 @@
+import re
 import sys
 from .launcher_interface import ILauncher
 from robotics_application_manager.manager.docker_thread import DockerThread
@@ -12,6 +13,23 @@ import os
 import stat
 from typing import List, Any
 from robotics_application_manager import LogManager
+
+
+def _find_drone_namespaces():
+    """Return list of drone namespaces that have a state_machine/_reset service."""
+    try:
+        result = subprocess.run(
+            ["ros2", "service", "list", "--include-hidden-services"],
+            capture_output=True, text=True, timeout=10,
+        )
+        namespaces = []
+        for line in result.stdout.splitlines():
+            m = re.match(r"^/([^/]+)/platform/state_machine/_reset$", line.strip())
+            if m:
+                namespaces.append(m.group(1))
+        return namespaces
+    except Exception:
+        return []
 
 
 def call_gzservice(service, reqtype, reptype, timeout, req):
@@ -151,9 +169,10 @@ class LauncherGzsim(ILauncher):
         )
 
     def reset(self):
-        if is_ros_service_available("/drone0/platform/state_machine/_reset"):
+        # Reset state machine for every drone namespace currently running.
+        for ns in _find_drone_namespaces():
             call_service(
-                "/drone0/platform/state_machine/_reset",
+                f"/{ns}/platform/state_machine/_reset",
                 "std_srvs/srv/Trigger",
                 "{}",
             )
@@ -164,8 +183,9 @@ class LauncherGzsim(ILauncher):
             "3000",
             "reset: {all: true}",
         )
-        if is_ros_service_available("/drone0/controller/_reset"):
-            call_service("/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}")
+        for ns in _find_drone_namespaces():
+            if is_ros_service_available(f"/{ns}/controller/_reset"):
+                call_service(f"/{ns}/controller/_reset", "std_srvs/srv/Trigger", "{}")
 
     def get_dri_path(self):
         directory_path = "/dev/dri"
