@@ -799,6 +799,7 @@ class Manager:
                     universal_newlines=True,
                     shell=True,
                     executable="/bin/bash",
+                    start_new_session=True,
                 )
             else:
 
@@ -813,6 +814,7 @@ class Manager:
                     universal_newlines=True,
                     shell=True,
                     executable="/bin/bash",
+                    start_new_session=True,
                 )
             return
 
