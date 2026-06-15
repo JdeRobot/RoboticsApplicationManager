@@ -16,8 +16,8 @@ class LaunchWorldCmd(ManagerConsumerMessage):
     command: str = "launch_world"
     data: dict = {
         "world": {
-            "type": "gazebo",
-            "launch_file_path": "/opt/jderobot/Launchers/simple_circuit_followingcam.launch.py",
+            "type": "gz",
+            "launch_file_path": "/opt/jderobot/Launchers/simple_circuit.launch.py",
         },
         "robot": {
             "type": None,
