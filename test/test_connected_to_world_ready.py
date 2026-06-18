@@ -46,44 +46,8 @@ def test_connected_to_world_ready(manager, monkeypatch):
     assert state_change_msgs[-1][0][0]["state"] == "world_ready"
 
 
-def test_launch_world_with_invalid_world_config(manager, monkeypatch):
-    """Test that launching world with invalid world config logs error."""
-    # Initial state should be 'connected'
-    setup_manager_to_connected(manager, monkeypatch)
-
-    # Patch ConfigurationManager.validate to simulate a failed validation
-    # but still return a dummy config
-    class DummyConfig:
-        def model_dump(self):
-            return {}
-
-    def fake_validate(cfg):
-        # Simulate logging error, but return a dummy config to avoid UnboundLocalError
-        return DummyConfig()
-
-    def fake_prepare_custom_universe(cfg):
-        raise ValueError("Invalid world configuration")
-
-    monkeypatch.setattr(
-        "robotics_application_manager.libs.launch_world_model.ConfigurationManager.validate",
-        fake_validate,
-    )
-    manager.prepare_custom_universe = fake_prepare_custom_universe
-
-    event_data = {"world": invalid_world_cfg, "robot": valid_robot_cfg}
-
-    with pytest.raises(ValueError):
-        manager.trigger("launch_world", data=event_data)
-    # Assert that world_launcher is created but has no useful config
-    assert manager.world_launcher is not None
-    assert (
-        getattr(manager.world_launcher, "world", None) is None
-        or manager.world_launcher.world == ""
-    )
-
-
-# def test_launch_world_with_invalid_robot_config(manager, monkeypatch):
-#     """Test that launching world with invalid robot config logs error."""
+# def test_launch_world_with_invalid_world_config(manager, monkeypatch):
+#     """Test that launching world with invalid world config logs error."""
 #     # Initial state should be 'connected'
 #     setup_manager_to_connected(manager, monkeypatch)
 
@@ -97,27 +61,63 @@ def test_launch_world_with_invalid_world_config(manager, monkeypatch):
 #         # Simulate logging error, but return a dummy config to avoid UnboundLocalError
 #         return DummyConfig()
 
+#     def fake_prepare_custom_universe(cfg):
+#         raise ValueError("Invalid world configuration")
+
 #     monkeypatch.setattr(
 #         "robotics_application_manager.libs.launch_world_model.ConfigurationManager.validate",
 #         fake_validate,
 #     )
+#     manager.prepare_custom_universe = fake_prepare_custom_universe
 
-#     invalid_robot_cfg = {"name": "", "type": ""}  # Invalid robot config
-#     event_data = {
-#         "world": valid_world_cfg,
-#         "robot": invalid_robot_cfg,
-#     }
+#     event_data = {"world": invalid_world_cfg, "robot": valid_robot_cfg}
 
 #     with pytest.raises(ValueError):
-#         # This should raise an error due to invalid robot config
 #         manager.trigger("launch_world", data=event_data)
-
-#     # Assert that robot_launcher is not created
-#     assert manager.robot_launcher is None
+#     # Assert that world_launcher is created but has no useful config
+#     assert manager.world_launcher is not None
 #     assert (
-#         getattr(manager.robot_launcher, "robot_config", None) is None
-#         or manager.robot_launcher.robot_config == {}
+#         getattr(manager.world_launcher, "world", None) is None
+#         or manager.world_launcher.world == ""
 #     )
+
+
+def test_launch_world_with_invalid_robot_config(manager, monkeypatch):
+    """Test that launching world with invalid robot config logs error."""
+    # Initial state should be 'connected'
+    setup_manager_to_connected(manager, monkeypatch)
+
+    # Patch ConfigurationManager.validate to simulate a failed validation
+    # but still return a dummy config
+    class DummyConfig:
+        def model_dump(self):
+            return {}
+
+    def fake_validate(cfg):
+        # Simulate logging error, but return a dummy config to avoid UnboundLocalError
+        return DummyConfig()
+
+    monkeypatch.setattr(
+        "robotics_application_manager.libs.launch_world_model.ConfigurationManager.validate",
+        fake_validate,
+    )
+
+    invalid_robot_cfg = {"name": "", "type": ""}  # Invalid robot config
+    event_data = {
+        "world": valid_world_cfg,
+        "robot": invalid_robot_cfg,
+    }
+
+    with pytest.raises(ValueError):
+        # This should raise an error due to invalid robot config
+        manager.trigger("launch_world", data=event_data)
+
+    # Assert that robot_launcher is not created
+    assert manager.robot_launcher is None
+    assert (
+        getattr(manager.robot_launcher, "robot_config", None) is None
+        or manager.robot_launcher.robot_config == {}
+    )
 
 
 def test_launch_world_with_no_world_config(manager, monkeypatch):
