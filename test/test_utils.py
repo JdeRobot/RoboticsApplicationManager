@@ -27,15 +27,16 @@ def setup_manager_to_world_ready(manager, monkeypatch):
 
     event_data = {
         "world": valid_world_cfg,
-        "robot": {
-            "world": None,  # No robot specified
-            "type": next(iter(worlds)),  # Use the first world type
-            "start_pose": [0, 0, 0, 0, 0, 0],
-            "launch_file_path": "/path/to/robot_launch_file.launch",
-            "entity": "test",
-            "extra_config": None,
-            # "robot_config": {"name": "test_robot", "type": worlds[0].robot_type},
-        },
+        "robot": None,
+        # "robot": {
+        #     "world": None,  # No robot specified
+        #     "type": next(iter(worlds)),  # Use the first world type
+        #     "start_pose": [0, 0, 0, 0, 0, 0],
+        #     "launch_file_path": "/path/to/robot_launch_file.launch",
+        #     "entity": "test",
+        #     "extra_config": None,
+        #     # "robot_config": {"name": "test_robot", "type": worlds[0].robot_type},
+        # },
     }
     manager.trigger("launch_world", data=event_data)
 
