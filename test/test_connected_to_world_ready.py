@@ -11,9 +11,11 @@ valid_world_cfg = ConfigurationModel(
 
 valid_robot_cfg = {
     "world": None,  # No robot specified
-    "type": next(iter(worlds)),  # Use the first world type
+    # "type": next(iter(worlds)),  # Use the first world type
+    "type": None,
     "start_pose": [0, 0, 0, 0, 0, 0],
     "launch_file_path": "/path/to/robot_launch_file.launch",
+    "entity": "test",
     "extra_config": None,
 }
 
