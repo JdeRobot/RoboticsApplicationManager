@@ -165,13 +165,21 @@ class LauncherGzsim(ILauncher):
             )
         node = Node()
 
+        node.request(
+            f"/world/default/control",
+            WorldControl(pause=True),
+            WorldControl,
+            Boolean,
+            10000,
+        )
+
         if robot_entity is not None:
             node.request(
                 f"/world/default/remove",
                 Entity(name=robot_entity, type=Entity.MODEL),
                 Entity,
                 Boolean,
-                1000,
+                5000,
             )
 
         node.request(
@@ -179,7 +187,7 @@ class LauncherGzsim(ILauncher):
             WorldControl(pause=True, reset=WorldReset(all=True)),
             WorldControl,
             Boolean,
-            1000,
+            10000,
         )
 
         if is_ros_service_available("/drone0/controller/_reset"):
