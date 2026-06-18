@@ -19,27 +19,6 @@ from gz.msgs10.empty_pb2 import Empty
 from gz.msgs10.scene_pb2 import Scene
 
 
-def call_service(service, service_type, request_data="{}"):
-    command = f"ros2 service call {service} {service_type} '{request_data}'"
-    try:
-        p = subprocess.Popen(
-            [
-                f"{command}",
-            ],
-            shell=True,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-        p.wait(10)
-    except:
-        p.kill()
-
-        LogManager.logger.exception(f"Unable to complete call: {service}")
-        raise Exception(f"Unable to complete call: {service}")
-
-
 class LauncherRobotRos2Api(ILauncher):
     type: str
     module: str
