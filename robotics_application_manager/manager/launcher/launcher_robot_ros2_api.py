@@ -13,27 +13,10 @@ import sys
 
 import logging
 from robotics_application_manager import LogManager
+from gz.transport13 import Node
 
-
-def call_service(service, service_type, request_data="{}"):
-    command = f"ros2 service call {service} {service_type} '{request_data}'"
-    try:
-        p = subprocess.Popen(
-            [
-                f"{command}",
-            ],
-            shell=True,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-        p.wait(10)
-    except:
-        p.kill()
-
-        LogManager.logger.exception(f"Unable to complete call: {service}")
-        raise Exception(f"Unable to complete call: {service}")
+from gz.msgs10.empty_pb2 import Empty
+from gz.msgs10.scene_pb2 import Scene
 
 
 class LauncherRobotRos2Api(ILauncher):
@@ -42,7 +25,7 @@ class LauncherRobotRos2Api(ILauncher):
     launch_file: str
     threads: List[Any] = []
 
-    def run(self, robot_pose, extra_config, callback):
+    def run(self, entity, robot_pose, extra_config, callback):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
@@ -65,6 +48,23 @@ class LauncherRobotRos2Api(ILauncher):
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
+
+        # Wait until robot entity has spawned
+        node = Node()
+        spawned = False
+        while not spawned:
+            a = node.request(
+                f"/world/default/scene/info",
+                Empty(),
+                Empty,
+                Scene,
+                1000,
+            )
+            if a[0]:
+                for model in a[1].model:
+                    if model.name == entity:
+                        spawned = True
+                        LogManager.logger.info("Robot spawned OK")
 
     def terminate(self):
         if self.threads is not None:

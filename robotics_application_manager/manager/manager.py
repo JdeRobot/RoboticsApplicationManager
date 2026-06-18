@@ -363,7 +363,9 @@ class Manager:
 
         self.world_launcher.run()
         if self.robot_launcher is not None:
-            self.robot_launcher.run(robot_cfg["start_pose"], robot_cfg["extra_config"])
+            self.robot_launcher.run(
+                robot_cfg["entity"], robot_cfg["start_pose"], robot_cfg["extra_config"]
+            )
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
@@ -1008,7 +1010,9 @@ class Manager:
         if self.robot_launcher:
             try:
                 self.robot_launcher.run(
-                    self.robot_config["start_pose"], self.robot_config["extra_config"]
+                    self.robot_config["entity"],
+                    self.robot_config["start_pose"],
+                    self.robot_config["extra_config"],
                 )
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")
