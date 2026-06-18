@@ -44,10 +44,13 @@ class LauncherRobot(BaseModel):
     module: str = ".".join(__name__.split(".")[:-1])
     ros_version: int = get_ros_version()
     launchers: Optional[ILauncher] = []
+    entity: str = ""
     start_pose: Optional[list] = []
 
-    def run(self, start_pose=None, extra_config=None):
+    def run(self, entity="", start_pose=None, extra_config=None):
         """Run the robot launcher with an optional start pose."""
+        self.entity = entity
+
         if start_pose is not None:
             self.start_pose = start_pose
 
@@ -86,7 +89,7 @@ class LauncherRobot(BaseModel):
         launcher_class = get_class(launcher_module)
         launcher = launcher_class.from_config(launcher_class, configuration)
 
-        launcher.run(self.start_pose, extra_config, process_terminated)
+        launcher.run(self.entity, self.start_pose, extra_config, process_terminated)
         return launcher
 
     def launch_command(self, configuration):
