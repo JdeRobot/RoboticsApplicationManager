@@ -14,6 +14,12 @@ import stat
 from typing import List, Any
 from robotics_application_manager import LogManager
 
+from gz.msgs10.world_control_pb2 import WorldControl
+from gz.msgs10.world_reset_pb2 import WorldReset
+from gz.msgs10.entity_pb2 import Entity
+from gz.msgs10.boolean_pb2 import Boolean
+from gz.transport13 import Node
+
 
 def _find_drone_namespaces():
     """Return list of drone namespaces that have a state_machine/_reset service."""
@@ -168,21 +174,44 @@ class LauncherGzsim(ILauncher):
             "pause: false",
         )
 
-    def reset(self):
-        # Reset state machine for every drone namespace currently running.
+    def reset(self, robot_entity=None):
+        # reset the AS2 state machine for every drone that's up (not just drone0).
+        # _find_drone_namespaces returns [] for non-drone exercises, so this is
+        # a no-op there and only the world reset below runs.
         for ns in _find_drone_namespaces():
             call_service(
                 f"/{ns}/platform/state_machine/_reset",
                 "std_srvs/srv/Trigger",
                 "{}",
             )
-        call_gzservice(
-            "/world/default/control",
-            "gz.msgs.WorldControl",
-            "gz.msgs.Boolean",
-            "3000",
-            "reset: {all: true}",
+        node = Node()
+
+        node.request(
+            f"/world/default/control",
+            WorldControl(pause=True),
+            WorldControl,
+            Boolean,
+            10000,
         )
+
+        if robot_entity is not None:
+            node.request(
+                f"/world/default/remove",
+                Entity(name=robot_entity, type=Entity.MODEL),
+                Entity,
+                Boolean,
+                5000,
+            )
+
+        node.request(
+            f"/world/default/control",
+            WorldControl(pause=True, reset=WorldReset(all=True)),
+            WorldControl,
+            Boolean,
+            10000,
+        )
+
+        # reset each drone's controller too (not just drone0)
         for ns in _find_drone_namespaces():
             if is_ros_service_available(f"/{ns}/controller/_reset"):
                 call_service(f"/{ns}/controller/_reset", "std_srvs/srv/Trigger", "{}")

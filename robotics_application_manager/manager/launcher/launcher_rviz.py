@@ -68,7 +68,7 @@ class LauncherRviz(ILauncher):
     def unpause(self):
         pass
 
-    def reset(self):
+    def reset(self, robot_entity=None):
         pass
 
     def is_running(self):

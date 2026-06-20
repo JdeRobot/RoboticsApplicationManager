@@ -177,16 +177,14 @@ class Vnc_server:
                 os.makedirs(desktop_dir)
             desktop_path = os.path.join(desktop_dir, "terminal_launcher.desktop")
             with open(desktop_path, "w") as f:
-                f.write(
-                    """[Desktop Entry]
+                f.write("""[Desktop Entry]
                     Name=Open Terminal
                     Exec=xterm
                     Icon=utilities-terminal
                     Type=Application
                     Encoding=UTF-8
                     Terminal=false
-                    Categories=None;"""
-                )
+                    Categories=None;""")
             os.chmod(desktop_path, 0o755)
         except Exception as err:
             print(err)
@@ -200,16 +198,14 @@ class Vnc_server:
 
         try:
             with open(desktop_path, "w") as f:
-                f.write(
-                    """[Desktop Entry]
+                f.write("""[Desktop Entry]
     Name=Gazebo Client
     Exec=gzclient
     Icon=gazebo
     Type=Application
     Encoding=UTF-8
     Terminal=false
-    Categories=None;"""
-                )
+    Categories=None;""")
             os.chmod(desktop_path, 0o755)
             print("Icono de gzclient creado con éxito en el escritorio.")
         except Exception as e:

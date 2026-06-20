@@ -224,6 +224,7 @@ class Manager:
         self.world_launcher = None
         self.world_type = None
         self.robot_launcher = None
+        self.robot_config = None
         self.tools_launcher = None
         # Group of agent processes (1 for single-agent exercises, 2+ for
         # multi-agent ones like drone cat-mouse). Lifecycle ops fan out over
@@ -347,25 +348,26 @@ class Manager:
 
         self.world_launcher = LauncherWorld(**cfg.model_dump())
         LogManager.logger.info(str(self.world_launcher))
-        self.world_launcher.run()
-        LogManager.logger.info("Launch transition finished")
 
         # Launch robot
-        try:
-            if robot_cfg["type"] == None:
-                self.robot_launcher = None
-                LogManager.logger.info("Launch transition finished")
-                return
-            cfg = ConfigurationManager.validate(robot_cfg)
-            LogManager.logger.info("Launching robot from the RB")
+        self.robot_launcher = None
+        if robot_cfg["type"] is not None:
+            try:
+                cfg = ConfigurationManager.validate(robot_cfg)
+                LogManager.logger.info("Launching robot from the RB")
+                LogManager.logger.info(cfg)
+            except ValueError as e:
+                LogManager.logger.error(f"Configuration validation failed: {e}")
 
-            LogManager.logger.info(cfg)
-        except ValueError as e:
-            LogManager.logger.error(f"Configuration validation failed: {e}")
+            self.robot_launcher = LauncherRobot(**cfg.model_dump())
+            self.robot_config = robot_cfg
+            LogManager.logger.info(str(self.robot_launcher))
 
-        self.robot_launcher = LauncherRobot(**cfg.model_dump())
-        LogManager.logger.info(str(self.robot_launcher))
-        self.robot_launcher.run(robot_cfg["start_pose"])
+        self.world_launcher.run()
+        if self.robot_launcher is not None:
+            self.robot_launcher.run(
+                robot_cfg["entity"], robot_cfg["start_pose"], robot_cfg["extra_config"]
+            )
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_universe(self, cfg_dict):
@@ -802,6 +804,7 @@ class Manager:
                     universal_newlines=True,
                     shell=True,
                     executable="/bin/bash",
+                    start_new_session=True,
                 )
             else:
                 proc = subprocess.Popen(
@@ -815,6 +818,7 @@ class Manager:
                     universal_newlines=True,
                     shell=True,
                     executable="/bin/bash",
+                    start_new_session=True,
                 )
             self.application_processes.add("agentA", proc)
             self.unpause_sim()
@@ -1023,14 +1027,21 @@ class Manager:
             self.robot_launcher.terminate()
 
         try:
-            self.tools_launcher.reset()
+            entity = None
+            if self.robot_config is not None:
+                entity = self.robot_config["entity"]
+            self.tools_launcher.reset(entity)
         except subprocess.TimeoutExpired as e:
             self.write_to_tool_terminal(f"{e}\n\n")
             raise Exception("Failed to reset simulator")
 
         if self.robot_launcher:
             try:
-                self.robot_launcher.run()
+                self.robot_launcher.run(
+                    self.robot_config["entity"],
+                    self.robot_config["start_pose"],
+                    self.robot_config["extra_config"],
+                )
             except Exception as e:
                 LogManager.logger.exception("Exception terminating world launcher")
 
