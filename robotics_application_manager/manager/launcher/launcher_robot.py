@@ -12,16 +12,6 @@ from robotics_application_manager import LogManager
 from .launcher_interface import ILauncher
 
 worlds = {
-    "gazebo": {
-        "2": [
-            {
-                "type": "gazebo",
-                "module": "robot_ros2_api",
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
-    },
     "gz": {
         "2": [
             {
