@@ -55,7 +55,7 @@ class LauncherRobot(BaseModel):
 
     def terminate(self):
         """Terminate all robot launchers and clear the launchers list."""
-        LogManager.logger.info("Terminating robot launcher")
+        LogManager.logger.info("Terminating robots launchers")
         if self.launchers:
             for launcher in self.launchers:
                 launcher.terminate()

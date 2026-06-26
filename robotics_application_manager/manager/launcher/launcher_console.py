@@ -52,8 +52,9 @@ class LauncherConsole(ILauncher):
         return self.running
 
     def terminate(self):
+        LogManager.logger.info(f"Terminating console tool")
         self.console_vnc.terminate()
-        for thread in self.threads:
+        for thread in self.threads[:]:
             if thread.is_alive():
                 thread.terminate()
                 thread.join()

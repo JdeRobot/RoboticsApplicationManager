@@ -31,11 +31,6 @@ class LauncherRobotRos2Api(ILauncher):
 
         logging.getLogger("roslaunch").setLevel(logging.CRITICAL)
 
-        xserver_cmd = f"/usr/bin/Xorg -quiet -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config ./xorg.conf :0"
-        xserver_thread = DockerThread(xserver_cmd)
-        xserver_thread.start()
-        self.threads.append(xserver_thread)
-
         x, y, z, R, P, Y = robot_pose
 
         if extra_config == "None":
@@ -48,6 +43,7 @@ class LauncherRobotRos2Api(ILauncher):
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
+        self.threads.append(exercise_launch_thread)
 
         # Wait until robot entity has spawned
         node = Node()
@@ -67,37 +63,9 @@ class LauncherRobotRos2Api(ILauncher):
                         LogManager.logger.info("Robot spawned OK")
 
     def terminate(self):
-        if self.threads is not None:
-            for thread in self.threads:
-                if thread.is_alive():
-                    thread.terminate()
-                    thread.join()
-                self.threads.remove(thread)
-
-        kill_cmd = "pkill -9 -f "
-        cmd = kill_cmd + "spawn_robot.launch.py"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-
-        cmd = kill_cmd + "bridge"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-
-        cmd = kill_cmd + "robot_state_publisher"
-        subprocess.call(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            bufsize=1024,
-            universal_newlines=True,
-        )
+        LogManager.logger.info(f"Terminating robot launcher")
+        for thread in self.threads[:]:
+            if thread.is_alive():
+                thread.terminate()
+                thread.join()
+            self.threads.remove(thread)
