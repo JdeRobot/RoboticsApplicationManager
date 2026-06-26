@@ -62,7 +62,7 @@ class LauncherWorld(BaseModel):
             self.launchers.append(launcher)
 
     def terminate(self):
-        LogManager.logger.info("Terminating world launcher")
+        LogManager.logger.info("Terminating worlds launchers")
         if self.launchers:
             for launcher in self.launchers:
                 launcher.terminate()

@@ -20,62 +20,6 @@ from gz.msgs10.boolean_pb2 import Boolean
 from gz.transport13 import Node
 
 
-def call_gzservice(service, reqtype, reptype, timeout, req):
-    command = f"gz service -s {service} --reqtype {reqtype} --reptype {reptype} --timeout {timeout} --req '{req}'"
-    try:
-        p = subprocess.Popen(
-            [
-                f"{command}",
-            ],
-            shell=True,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-        p.wait(10)
-    except:
-        p.kill()
-
-        LogManager.logger.exception(f"Unable to complete call: {service}")
-        raise Exception(f"Unable to complete call: {service}")
-
-
-def call_service(service, service_type, request_data="{}"):
-    command = f"ros2 service call {service} {service_type} '{request_data}'"
-    try:
-        p = subprocess.Popen(
-            [
-                f"{command}",
-            ],
-            shell=True,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-        p.wait(10)
-    except:
-        p.kill()
-
-        LogManager.logger.exception(f"Unable to complete call: {service}")
-        raise Exception(f"Unable to complete call: {service}")
-
-
-def is_ros_service_available(service_name):
-    try:
-        result = subprocess.run(
-            ["ros2", "service", "list", "--include-hidden-services"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return service_name in result.stdout
-    except subprocess.CalledProcessError as e:
-        LogManager.logger.exception(f"Error checking service availability: {e}")
-        return False
-
-
 class LauncherGzsim(ILauncher):
     display: str
     internal_port: int
@@ -129,40 +73,37 @@ class LauncherGzsim(ILauncher):
         return self.running
 
     def terminate(self):
+        LogManager.logger.info(f"Terminating gz tool")
         self.gz_vnc.terminate()
-        for thread in self.threads:
-            thread.terminate()
-            thread.join()
+        for thread in self.threads[:]:
+            if thread.is_alive():
+                thread.terminate()
+                thread.join()
+            self.threads.remove(thread)
         self.running = False
 
     def died(self):
         pass
 
     def pause(self):
-        call_gzservice(
-            "/world/default/control",
-            "gz.msgs.WorldControl",
-            "gz.msgs.Boolean",
-            "3000",
-            "pause: true",
+        Node().request(
+            f"/world/default/control",
+            WorldControl(pause=True),
+            WorldControl,
+            Boolean,
+            10000,
         )
 
     def unpause(self):
-        call_gzservice(
-            "/world/default/control",
-            "gz.msgs.WorldControl",
-            "gz.msgs.Boolean",
-            "3000",
-            "pause: false",
+        Node().request(
+            f"/world/default/control",
+            WorldControl(pause=False),
+            WorldControl,
+            Boolean,
+            10000,
         )
 
     def reset(self, robot_entity=None):
-        if is_ros_service_available("/drone0/platform/state_machine/_reset"):
-            call_service(
-                "/drone0/platform/state_machine/_reset",
-                "std_srvs/srv/Trigger",
-                "{}",
-            )
         node = Node()
 
         node.request(
@@ -189,9 +130,6 @@ class LauncherGzsim(ILauncher):
             Boolean,
             10000,
         )
-
-        if is_ros_service_available("/drone0/controller/_reset"):
-            call_service("/drone0/controller/_reset", "std_srvs/srv/Trigger", "{}")
 
     def get_dri_path(self):
         directory_path = "/dev/dri"

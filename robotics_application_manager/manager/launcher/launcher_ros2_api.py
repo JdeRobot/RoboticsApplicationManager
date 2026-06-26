@@ -10,6 +10,7 @@ from .launcher_interface import (
 )
 from robotics_application_manager.manager.docker_thread import DockerThread
 import subprocess
+from robotics_application_manager import LogManager
 
 import logging
 
@@ -38,28 +39,12 @@ class LauncherRos2Api(ILauncher):
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
+        self.threads.append(exercise_launch_thread)
 
     def terminate(self):
-        if self.threads is not None:
-            for thread in self.threads:
-                if thread.is_alive():
-                    thread.terminate()
-                    thread.join()
-                self.threads.remove(thread)
-
-        to_kill = ["launch.py"]
-        if self.type == "gz":
-            to_kill = ["drones_ws", "gz", "launch.py"]
-        else:
-            to_kill = ["gzserver", "launch.py"]
-
-        kill_cmd = "pkill -9 -f "
-        for i in to_kill:
-            cmd = kill_cmd + i
-            subprocess.call(
-                cmd,
-                shell=True,
-                stdout=subprocess.PIPE,
-                bufsize=1024,
-                universal_newlines=True,
-            )
+        LogManager.logger.info(f"Terminating world launcher")
+        for thread in self.threads[:]:
+            if thread.is_alive():
+                thread.terminate()
+                thread.join()
+            self.threads.remove(thread)

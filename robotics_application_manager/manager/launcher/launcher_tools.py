@@ -84,7 +84,7 @@ class LauncherTools(BaseModel):
             self.launchers.append(launcher)
 
     def terminate(self):
-        LogManager.logger.info("Terminating tools launcher")
+        LogManager.logger.info("Terminating tools launchers")
         for launcher in self.launchers:
             if launcher.is_running():
                 launcher.terminate()

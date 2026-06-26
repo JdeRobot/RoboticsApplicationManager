@@ -925,7 +925,8 @@ class Manager:
 
     def process_message(self, message):
         if message.command == "gui":
-            self.tools_launcher.pass_msg(message.data)
+            if self.tools_launcher is not None:
+                self.tools_launcher.pass_msg(message.data)
             return
 
         self.trigger(message.command, data=message.data or None)
