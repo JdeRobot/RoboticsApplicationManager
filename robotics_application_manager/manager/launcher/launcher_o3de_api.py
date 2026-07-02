@@ -14,7 +14,7 @@ from robotics_application_manager.libs import (
     wait_for_process_to_start,
     check_gpu_acceleration,
 )
-import subprocess
+import subprocess	
 
 import logging
 
@@ -48,12 +48,13 @@ class LauncherO3deApi(ILauncher):
                 self.display, self.internal_port, self.external_port, DRI_PATH
             )
             # Write display config
-            o3decmd = f'export DISPLAY={self.display}; data/workspace/o3de/gme_o3de/bin/Linux/release/Monolithic/MySimulationProject2.GameLauncher +LoadLevel "{self.launch_file}" --forceAdapter="NVIDIA"'
+            o3decmd = f'export DISPLAY={self.display}; data/workspace/o3de/gme/bin/Linux/release/Monolithic/MySimulationProject2.GameLauncher +LoadLevel "{self.launch_file}" --forceAdapter="NVIDIA" --host'
+
         else:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config
-            o3decmd = f'export DISPLAY={self.display}; data/workspace/o3de/gme_o3de/bin/Linux/release/Monolithic/MySimulationProject2.GameLauncher +LoadLevel "{self.launch_file}" --forceAdapter="NVIDIA"'
+            o3decmd = f'export DISPLAY={self.display}; data/workspace/o3de/gme/bin/Linux/release/Monolithic/MySimulationProject2.GameLauncher +LoadLevel "{self.launch_file}" --forceAdapter="NVIDIA" --host'
 
         gzclient_thread = DockerThread(o3decmd)
         gzclient_thread.start()
