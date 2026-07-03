@@ -48,13 +48,13 @@ class LauncherO3deApi(ILauncher):
                 self.display, self.internal_port, self.external_port, DRI_PATH
             )
             # Write display config
-            o3decmd = f'export DISPLAY={self.display}; data/workspace/o3de/gme/bin/Linux/release/Monolithic/MySimulationProject2.GameLauncher +LoadLevel "{self.launch_file}" --forceAdapter="NVIDIA" --host'
+            o3decmd = f'export DISPLAY={self.display}; data/workspace/o3de/gme/bin/Linux/release/Monolithic/MySimulationProject2.GameLauncher +LoadLevel "{self.launch_file}" --forceAdapter="NVIDIA" --host --r_displayInfo=0'
 
         else:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config
-            o3decmd = f'export DISPLAY={self.display}; data/workspace/o3de/gme/bin/Linux/release/Monolithic/MySimulationProject2.GameLauncher +LoadLevel "{self.launch_file}" --forceAdapter="NVIDIA" --host'
+            o3decmd = f'export DISPLAY={self.display}; data/workspace/o3de/gme/bin/Linux/release/Monolithic/MySimulationProject2.GameLauncher +LoadLevel "{self.launch_file}" --forceAdapter="NVIDIA" --host --r_displayInfo=0'
 
         gzclient_thread = DockerThread(o3decmd)
         gzclient_thread.start()
