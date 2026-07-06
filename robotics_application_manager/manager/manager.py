@@ -751,6 +751,11 @@ class Manager:
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         entrypoint = app_cfg["entrypoint"]
+
+        # Backwards compatibility for now
+        if isinstance(entrypoint, list):
+            entrypoint = entrypoint[0]
+
         to_lint = app_cfg["linter"]
 
         # Unzip the app
