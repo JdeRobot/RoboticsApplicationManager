@@ -325,6 +325,10 @@ class Manager:
         scene_cfg = cfg_dict["scene"]
         robot_cfg = cfg_dict["robot"]
 
+        # Backwards compatibility for now
+        if isinstance(robot_cfg, list):
+            robot_cfg = robot_cfg[0]
+
         # Launch scene
         try:
             if scene_cfg["type"] == None:
