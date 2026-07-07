@@ -61,14 +61,14 @@ def test_connected_to_world_ready(manager, monkeypatch):
 #         # Simulate logging error, but return a dummy config to avoid UnboundLocalError
 #         return DummyConfig()
 
-#     def fake_prepare_custom_universe(cfg):
+#     def fake_prepare_custom_world(cfg):
 #         raise ValueError("Invalid world configuration")
 
 #     monkeypatch.setattr(
 #         "robotics_application_manager.libs.launch_world_model.ConfigurationManager.validate",
 #         fake_validate,
 #     )
-#     manager.prepare_custom_universe = fake_prepare_custom_universe
+#     manager.prepare_custom_world = fake_prepare_custom_world
 
 #     event_data = {"world": invalid_world_cfg, "robot": valid_robot_cfg}
 

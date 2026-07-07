@@ -43,7 +43,7 @@ def setup_manager_to_world_ready(manager, monkeypatch):
     # State should now be 'world_ready'
     assert manager.state == "world_ready"
 
-    # Patch LauncherWorld to avoid starting real worlds
+    # Patch LauncherScene to avoid starting real worlds
     class DummyConsumer:
         def __init__(self):
             self.launched = False
@@ -51,7 +51,7 @@ def setup_manager_to_world_ready(manager, monkeypatch):
         def consume(self, *args, **kwargs):
             pass
 
-    class DummyLauncherWorld:
+    class DummyLauncherScene:
         def __init__(self, *args, **kwargs):
             self.launched = False
 

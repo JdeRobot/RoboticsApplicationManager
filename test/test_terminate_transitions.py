@@ -116,8 +116,8 @@ def test_terminate_tools_invalid_machine_error(manager, monkeypatch):
     assert manager.state == "application_running"
 
 
-def test_terminate_universe_valid(manager, monkeypatch):
-    """Test the valid terminate_universe transition in the Manager."""
+def test_terminate_world_valid(manager, monkeypatch):
+    """Test the valid terminate_world transition in the Manager."""
     # Ensure the manager is in a state where it can stop
     setup_manager_to_world_ready(manager, monkeypatch)
     # Mock needed methods and attributes
@@ -125,14 +125,14 @@ def test_terminate_universe_valid(manager, monkeypatch):
     manager.terminate_harmonic_processes = lambda: None
 
     # Trigger the stop transition
-    manager.trigger("terminate_universe")
+    manager.trigger("terminate_world")
     # Check that the state has changed to 'connected'
     assert manager.state == "connected"
 
 
-def test_terminate_universe_invalid_machine_error(manager, monkeypatch):
+def test_terminate_world_invalid_machine_error(manager, monkeypatch):
     """
-    Test the invalid terminate_universe transition in the Manager.
+    Test the invalid terminate_world transition in the Manager.
 
     Ensure that the transition raises an error when executed from an invalid state.
     """
@@ -141,6 +141,6 @@ def test_terminate_universe_invalid_machine_error(manager, monkeypatch):
 
     # Trigger the stop transition
     with pytest.raises(MachineError):
-        manager.trigger("terminate_universe")
+        manager.trigger("terminate_world")
     # Check that the state has not changed
     assert manager.state == "application_running"
