@@ -63,6 +63,18 @@ class LauncherRobot(BaseModel):
             self.launchers.append(launcher)
         LogManager.logger.info(self.launchers)
 
+    def wait_spawned(self):
+        """Block until every module of this robot has spawned in the sim.
+
+        run() only starts the launches; this waits for them. Kept separate so
+        the manager can start all robots first, then wait for them together
+        (parallel spawn). Only modules that spawn a gazebo entity implement
+        wait_spawned(), so guard for it.
+        """
+        for launcher in self.launchers:
+            if hasattr(launcher, "wait_spawned"):
+                launcher.wait_spawned()
+
     def terminate(self):
         """Terminate all robot launchers and clear the launchers list."""
         LogManager.logger.info("Terminating robot launcher")

@@ -223,8 +223,10 @@ class Manager:
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.world_launcher = None
         self.world_type = None
-        self.robot_launcher = None
-        self.robot_config = None
+        # one launcher + config per robot (list, so N robots are supported the
+        # same way one is — each entry has its own entity / launch / start_pose)
+        self.robot_launchers = []
+        self.robot_configs = []
         self.tools_launcher = None
         # Group of agent processes (1 for single-agent exercises, 2+ for
         # multi-agent ones like drone cat-mouse). Lifecycle ops fan out over
@@ -325,7 +327,13 @@ class Manager:
         """
         cfg_dict = event.kwargs.get("data", {})
         world_cfg = cfg_dict["world"]
-        robot_cfg = cfg_dict["robot"]
+        # 'robot' is a LIST of robot configs (one entry per robot). single-robot
+        # exercises are just a list of one. each entry is a full robot config;
+        # the type is shared, the entity / launch_file_path / start_pose differ.
+        robot_cfgs = cfg_dict.get("robot") or []
+        # tolerate an old single-object 'robot' just in case (wrap it)
+        if isinstance(robot_cfgs, dict):
+            robot_cfgs = [robot_cfgs]
 
         # Launch world
         try:
@@ -349,26 +357,48 @@ class Manager:
         self.world_launcher = LauncherWorld(**cfg.model_dump())
         LogManager.logger.info(str(self.world_launcher))
 
-        # Launch robot
-        self.robot_launcher = None
-        if robot_cfg["type"] is not None:
+        # Launch robots — one LauncherRobot per entry in the list
+        self.robot_launchers = []
+        self.robot_configs = []
+        for robot_cfg in robot_cfgs:
+            if robot_cfg.get("type") is None:
+                continue
             try:
                 cfg = ConfigurationManager.validate(robot_cfg)
                 LogManager.logger.info("Launching robot from the RB")
                 LogManager.logger.info(cfg)
             except ValueError as e:
                 LogManager.logger.error(f"Configuration validation failed: {e}")
-
-            self.robot_launcher = LauncherRobot(**cfg.model_dump())
-            self.robot_config = robot_cfg
-            LogManager.logger.info(str(self.robot_launcher))
+                continue
+            self.robot_launchers.append(LauncherRobot(**cfg.model_dump()))
+            self.robot_configs.append(robot_cfg)
+            LogManager.logger.info(str(self.robot_launchers[-1]))
 
         self.world_launcher.run()
-        if self.robot_launcher is not None:
-            self.robot_launcher.run(
-                robot_cfg["entity"], robot_cfg["start_pose"], robot_cfg["extra_config"]
-            )
+        self._run_all_robots()
         LogManager.logger.info("Launch transition finished")
+
+    def _run_all_robots(self):
+        """Launch every robot in the group, spawning them in parallel.
+
+        Two phases on the main thread (no worker threads - those hung, because
+        gz Node.request blocks and starves the GIL):
+          1. start every robot's launch (each returns immediately),
+          2. wait for them all to appear in the sim.
+        Since the launches all run concurrently as separate processes, the
+        group comes up in ~one spawn time instead of N. reset_sim() reuses this,
+        so every reset gets the same speed-up.
+        """
+        # phase 1: fire all launches
+        for launcher, robot_cfg in zip(self.robot_launchers, self.robot_configs):
+            launcher.run(
+                robot_cfg["entity"],
+                robot_cfg["start_pose"],
+                robot_cfg["extra_config"],
+            )
+        # phase 2: wait for every robot to spawn
+        for launcher in self.robot_launchers:
+            launcher.wait_spawned()
 
     def prepare_custom_universe(self, cfg_dict):
         """
@@ -927,9 +957,10 @@ class Manager:
             self.world_launcher.terminate()
             self.world_launcher = None
             self.world_type = None
-        if self.robot_launcher is not None:
-            self.robot_launcher.terminate()
-            self.robot_launcher = None
+        for robot_launcher in self.robot_launchers:
+            robot_launcher.terminate()
+        self.robot_launchers = []
+        self.robot_configs = []
 
     def on_disconnect(self, event):
         """
@@ -951,9 +982,9 @@ class Manager:
             except Exception as e:
                 LogManager.logger.exception("Exception terminating tools launcher")
 
-        if self.robot_launcher:
+        for robot_launcher in self.robot_launchers:
             try:
-                self.robot_launcher.terminate()
+                robot_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating robot launcher")
 
@@ -1023,27 +1054,25 @@ class Manager:
         the appropriate ROS or Gazebo services based on the visualization type,
         and relaunches the robot if a launcher is available.
         """
-        if self.robot_launcher:
-            self.robot_launcher.terminate()
+        # kill every robot launcher first (so we're not resetting a live robot)
+        for robot_launcher in self.robot_launchers:
+            robot_launcher.terminate()
 
         try:
-            entity = None
-            if self.robot_config is not None:
-                entity = self.robot_config["entity"]
-            self.tools_launcher.reset(entity)
+            # remove each robot entity from gazebo, then reset the world
+            entities = [
+                rc["entity"] for rc in self.robot_configs if rc.get("entity")
+            ]
+            self.tools_launcher.reset(entities)
         except subprocess.TimeoutExpired as e:
             self.write_to_tool_terminal(f"{e}\n\n")
             raise Exception("Failed to reset simulator")
 
-        if self.robot_launcher:
-            try:
-                self.robot_launcher.run(
-                    self.robot_config["entity"],
-                    self.robot_config["start_pose"],
-                    self.robot_config["extra_config"],
-                )
-            except Exception as e:
-                LogManager.logger.exception("Exception terminating world launcher")
+        # relaunch all robots (in parallel) so they respawn at their start pose
+        try:
+            self._run_all_robots()
+        except Exception as e:
+            LogManager.logger.exception("Exception relaunching robots")
 
     def start(self):
         """
@@ -1081,9 +1110,9 @@ class Manager:
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating tools launcher")
 
-            if self.robot_launcher:
+            for robot_launcher in self.robot_launchers:
                 try:
-                    self.robot_launcher.terminate()
+                    robot_launcher.terminate()
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating robot launcher")
 

@@ -24,8 +24,20 @@ class LauncherRobotRos2Api(ILauncher):
     module: str
     launch_file: str
     threads: List[Any] = []
+    entity: str = ""
 
     def run(self, entity, robot_pose, extra_config, callback):
+        """Start the robot's launch WITHOUT blocking on spawn.
+
+        This only fires the ros2 launch (async, in its own process) and returns
+        immediately. Call wait_spawned() afterwards to block until the entity
+        actually appears. Splitting it in two lets the manager start every
+        robot's launch first and then wait for them all together, so N robots
+        spawn in parallel (~one spawn time, not N) - which also makes every
+        reset ~N times faster, since reset respawns the whole group.
+        """
+        self.entity = entity
+
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
@@ -41,20 +53,29 @@ class LauncherRobotRos2Api(ILauncher):
         if extra_config == "None":
             extra_config = ""
 
+        # pass the entity name too — multi-robot launch files use it as the
+        # ROS/gz namespace so N robots don't collide on topics/node names.
         if ACCELERATION_ENABLED:
-            exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} {extra_config}"
+            exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} entity:={entity} {extra_config}"
         else:
-            exercise_launch_cmd = f"ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} {extra_config}"
+            exercise_launch_cmd = f"ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} entity:={entity} {extra_config}"
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
 
-        # Wait until robot entity has spawned
+    def wait_spawned(self, timeout=90):
+        """Block until this robot's entity shows up in the gazebo scene.
+
+        Runs on the caller's (main) thread on purpose: gz Node.request is a
+        blocking call, so polling it from worker threads starves the GIL and
+        hangs - that's exactly what broke the earlier threaded spawn attempt.
+        The timeout stops a robot that never spawns from blocking forever.
+        """
         node = Node()
-        spawned = False
-        while not spawned:
+        start = time.time()
+        while time.time() - start < timeout:
             a = node.request(
-                f"/world/default/scene/info",
+                "/world/default/scene/info",
                 Empty(),
                 Empty,
                 Scene,
@@ -62,9 +83,13 @@ class LauncherRobotRos2Api(ILauncher):
             )
             if a[0]:
                 for model in a[1].model:
-                    if model.name == entity:
-                        spawned = True
-                        LogManager.logger.info("Robot spawned OK")
+                    if model.name == self.entity:
+                        LogManager.logger.info(f"Robot '{self.entity}' spawned OK")
+                        return True
+        LogManager.logger.error(
+            f"Robot '{self.entity}' did not spawn within {timeout}s"
+        )
+        return False
 
     def terminate(self):
         if self.threads is not None:

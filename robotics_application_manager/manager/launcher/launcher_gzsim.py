@@ -174,7 +174,7 @@ class LauncherGzsim(ILauncher):
             "pause: false",
         )
 
-    def reset(self, robot_entity=None):
+    def reset(self, robot_entities=None):
         # reset the AS2 state machine for every drone that's up (not just drone0).
         # _find_drone_namespaces returns [] for non-drone exercises, so this is
         # a no-op there and only the world reset below runs.
@@ -194,14 +194,19 @@ class LauncherGzsim(ILauncher):
             10000,
         )
 
-        if robot_entity is not None:
-            node.request(
-                f"/world/default/remove",
-                Entity(name=robot_entity, type=Entity.MODEL),
-                Entity,
-                Boolean,
-                5000,
-            )
+        # remove each robot entity from gazebo (reset:{all} alone doesn't clear
+        # runtime-spawned robots). accepts a single name or a list of them.
+        if robot_entities:
+            if isinstance(robot_entities, str):
+                robot_entities = [robot_entities]
+            for entity in robot_entities:
+                node.request(
+                    f"/world/default/remove",
+                    Entity(name=entity, type=Entity.MODEL),
+                    Entity,
+                    Boolean,
+                    5000,
+                )
 
         node.request(
             f"/world/default/control",
