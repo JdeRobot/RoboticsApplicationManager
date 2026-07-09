@@ -103,7 +103,7 @@ class LauncherGzsim(ILauncher):
             10000,
         )
 
-    def reset(self, robot_entity=None):
+    def reset(self, robot_entities=None):
         node = Node()
 
         node.request(
@@ -114,14 +114,20 @@ class LauncherGzsim(ILauncher):
             10000,
         )
 
-        if robot_entity is not None:
-            node.request(
-                f"/world/default/remove",
-                Entity(name=robot_entity, type=Entity.MODEL),
-                Entity,
-                Boolean,
-                5000,
-            )
+        # remove each robot entity before resetting the world (a world reset on
+        # its own doesn't clear runtime-spawned models). accepts a single name
+        # or a list of them, so one robot and N robots take the same path.
+        if robot_entities:
+            if isinstance(robot_entities, str):
+                robot_entities = [robot_entities]
+            for entity in robot_entities:
+                node.request(
+                    f"/world/default/remove",
+                    Entity(name=entity, type=Entity.MODEL),
+                    Entity,
+                    Boolean,
+                    5000,
+                )
 
         node.request(
             f"/world/default/control",

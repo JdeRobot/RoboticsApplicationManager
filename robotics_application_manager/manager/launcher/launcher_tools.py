@@ -121,9 +121,9 @@ class LauncherTools(BaseModel):
         for launcher in self.launchers:
             launcher.unpause()
 
-    def reset(self, robot_entity=None):
+    def reset(self, robot_entities=None):
         for launcher in self.launchers:
-            launcher.reset(robot_entity)
+            launcher.reset(robot_entities)
 
     def pass_msg(self, data):
         for launcher in self.launchers:

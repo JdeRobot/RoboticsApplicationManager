@@ -16,7 +16,6 @@ import os
 import signal
 import subprocess
 import re
-import psutil
 import shutil
 import time
 import base64
@@ -34,7 +33,6 @@ from robotics_application_manager.comms import (
 from robotics_application_manager.libs import (
     check_gpu_acceleration,
     get_class_from_file,
-    stop_process_and_children,
     ConfigurationManager,
 )
 from robotics_application_manager.ram_logging import LogManager
@@ -45,6 +43,11 @@ from robotics_application_manager.manager.launcher import (
 )
 from robotics_application_manager.manager.lint import Lint
 from robotics_application_manager.manager.editor import serialize_completions
+from robotics_application_manager.manager.agent_group import AgentGroup
+
+from gz.transport13 import Node
+from gz.msgs10.empty_pb2 import Empty
+from gz.msgs10.scene_pb2 import Scene
 
 
 class Manager:
@@ -224,10 +227,13 @@ class Manager:
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.scene_launcher = None
         self.world_type = None
-        self.robot_launcher = None
-        self.robot_config = None
+        self.robot_launchers = []
+        self.robot_configs = []
         self.tools_launcher = None
-        self.application_process = None
+        # Group of agent processes (1 for single-agent exercises, 2+ for
+        # multi-agent ones like drone cat-mouse). Lifecycle ops fan out over
+        # all members; the FSM stays single-target. See AgentGroup.
+        self.application_processes = AgentGroup()
         self.running = True
         self.linter = Lint()
 
@@ -323,11 +329,9 @@ class Manager:
         """
         cfg_dict = event.kwargs.get("data", {})
         scene_cfg = cfg_dict["scene"]
-        robot_cfg = cfg_dict["robot"]
-
-        # Backwards compatibility for now
-        if isinstance(robot_cfg, list):
-            robot_cfg = robot_cfg[0]
+        # 'robot' is a list of robot configs, one entry per robot
+        robot_cfgs = cfg_dict["robot"]
+        self._make_names_unique(robot_cfgs)
 
         # Launch scene
         try:
@@ -351,26 +355,89 @@ class Manager:
         self.scene_launcher = LauncherScene(**cfg.model_dump())
         LogManager.logger.info(str(self.scene_launcher))
 
-        # Launch robot
-        self.robot_launcher = None
-        if robot_cfg["type"] is not None:
+        # Launch robots. A world with no robot assigned still sends a config, but
+        # a dummy one: it has no type, so it gets no launcher. Those entries keep
+        # a None launcher, so the two lists stay index-aligned and the callers
+        # just skip them.
+        self.robot_configs = robot_cfgs
+        self.robot_launchers = []
+        for robot_cfg in robot_cfgs:
+            if robot_cfg["type"] is None:
+                self.robot_launchers.append(None)
+                continue
             try:
                 cfg = ConfigurationManager.validate(robot_cfg)
                 LogManager.logger.info("Launching robot from the RB")
                 LogManager.logger.info(cfg)
             except ValueError as e:
                 LogManager.logger.error(f"Configuration validation failed: {e}")
-
-            self.robot_launcher = LauncherRobot(**cfg.model_dump())
-            self.robot_config = robot_cfg
-            LogManager.logger.info(str(self.robot_launcher))
+                self.robot_launchers.append(None)
+                continue
+            self.robot_launchers.append(LauncherRobot(**cfg.model_dump()))
+            LogManager.logger.info(str(self.robot_launchers[-1]))
 
         self.scene_launcher.run()
-        if self.robot_launcher is not None:
-            self.robot_launcher.run(
-                robot_cfg["entity"], robot_cfg["start_pose"], robot_cfg["extra_config"]
+        for launcher, robot_cfg in zip(self.robot_launchers, self.robot_configs):
+            if launcher is None:
+                continue
+            launcher.run(
+                robot_cfg["entity"],
+                robot_cfg["start_pose"],
+                robot_cfg["extra_config"],
             )
+        self._wait_for_robots()
         LogManager.logger.info("Launch transition finished")
+
+    @staticmethod
+    def _make_names_unique(robot_cfgs):
+        """Rename only the robots whose names clash with an earlier one.
+
+        The first robot to use a name keeps it; a later robot asking for the same
+        name gets a numbered suffix:
+
+            car, vehicle, car  ->  car, vehicle, car_1
+
+        entity and namespace are handled separately: a robot can have one and not
+        the other, and a clash in one does not imply a clash in the other.
+        """
+        for key in ("entity", "namespace"):
+            used = set()
+            for robot_cfg in robot_cfgs:
+                name = robot_cfg.get(key)
+                if not name:
+                    continue
+                if name not in used:
+                    used.add(name)
+                    continue
+                index = 1
+                while f"{name}_{index}" in used:
+                    index += 1
+                robot_cfg[key] = f"{name}_{index}"
+                used.add(robot_cfg[key])
+
+    def _wait_for_robots(self, timeout=90):
+        """Wait until every robot entity has appeared in the gazebo scene.
+
+        The launches are started first and all run as separate processes, so the
+        robots spawn concurrently; this checks the whole list in one poll loop,
+        removing each entity as it shows up. gz Node.request blocks, so it stays
+        on the main thread (polling it from worker threads starves the GIL).
+        """
+        pending = {
+            cfg["entity"]
+            for launcher, cfg in zip(self.robot_launchers, self.robot_configs)
+            if launcher is not None
+        }
+        node = Node()
+        start = time.time()
+        while pending and time.time() - start < timeout:
+            ok, scene = node.request(
+                "/world/default/scene/info", Empty(), Empty, Scene, 1000
+            )
+            if ok:
+                pending -= {model.name for model in scene.model}
+        if pending:
+            LogManager.logger.error(f"Robots did not spawn in time: {pending}")
 
     def prepare_custom_world(self, cfg_dict):
         """
@@ -740,12 +807,7 @@ class Manager:
             event: The event object containing application configuration and code data.
         """
         # Kill already running code
-        try:
-            proc = psutil.Process(self.application_process.pid)
-            proc.suspend()
-            proc.kill()
-        except Exception:
-            pass
+        self.application_processes.kill_all()
 
         # Delete old files
         if os.path.exists("/workspace/code"):
@@ -767,6 +829,7 @@ class Manager:
             _, _, code = app_cfg["code"].partition("base64,")
         with open("/workspace/code/app.zip", "wb") as result:
             result.write(base64.b64decode(code))
+
         zip_ref = zipfile.ZipFile("/workspace/code/app.zip", "r")
         zip_ref.extractall("/workspace/code")
         zip_ref.close()
@@ -797,9 +860,8 @@ class Manager:
             if returncode != 0:
                 raise Exception("Failed to compile")
 
-            self.unpause_sim()
             if entrypoint.endswith(".launch.py"):
-                self.application_process = subprocess.Popen(
+                proc = subprocess.Popen(
                     [
                         f"source /workspace/code/install/setup.bash && ros2 launch {entrypoint}"
                     ],
@@ -813,8 +875,7 @@ class Manager:
                     start_new_session=True,
                 )
             else:
-
-                self.application_process = subprocess.Popen(
+                proc = subprocess.Popen(
                     [
                         "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
                     ],
@@ -827,6 +888,8 @@ class Manager:
                     executable="/bin/bash",
                     start_new_session=True,
                 )
+            self.application_processes.add("agentA", proc)
+            self.unpause_sim()
             return
 
         # Pass the linter
@@ -844,8 +907,7 @@ class Manager:
         fds = os.listdir("/dev/pts/")
         console_fd = str(max(map(int, fds[:-1])))
 
-        self.unpause_sim()
-        self.application_process = subprocess.Popen(
+        proc = subprocess.Popen(
             ["python3", entrypoint],
             stdin=open("/dev/pts/" + console_fd, "r"),
             stdout=open("/dev/pts/" + console_fd, "w"),
@@ -853,6 +915,39 @@ class Manager:
             bufsize=1024,
             universal_newlines=True,
         )
+        self.application_processes.add("agentA", proc)
+
+        # check if theres a second agent in processB/ subdir — this one is
+        # pre-programmed from the server side so no need to lint it
+        processb_entrypoint = os.path.join(
+            "/workspace/code/processB", os.path.basename(entrypoint)
+        )
+        if os.path.isfile(processb_entrypoint):
+            # PYTHONPATH must include /workspace/code so processB can import
+            # commons (hal_interfaces, gui_interfaces, etc.) which extract there.
+            # Python only adds the script's own directory to sys.path, not parent.
+            proc_b_env = os.environ.copy()
+            proc_b_env["PYTHONPATH"] = "/workspace/code:" + proc_b_env.get("PYTHONPATH", "")
+            proc_b = subprocess.Popen(
+                ["python3", processb_entrypoint],
+                env=proc_b_env,
+                stdin=open("/dev/pts/" + console_fd, "r"),
+                stdout=open("/dev/pts/" + console_fd, "w"),
+                stderr=sys.stdout,
+                bufsize=1024,
+                universal_newlines=True,
+            )
+            self.application_processes.add("agentB", proc_b)
+
+        # SIGSTOP every agent first, then unpause gazebo, then SIGCONT them all
+        # together — so no agent acts on a still-paused world and they start in
+        # lockstep. using finally so even if unpause fails we dont leave frozen
+        # processes behind. Fans out over the whole group (1 agent or N).
+        self.application_processes.signal_stop_all()
+        try:
+            self.unpause_sim()
+        finally:
+            self.application_processes.signal_cont_all()
 
         LogManager.logger.info("Run application transition finished")
 
@@ -866,11 +961,10 @@ class Manager:
         Parameters:
             event: The event object associated with the termination request.
         """
-        if self.application_process:
+        if self.application_processes:
             try:
-                stop_process_and_children(self.application_process)
-                self.application_process = None
                 self.pause_sim()
+                self.application_processes.kill_all()
                 self.reset_sim()
             except Exception:
                 LogManager.logger.exception("No application running")
@@ -895,9 +989,11 @@ class Manager:
             self.scene_launcher.terminate()
             self.scene_launcher = None
             self.world_type = None
-        if self.robot_launcher is not None:
-            self.robot_launcher.terminate()
-            self.robot_launcher = None
+        for robot_launcher in self.robot_launchers:
+            if robot_launcher is not None:
+                robot_launcher.terminate()
+        self.robot_launchers = []
+        self.robot_configs = []
 
     def on_disconnect(self, event):
         """
@@ -907,10 +1003,9 @@ class Manager:
         terminates launchers, and restarts the script.
         """
 
-        if self.application_process:
+        if self.application_processes:
             try:
-                stop_process_and_children(self.application_process)
-                self.application_process = None
+                self.application_processes.kill_all()
             except Exception as e:
                 LogManager.logger.exception("Exception stopping application process")
 
@@ -920,9 +1015,11 @@ class Manager:
             except Exception as e:
                 LogManager.logger.exception("Exception terminating tools launcher")
 
-        if self.robot_launcher:
+        for robot_launcher in self.robot_launchers:
+            if robot_launcher is None:
+                continue
             try:
-                self.robot_launcher.terminate()
+                robot_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating robot launcher")
 
@@ -943,15 +1040,9 @@ class Manager:
         self.consumer.send_message(message.response(response))
 
     def on_pause(self, msg):
-        if self.application_process is not None:
-            proc = psutil.Process(self.application_process.pid)
-            children = proc.children(recursive=True)
-            children.append(proc)
-            for p in children:
-                try:
-                    p.suspend()
-                except psutil.NoSuchProcess:
-                    pass
+        if self.application_processes:
+            # Suspend every agent in the group, then freeze the shared world.
+            self.application_processes.pause_all()
             self.pause_sim()
         else:
             LogManager.logger.warning(
@@ -967,15 +1058,9 @@ class Manager:
         Parameters:
             msg: The event or message triggering the resume action.
         """
-        if self.application_process is not None:
-            proc = psutil.Process(self.application_process.pid)
-            children = proc.children(recursive=True)
-            children.append(proc)
-            for p in children:
-                try:
-                    p.resume()
-                except psutil.NoSuchProcess:
-                    pass
+        if self.application_processes:
+            # Unfreeze the shared world, then resume every agent in the group.
+            self.application_processes.resume_all()
             self.unpause_sim()
         else:
             LogManager.logger.warning(
@@ -1005,27 +1090,37 @@ class Manager:
         the appropriate ROS or Gazebo services based on the visualization type,
         and relaunches the robot if a launcher is available.
         """
-        if self.robot_launcher:
-            self.robot_launcher.terminate()
+        # kill every robot launcher first (so we're not resetting a live robot)
+        for robot_launcher in self.robot_launchers:
+            if robot_launcher is not None:
+                robot_launcher.terminate()
+
+        if self.tools_launcher is None:
+            return
 
         try:
-            entity = None
-            if self.robot_config is not None:
-                entity = self.robot_config["entity"]
-            self.tools_launcher.reset(entity)
+            entities = [
+                cfg["entity"]
+                for launcher, cfg in zip(self.robot_launchers, self.robot_configs)
+                if launcher is not None
+            ]
+            self.tools_launcher.reset(entities)
         except subprocess.TimeoutExpired as e:
             self.write_to_tool_terminal(f"{e}\n\n")
             raise Exception("Failed to reset simulator")
 
-        if self.robot_launcher:
-            try:
-                self.robot_launcher.run(
-                    self.robot_config["entity"],
-                    self.robot_config["start_pose"],
-                    self.robot_config["extra_config"],
+        try:
+            for launcher, robot_cfg in zip(self.robot_launchers, self.robot_configs):
+                if launcher is None:
+                    continue
+                launcher.run(
+                    robot_cfg["entity"],
+                    robot_cfg["start_pose"],
+                    robot_cfg["extra_config"],
                 )
-            except Exception as e:
-                LogManager.logger.exception("Exception terminating scene launcher")
+            self._wait_for_robots()
+        except Exception as e:
+            LogManager.logger.exception("Exception relaunching robots")
 
     def start(self):
         """
@@ -1049,10 +1144,9 @@ class Manager:
             except Exception as e:
                 LogManager.logger.exception("Exception stopping consumer")
 
-            if self.application_process:
+            if self.application_processes:
                 try:
-                    stop_process_and_children(self.application_process)
-                    self.application_process = None
+                    self.application_processes.kill_all()
                 except Exception as e:
                     LogManager.logger.exception(
                         "Exception stopping application process"
@@ -1064,9 +1158,11 @@ class Manager:
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating tools launcher")
 
-            if self.robot_launcher:
+            for robot_launcher in self.robot_launchers:
+                if robot_launcher is None:
+                    continue
                 try:
-                    self.robot_launcher.terminate()
+                    robot_launcher.terminate()
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating robot launcher")
 
