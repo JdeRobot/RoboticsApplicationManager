@@ -10,16 +10,6 @@ from robotics_application_manager import LogManager
 from .launcher_interface import ILauncher
 
 worlds = {
-    "gazebo": {
-        "2": [
-            {
-                "type": "gazebo",
-                "module": "ros2_api",
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
-    },
     "gz": {
         "2": [
             {
@@ -58,7 +48,7 @@ worlds = {
 }
 
 
-class LauncherWorld(BaseModel):
+class LauncherScene(BaseModel):
     type: str
     launch_file_path: str
     module: str = ".".join(__name__.split(".")[:-1])
@@ -72,7 +62,7 @@ class LauncherWorld(BaseModel):
             self.launchers.append(launcher)
 
     def terminate(self):
-        LogManager.logger.info("Terminating world launcher")
+        LogManager.logger.info("Terminating scenes launchers")
         if self.launchers:
             for launcher in self.launchers:
                 launcher.terminate()
@@ -97,6 +87,6 @@ class LauncherWorld(BaseModel):
         pass
 
 
-class LauncherWorldException(Exception):
+class LauncherSceneException(Exception):
     def __init__(self, message):
-        super(LauncherWorldException, self).__init__(message)
+        super(LauncherSceneException, self).__init__(message)

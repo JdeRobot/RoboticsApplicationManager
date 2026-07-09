@@ -147,31 +147,34 @@ class LauncherGzsim(ILauncher):
         return self.running
 
     def terminate(self):
+        LogManager.logger.info(f"Terminating gz tool")
         self.gz_vnc.terminate()
-        for thread in self.threads:
-            thread.terminate()
-            thread.join()
+        for thread in self.threads[:]:
+            if thread.is_alive():
+                thread.terminate()
+                thread.join()
+            self.threads.remove(thread)
         self.running = False
 
     def died(self):
         pass
 
     def pause(self):
-        call_gzservice(
-            "/world/default/control",
-            "gz.msgs.WorldControl",
-            "gz.msgs.Boolean",
-            "3000",
-            "pause: true",
+        Node().request(
+            f"/world/default/control",
+            WorldControl(pause=True),
+            WorldControl,
+            Boolean,
+            10000,
         )
 
     def unpause(self):
-        call_gzservice(
-            "/world/default/control",
-            "gz.msgs.WorldControl",
-            "gz.msgs.Boolean",
-            "3000",
-            "pause: false",
+        Node().request(
+            f"/world/default/control",
+            WorldControl(pause=False),
+            WorldControl,
+            Boolean,
+            10000,
         )
 
     def reset(self, robot_entities=None):

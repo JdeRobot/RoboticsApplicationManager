@@ -112,8 +112,8 @@ def manager(monkeypatch):
     monkeypatch.setattr("os.makedirs", lambda path, exist_ok=False: None)
     monkeypatch.setattr("os.path.isdir", lambda path: True)
 
-    # Patch LauncherWorld to avoid launching real processes
-    class DummyLauncherWorld:
+    # Patch LauncherScene to avoid launching real processes
+    class DummyLauncherScene:
         def __init__(self, *a, **k):
             self.launched = False
 
@@ -129,7 +129,7 @@ def manager(monkeypatch):
             pass
 
     monkeypatch.setattr(
-        "robotics_application_manager.manager.manager.LauncherWorld", DummyLauncherWorld
+        "robotics_application_manager.manager.manager.LauncherScene", DummyLauncherScene
     )
 
     class DummyFileWatchdog:

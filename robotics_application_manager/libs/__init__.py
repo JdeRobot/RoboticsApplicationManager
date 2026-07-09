@@ -10,7 +10,6 @@ from .launch_world_model import ConfigurationModel, ConfigurationManager
 from .process_utils import (
     get_ros_version,
     check_gpu_acceleration,
-    get_user_world,
     wait_for_xserver,
     wait_for_process_to_start,
     stop_process_and_children,

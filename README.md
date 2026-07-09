@@ -75,12 +75,12 @@ The `Manager` class is the core of RAM, orchestrating operations and managing tr
 4. **Error Handling**: `ManagerConsumer` communicates exceptions back to the client and `Manager`.
 5. **Lifecycle Management**: `Manager` controls the start and stop of the `ManagerConsumer` WebSocket server.
 
-#### Interaction Between `Manager` and `LauncherWorld`
+#### Interaction Between `Manager` and `LauncherScene`
 
-1. **World Initialization and Launching**: `Manager` initializes `LauncherWorld` with specific configurations, such as world type (e.g., `gazebo`, `drones`) and the launch file path.
-2. **Dynamic Module Management**: `LauncherWorld` dynamically launches modules based on the world configuration and ROS version, as dictated by `Manager`.
-3. **State Management and Transition**: The state of `Manager` is updated in response to the actions performed by `LauncherWorld`. For example, once the world is ready, `Manager` may transition to the `world_ready` state.
-4. **Termination and Cleanup**: `Manager` can instruct `LauncherWorld` to terminate the world environment through its `terminate` method. `LauncherWorld` ensures a clean and orderly shutdown of all modules and resources involved in the world setup.
+1. **World Initialization and Launching**: `Manager` initializes `LauncherScene` with specific configurations, such as world type (e.g., `gazebo`, `drones`) and the launch file path.
+2. **Dynamic Module Management**: `LauncherScene` dynamically launches modules based on the world configuration and ROS version, as dictated by `Manager`.
+3. **State Management and Transition**: The state of `Manager` is updated in response to the actions performed by `LauncherScene`. For example, once the world is ready, `Manager` may transition to the `world_ready` state.
+4. **Termination and Cleanup**: `Manager` can instruct `LauncherScene` to terminate the world environment through its `terminate` method. `LauncherScene` ensures a clean and orderly shutdown of all modules and resources involved in the world setup.
 5. **Error Handling and Logging**: `Manager` handles exceptions and errors that may arise during the world setup or termination processes, ensuring robust operation.
 
 #### Interaction Between `Manager` and `LauncherTools`
@@ -110,32 +110,26 @@ The `Manager` class is the core of RAM, orchestrating operations and managing tr
 ## Usage Example
 
 1. **Connecting to RAM**:
-
    - Initially, the RAM is in the `idle` state.
    - A client (e.g., a user interface or another system) connects to RAM, triggering the `connect` transition and moving RAM to the `connected` state.
 
 2. **Launching the World**:
-
    - Once connected, the client can request RAM to launch a robotic world by sending a `launch_world` command.
    - RAM transitions to the `world_ready` state after successfully setting up the world environment.
 
 3. **Setting Up Tools**:
-
    - After the world is ready, the client requests RAM to prepare the tools with a `prepare_tools` command.
    - RAM transitions to the `tools_ready` state, indicating that the tools are set up and ready.
 
 4. **Running an Application**:
-
    - The client then requests RAM to run a specific robotic application, moving RAM into the `application_running` state.
    - The application executes, and RAM handles its process management, including monitoring and error handling.
 
 5. **Pausing and Resuming Application**:
-
    - The client can send `pause` and `resume` commands to RAM to control the application's execution.
    - RAM transitions to the `paused` state when paused and returns to `application_running` upon resumption.
 
 6. **Stopping the Application**:
-
    - Finally, the client can send a `stop` command to halt the application.
    - RAM stops the application and transitions back to the `tools_ready` state, ready for new commands.
 

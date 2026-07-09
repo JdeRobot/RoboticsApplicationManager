@@ -13,15 +13,6 @@ tools = {
         "external_port": 6082,
         "internal_port": 5901,
     },
-    "gazebo": {
-        "type": "module",
-        "width": 1024,
-        "height": 768,
-        "module": "gazebo",
-        "display": ":2",
-        "external_port": 6080,
-        "internal_port": 5900,
-    },
     "gzsim": {
         "type": "module",
         "width": 1024,
@@ -68,7 +59,6 @@ tools = {
 }
 
 simulator = {
-    "gazebo": {"tool": "gazebo"},
     "gz": {"tool": "gzsim"},
     "o3de": {"tool": "o3de"},
 }
@@ -94,7 +84,7 @@ class LauncherTools(BaseModel):
             self.launchers.append(launcher)
 
     def terminate(self):
-        LogManager.logger.info("Terminating tools launcher")
+        LogManager.logger.info("Terminating tools launchers")
         for launcher in self.launchers:
             if launcher.is_running():
                 launcher.terminate()

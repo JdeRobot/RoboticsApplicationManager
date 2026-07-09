@@ -2,6 +2,7 @@ from .launcher_interface import ILauncher
 from robotics_application_manager.manager.docker_thread import DockerThread
 from robotics_application_manager.manager.vnc import Vnc_server
 from robotics_application_manager.libs import check_gpu_acceleration
+from robotics_application_manager import LogManager
 import os
 import stat
 from typing import List, Any
@@ -52,8 +53,9 @@ class LauncherConsole(ILauncher):
         return self.running
 
     def terminate(self):
+        LogManager.logger.info(f"Terminating console tool")
         self.console_vnc.terminate()
-        for thread in self.threads:
+        for thread in self.threads[:]:
             if thread.is_alive():
                 thread.terminate()
                 thread.join()

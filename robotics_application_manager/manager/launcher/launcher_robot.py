@@ -12,16 +12,6 @@ from robotics_application_manager import LogManager
 from .launcher_interface import ILauncher
 
 worlds = {
-    "gazebo": {
-        "2": [
-            {
-                "type": "gazebo",
-                "module": "robot_ros2_api",
-                "parameters": [],
-                "launch_file": [],
-            }
-        ],
-    },
     "gz": {
         "2": [
             {
@@ -77,7 +67,7 @@ class LauncherRobot(BaseModel):
 
     def terminate(self):
         """Terminate all robot launchers and clear the launchers list."""
-        LogManager.logger.info("Terminating robot launcher")
+        LogManager.logger.info("Terminating robots launchers")
         if self.launchers:
             for launcher in self.launchers:
                 launcher.terminate()

@@ -37,7 +37,7 @@ from robotics_application_manager.libs import (
 )
 from robotics_application_manager.ram_logging import LogManager
 from robotics_application_manager.manager.launcher import (
-    LauncherWorld,
+    LauncherScene,
     LauncherRobot,
     LauncherTools,
 )
@@ -120,10 +120,10 @@ class Manager:
             "before": "on_terminate_tools",
         },
         {
-            "trigger": "terminate_universe",
+            "trigger": "terminate_world",
             "source": "world_ready",
             "dest": "connected",
-            "before": "on_terminate_universe",
+            "before": "on_terminate_world",
         },
         # Global transitions
         {
@@ -221,7 +221,7 @@ class Manager:
         self.ros_version = subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])
         self.queue = Queue()
         self.consumer = ManagerConsumer(host, port, self.queue)
-        self.world_launcher = None
+        self.scene_launcher = None
         self.world_type = None
         # one launcher + config per robot (list, so N robots are supported the
         # same way one is — each entry has its own entity / launch / start_pose)
@@ -311,7 +311,7 @@ class Manager:
         This method initializes the launch process based on the provided configuration.
 
         During the launch process, it validates and processes the configuration data received from the event.
-        It then creates and starts a LauncherWorld instance with the validated configuration.
+        It then creates and starts a LauncherScene instance with the validated configuration.
         This setup is crucial for preparing the environment and resources necessary for the application's execution.
 
         Parameters:
@@ -326,36 +326,36 @@ class Manager:
             The method logs the start of the launch transition and the configuration details for debugging and traceability.
         """
         cfg_dict = event.kwargs.get("data", {})
-        world_cfg = cfg_dict["world"]
+        scene_cfg = cfg_dict["scene"]
         # 'robot' is a LIST of robot configs (one entry per robot). single-robot
-        # exercises are just a list of one. each entry is a full robot config;
-        # the type is shared, the entity / launch_file_path / start_pose differ.
+        # exercises are just a list of one; the type is shared, entity /
+        # launch_file_path / start_pose differ. tolerate an old single-object
+        # 'robot' by wrapping it in a list.
         robot_cfgs = cfg_dict.get("robot") or []
-        # tolerate an old single-object 'robot' just in case (wrap it)
         if isinstance(robot_cfgs, dict):
             robot_cfgs = [robot_cfgs]
 
-        # Launch world
+        # Launch scene
         try:
-            if world_cfg["type"] == None:
-                self.world_launcher = None
+            if scene_cfg["type"] == None:
+                self.scene_launcher = None
                 LogManager.logger.info("Launch transition finished")
                 return
-            cfg = ConfigurationManager.validate(world_cfg)
-            if "zip" in world_cfg:
-                LogManager.logger.info("Launching universe from received zip")
-                self.prepare_custom_universe(world_cfg)
+            cfg = ConfigurationManager.validate(scene_cfg)
+            if "zip" in scene_cfg:
+                LogManager.logger.info("Launching scene from received zip")
+                self.prepare_custom_world(scene_cfg)
             else:
-                LogManager.logger.info("Launching world from the RB")
+                LogManager.logger.info("Launching scene from the RB")
 
             LogManager.logger.info(cfg)
         except ValueError as e:
             LogManager.logger.error(f"Configuration validation failed: {e}")
 
-        self.world_type = world_cfg["type"]
+        self.world_type = scene_cfg["type"]
 
-        self.world_launcher = LauncherWorld(**cfg.model_dump())
-        LogManager.logger.info(str(self.world_launcher))
+        self.scene_launcher = LauncherScene(**cfg.model_dump())
+        LogManager.logger.info(str(self.scene_launcher))
 
         # Launch robots — one LauncherRobot per entry in the list
         self.robot_launchers = []
@@ -374,7 +374,7 @@ class Manager:
             self.robot_configs.append(robot_cfg)
             LogManager.logger.info(str(self.robot_launchers[-1]))
 
-        self.world_launcher.run()
+        self.scene_launcher.run()
         self._run_all_robots()
         LogManager.logger.info("Launch transition finished")
 
@@ -400,14 +400,14 @@ class Manager:
         for launcher in self.robot_launchers:
             launcher.wait_spawned()
 
-    def prepare_custom_universe(self, cfg_dict):
+    def prepare_custom_world(self, cfg_dict):
         """
-        Prepare and extract a custom universe from a base64-encoded zip file.
+        Prepare and extract a custom world from a base64-encoded zip file.
 
         Then build it in the workspace.
 
         Parameters:
-            cfg_dict (dict): Config dictionary containing the universe name and zip data
+            cfg_dict (dict): Config dictionary containing the world name and zip data
         """
         # Unzip the app
         if cfg_dict["zip"].startswith("data:"):
@@ -415,22 +415,22 @@ class Manager:
         else:
             zip_file = cfg_dict["zip"]
 
-        universe_ref = "/workspace/worlds/src/" + cfg_dict["name"]
+        world_ref = "/workspace/worlds/src/" + cfg_dict["name"]
         # Remove old content
         if os.path.exists("/workspace/worlds"):
             shutil.rmtree("/workspace/worlds", ignore_errors=False)
 
         # Create the folder if it doesn't exist
-        universe_folder = universe_ref + "/"
-        if not os.path.exists(universe_folder):
-            os.makedirs(universe_folder)
+        world_folder = world_ref + "/"
+        if not os.path.exists(world_folder):
+            os.makedirs(world_folder)
 
-        zip_destination = universe_ref + ".zip"
+        zip_destination = world_ref + ".zip"
         with open(zip_destination, "wb") as result:
             result.write(base64.b64decode(zip_file))
 
         zip_ref = zipfile.ZipFile(zip_destination, "r")
-        zip_ref.extractall(universe_folder + "/")
+        zip_ref.extractall(world_folder + "/")
         zip_ref.close()
 
         os.system(
@@ -782,6 +782,11 @@ class Manager:
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
         entrypoint = app_cfg["entrypoint"]
+
+        # Backwards compatibility for now
+        if isinstance(entrypoint, list):
+            entrypoint = entrypoint[0]
+
         to_lint = app_cfg["linter"]
 
         # the code comes as a base64 data-uri from the browser, strip the header part
@@ -943,9 +948,9 @@ class Manager:
         self.tools_launcher.terminate()
         self.tools_launcher = None
 
-    def on_terminate_universe(self, event):
+    def on_terminate_world(self, event):
         """
-        Handle the 'terminate_universe' event.
+        Handle the 'terminate_world' event.
 
         Terminates the world and robot launchers if they exist
         and terminates related Harmonic processes.
@@ -953,9 +958,9 @@ class Manager:
         Parameters:
             event: The event object associated with the termination request.
         """
-        if self.world_launcher is not None:
-            self.world_launcher.terminate()
-            self.world_launcher = None
+        if self.scene_launcher is not None:
+            self.scene_launcher.terminate()
+            self.scene_launcher = None
             self.world_type = None
         for robot_launcher in self.robot_launchers:
             robot_launcher.terminate()
@@ -988,15 +993,16 @@ class Manager:
             except Exception as e:
                 LogManager.logger.exception("Exception terminating robot launcher")
 
-        if self.world_launcher:
+        if self.scene_launcher:
             try:
-                self.world_launcher.terminate()
+                self.scene_launcher.terminate()
             except Exception as e:
-                LogManager.logger.exception("Exception terminating world launcher")
+                LogManager.logger.exception("Exception terminating scene launcher")
 
     def process_message(self, message):
         if message.command == "gui":
-            self.tools_launcher.pass_msg(message.data)
+            if self.tools_launcher is not None:
+                self.tools_launcher.pass_msg(message.data)
             return
 
         self.trigger(message.command, data=message.data or None)
@@ -1116,11 +1122,11 @@ class Manager:
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating robot launcher")
 
-            if self.world_launcher:
+            if self.scene_launcher:
                 try:
-                    self.world_launcher.terminate()
+                    self.scene_launcher.terminate()
                 except Exception as e:
-                    LogManager.logger.exception("Exception terminating world launcher")
+                    LogManager.logger.exception("Exception terminating scene launcher")
 
             exit()
 
