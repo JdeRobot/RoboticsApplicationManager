@@ -1,5 +1,6 @@
 """LauncherRobot module for managing robot launchers in different simulation worlds."""
 
+import re
 from typing import Optional
 from pydantic import BaseModel
 
@@ -37,8 +38,55 @@ class LauncherRobot(BaseModel):
     entity: str = ""
     start_pose: Optional[list] = []
 
+    @staticmethod
+    def make_names_unique(robot_cfgs):
+        """Rename only the robots whose names clash with an earlier one.
+
+        The first robot to use a name keeps it; a later robot asking for the same
+        name gets a numbered suffix:
+
+            car, vehicle, car  ->  car, vehicle, car_1
+
+        Entity and namespace are handled separately: a robot can have one and not
+        the other, and a clash in one does not imply a clash in the other. Entity
+        is a normal field, but namespace is not: it sits inside the extra_config
+        string (e.g. "sensor:=camera namespace:=drone"), so we have to dig it out
+        with a regex and write it back the same way.
+        """
+        for key in ("entity", "namespace"):
+            used = set()
+            for robot_cfg in robot_cfgs:
+                if key == "entity":
+                    name = robot_cfg.get("entity")
+                else:
+                    match = re.search(
+                        r"namespace:=(\S+)", robot_cfg.get("extra_config", "")
+                    )
+                    name = match.group(1) if match else None
+
+                if not name:
+                    continue
+                if name not in used:
+                    used.add(name)
+                    continue
+
+                index = 1
+                while f"{name}_{index}" in used:
+                    index += 1
+                new_name = f"{name}_{index}"
+
+                if key == "entity":
+                    robot_cfg["entity"] = new_name
+                else:
+                    robot_cfg["extra_config"] = re.sub(
+                        r"namespace:=\S+",
+                        f"namespace:={new_name}",
+                        robot_cfg["extra_config"],
+                    )
+                used.add(new_name)
+
     def run(self, entity="", start_pose=None, extra_config=None):
-        """Run the robot launcher with an optional start pose."""
+        """Start the robot launcher. Does not wait for the robot to spawn."""
         self.entity = entity
 
         if start_pose is not None:
@@ -52,6 +100,26 @@ class LauncherRobot(BaseModel):
             launcher = self.launch_module(module, extra_config)
             self.launchers.append(launcher)
         LogManager.logger.info(self.launchers)
+
+    @staticmethod
+    def wait_for(robot_launchers):
+        """Wait until every robot in the list has spawned.
+
+        Collects the entities of all the robots and checks them in a single
+        poll loop, instead of waiting for one robot at a time. Entries with no
+        launcher (a world with no robot assigned) are skipped.
+        """
+        launchers = [
+            launcher
+            for robot_launcher in robot_launchers
+            if robot_launcher is not None
+            for launcher in robot_launcher.launchers
+        ]
+        if not launchers:
+            return
+        # They are all the same simulator launcher, so any of them can run the
+        # poll for the whole list of entities.
+        launchers[0].wait([launcher.entity for launcher in launchers])
 
     def terminate(self):
         """Terminate all robot launchers and clear the launchers list."""

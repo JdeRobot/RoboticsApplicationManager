@@ -15,7 +15,6 @@ import black
 import os
 import signal
 import subprocess
-import re
 import shutil
 import time
 import base64
@@ -44,10 +43,6 @@ from robotics_application_manager.manager.launcher import (
 from robotics_application_manager.manager.lint import Lint
 from robotics_application_manager.manager.editor import serialize_completions
 from robotics_application_manager.manager.agent_group import AgentGroup
-
-from gz.transport13 import Node
-from gz.msgs10.empty_pb2 import Empty
-from gz.msgs10.scene_pb2 import Scene
 
 
 class Manager:
@@ -331,7 +326,7 @@ class Manager:
         scene_cfg = cfg_dict["scene"]
         # 'robot' is a list of robot configs, one entry per robot
         robot_cfgs = cfg_dict["robot"]
-        self._make_names_unique(robot_cfgs)
+        LauncherRobot.make_names_unique(robot_cfgs)
 
         # Launch scene
         try:
@@ -385,59 +380,8 @@ class Manager:
                 robot_cfg["start_pose"],
                 robot_cfg["extra_config"],
             )
-        self._wait_for_robots()
+        LauncherRobot.wait_for(self.robot_launchers)
         LogManager.logger.info("Launch transition finished")
-
-    @staticmethod
-    def _make_names_unique(robot_cfgs):
-        """Rename only the robots whose names clash with an earlier one.
-
-        The first robot to use a name keeps it; a later robot asking for the same
-        name gets a numbered suffix:
-
-            car, vehicle, car  ->  car, vehicle, car_1
-
-        entity and namespace are handled separately: a robot can have one and not
-        the other, and a clash in one does not imply a clash in the other.
-        """
-        for key in ("entity", "namespace"):
-            used = set()
-            for robot_cfg in robot_cfgs:
-                name = robot_cfg.get(key)
-                if not name:
-                    continue
-                if name not in used:
-                    used.add(name)
-                    continue
-                index = 1
-                while f"{name}_{index}" in used:
-                    index += 1
-                robot_cfg[key] = f"{name}_{index}"
-                used.add(robot_cfg[key])
-
-    def _wait_for_robots(self, timeout=90):
-        """Wait until every robot entity has appeared in the gazebo scene.
-
-        The launches are started first and all run as separate processes, so the
-        robots spawn concurrently; this checks the whole list in one poll loop,
-        removing each entity as it shows up. gz Node.request blocks, so it stays
-        on the main thread (polling it from worker threads starves the GIL).
-        """
-        pending = {
-            cfg["entity"]
-            for launcher, cfg in zip(self.robot_launchers, self.robot_configs)
-            if launcher is not None
-        }
-        node = Node()
-        start = time.time()
-        while pending and time.time() - start < timeout:
-            ok, scene = node.request(
-                "/world/default/scene/info", Empty(), Empty, Scene, 1000
-            )
-            if ok:
-                pending -= {model.name for model in scene.model}
-        if pending:
-            LogManager.logger.error(f"Robots did not spawn in time: {pending}")
 
     def prepare_custom_world(self, cfg_dict):
         """
@@ -816,11 +760,11 @@ class Manager:
 
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
-        entrypoint = app_cfg["entrypoint"]
-
-        # Backwards compatibility for now
-        if isinstance(entrypoint, list):
-            entrypoint = entrypoint[0]
+        
+        entrypoints = app_cfg["entrypoint"]
+        if not isinstance(entrypoints, list):
+            entrypoints = [entrypoints]
+        entrypoint = entrypoints[0]
 
         to_lint = app_cfg["linter"]
 
@@ -907,42 +851,24 @@ class Manager:
         fds = os.listdir("/dev/pts/")
         console_fd = str(max(map(int, fds[:-1])))
 
-        proc = subprocess.Popen(
-            ["python3", entrypoint],
-            stdin=open("/dev/pts/" + console_fd, "r"),
-            stdout=open("/dev/pts/" + console_fd, "w"),
-            stderr=sys.stdout,
-            bufsize=1024,
-            universal_newlines=True,
-        )
-        self.application_processes.add("agentA", proc)
+        agent_env = os.environ.copy()
+        agent_env["PYTHONPATH"] = "/workspace/code:" + agent_env.get("PYTHONPATH", "")
 
-        # check if theres a second agent in processB/ subdir — this one is
-        # pre-programmed from the server side so no need to lint it
-        processb_entrypoint = os.path.join(
-            "/workspace/code/processB", os.path.basename(entrypoint)
-        )
-        if os.path.isfile(processb_entrypoint):
-            # PYTHONPATH must include /workspace/code so processB can import
-            # commons (hal_interfaces, gui_interfaces, etc.) which extract there.
-            # Python only adds the script's own directory to sys.path, not parent.
-            proc_b_env = os.environ.copy()
-            proc_b_env["PYTHONPATH"] = "/workspace/code:" + proc_b_env.get("PYTHONPATH", "")
-            proc_b = subprocess.Popen(
-                ["python3", processb_entrypoint],
-                env=proc_b_env,
+        for index, agent_entrypoint in enumerate(entrypoints):
+            if not os.path.isfile(agent_entrypoint):
+                continue
+            proc = subprocess.Popen(
+                ["python3", agent_entrypoint],
+                env=agent_env,
                 stdin=open("/dev/pts/" + console_fd, "r"),
                 stdout=open("/dev/pts/" + console_fd, "w"),
                 stderr=sys.stdout,
                 bufsize=1024,
                 universal_newlines=True,
             )
-            self.application_processes.add("agentB", proc_b)
+            self.application_processes.add(f"agent{chr(ord('A') + index)}", proc)
 
         # SIGSTOP every agent first, then unpause gazebo, then SIGCONT them all
-        # together — so no agent acts on a still-paused world and they start in
-        # lockstep. using finally so even if unpause fails we dont leave frozen
-        # processes behind. Fans out over the whole group (1 agent or N).
         self.application_processes.signal_stop_all()
         try:
             self.unpause_sim()
@@ -1118,7 +1044,7 @@ class Manager:
                     robot_cfg["start_pose"],
                     robot_cfg["extra_config"],
                 )
-            self._wait_for_robots()
+            LauncherRobot.wait_for(self.robot_launchers)
         except Exception as e:
             LogManager.logger.exception("Exception relaunching robots")
 
