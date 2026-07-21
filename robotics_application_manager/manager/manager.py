@@ -326,8 +326,8 @@ class Manager:
         robot_cfg = cfg_dict["robot"]
 
         # Backwards compatibility for now
-        if isinstance(robot_cfg, list):
-            robot_cfg = robot_cfg[0]
+        # if isinstance(robot_cfg, list):
+        #     robot_cfg = robot_cfg[0]
 
         # Launch scene
         try:
@@ -353,7 +353,7 @@ class Manager:
 
         # Launch robot
         self.robot_launcher = None
-        if robot_cfg["type"] is not None:
+        if len(robot_cfg) > 0:
             try:
                 cfg = ConfigurationManager.validate(robot_cfg)
                 LogManager.logger.info("Launching robot from the RB")
