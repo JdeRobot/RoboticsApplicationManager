@@ -739,6 +739,22 @@ class Manager:
         except Exception as e:
             LogManager.logger.exception(f"Error refreshing GTK applications: {e}")
 
+    @staticmethod
+    def _agent_name(entrypoint, code_dir="/workspace/code"):
+        """Name an agent after the folder its entrypoint lives in.
+
+        Each extra agent ships in its own folder, so the folder name is what
+        tells them apart. An exercise naming those folders after its robots
+        gets agents called drone0 / drone1 instead of anonymous ones. The
+        student's entrypoint sits at the root of the code, so it falls back to
+        the file name.
+        """
+        relative_path = os.path.relpath(entrypoint, code_dir)
+        folder = os.path.dirname(relative_path)
+        if folder:
+            return folder.replace(os.sep, "_")
+        return os.path.splitext(os.path.basename(relative_path))[0]
+
     def on_run_application(self, event):
         """
         Handle the 'run_application' event.
@@ -854,7 +870,7 @@ class Manager:
         agent_env = os.environ.copy()
         agent_env["PYTHONPATH"] = "/workspace/code:" + agent_env.get("PYTHONPATH", "")
 
-        for index, agent_entrypoint in enumerate(entrypoints):
+        for agent_entrypoint in entrypoints:
             if not os.path.isfile(agent_entrypoint):
                 continue
             proc = subprocess.Popen(
@@ -866,7 +882,9 @@ class Manager:
                 bufsize=1024,
                 universal_newlines=True,
             )
-            self.application_processes.add(f"agent{chr(ord('A') + index)}", proc)
+            self.application_processes.add(
+                self._agent_name(agent_entrypoint), proc
+            )
 
         # SIGSTOP every agent first, then unpause gazebo, then SIGCONT them all
         self.application_processes.signal_stop_all()
