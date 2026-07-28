@@ -42,6 +42,8 @@ from robotics_application_manager.manager.launcher import (
     LauncherScene,
     LauncherRobot,
     LauncherTools,
+    make_names_unique,
+    wait_for_robots,
 )
 from robotics_application_manager.manager.lint import Lint
 from robotics_application_manager.manager.editor import serialize_completions
@@ -324,7 +326,7 @@ class Manager:
         cfg_dict = event.kwargs.get("data", {})
         scene_cfg = cfg_dict["scene"]
         robot_cfgs = cfg_dict["robot"]
-        LauncherRobot.make_names_unique(robot_cfgs)
+        make_names_unique(robot_cfgs)
 
         # Launch scene
         try:
@@ -352,30 +354,23 @@ class Manager:
         self.robot_launchers = []
         self.robot_configs = robot_cfgs
         for robot_cfg in robot_cfgs:
-            if robot_cfg["type"] is None:
-                self.robot_launchers.append(None)
-                continue
-
             try:
                 cfg = ConfigurationManager.validate(robot_cfg)
                 LogManager.logger.info("Launching robot from the RB")
                 LogManager.logger.info(cfg)
             except ValueError as e:
                 LogManager.logger.error(f"Configuration validation failed: {e}")
-                self.robot_launchers.append(None)
-                continue
 
-            self.robot_launchers.append(LauncherRobot(**cfg.model_dump()))
-            LogManager.logger.info(str(self.robot_launchers[-1]))
+            robot_launcher = LauncherRobot(**cfg.model_dump())
+            self.robot_launchers.append(robot_launcher)
+            LogManager.logger.info(str(robot_launcher))
 
         self.scene_launcher.run()
-        for launcher, robot_cfg in zip(self.robot_launchers, self.robot_configs):
-            if launcher is None:
-                continue
-            launcher.run(
+        for robot_launcher, robot_cfg in zip(self.robot_launchers, self.robot_configs):
+            robot_launcher.run(
                 robot_cfg["entity"], robot_cfg["start_pose"], robot_cfg["extra_config"]
             )
-        LauncherRobot.wait(self.robot_launchers)
+        wait_for_robots(self.robot_launchers)
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_world(self, cfg_dict):
@@ -779,39 +774,62 @@ class Manager:
                 LogManager.logger.info("User code not found")
                 raise Exception("User code not found")
 
-        # The workspace is built once, as soon as any entrypoint needs it
-        needs_build = any(
-            os.path.splitext(entrypoint)[1] == ".cpp"
-            or entrypoint.endswith(".launch.py")
-            for entrypoint in entrypoints
-        )
+            _, file_extension = os.path.splitext(entrypoint)
 
-        fds = os.listdir("/dev/pts/")
-        console_fd = str(max(map(int, fds[:-1])))
+            if file_extension == ".cpp" or entrypoint.endswith(".launch.py"):
+                fds = os.listdir("/dev/pts/")
+                console_fd = str(max(map(int, fds[:-1])))
 
-        if needs_build:
-            compile_process = subprocess.Popen(
-                [
-                    "cd /workspace/code && source /opt/ros/humble/setup.bash && colcon build && source install/setup.bash && cd ../.."
-                ],
-                stdin=open("/dev/pts/" + console_fd, "r"),
-                stdout=open("/dev/pts/" + console_fd, "w"),
-                stderr=open("/dev/pts/" + console_fd, "w"),
-                bufsize=1024,
-                universal_newlines=True,
-                shell=True,
-                executable="/bin/bash",
-            )
-            returncode = compile_process.wait()
-            if returncode != 0:
-                raise Exception("Failed to compile")
+                compile_process = subprocess.Popen(
+                    [
+                        "cd /workspace/code && source /opt/ros/humble/setup.bash && colcon build && source install/setup.bash && cd ../.."
+                    ],
+                    stdin=open("/dev/pts/" + console_fd, "r"),
+                    stdout=open("/dev/pts/" + console_fd, "w"),
+                    stderr=open("/dev/pts/" + console_fd, "w"),
+                    bufsize=1024,
+                    universal_newlines=True,
+                    shell=True,
+                    executable="/bin/bash",
+                )
+                returncode = compile_process.wait()
+                if returncode != 0:
+                    raise Exception("Failed to compile")
 
-        # Pass the linter. Only the Python entrypoints are linted
-        if any(
-            os.path.splitext(entrypoint)[1] != ".cpp"
-            and not entrypoint.endswith(".launch.py")
-            for entrypoint in entrypoints
-        ):
+                self.unpause_sim()
+                if entrypoint.endswith(".launch.py"):
+                    application_process = subprocess.Popen(
+                        [
+                            f"source /workspace/code/install/setup.bash && ros2 launch {entrypoint}"
+                        ],
+                        stdin=open("/dev/pts/" + console_fd, "r"),
+                        stdout=open("/dev/pts/" + console_fd, "w"),
+                        stderr=sys.stdout,
+                        bufsize=1024,
+                        universal_newlines=True,
+                        shell=True,
+                        executable="/bin/bash",
+                        start_new_session=True,
+                    )
+                else:
+
+                    application_process = subprocess.Popen(
+                        [
+                            "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
+                        ],
+                        stdin=open("/dev/pts/" + console_fd, "r"),
+                        stdout=open("/dev/pts/" + console_fd, "w"),
+                        stderr=sys.stdout,
+                        bufsize=1024,
+                        universal_newlines=True,
+                        shell=True,
+                        executable="/bin/bash",
+                        start_new_session=True,
+                    )
+                self.application_processes.append(application_process)
+                continue
+
+            # Pass the linter
             errors = self.linter.evaluate_source_code(to_lint)
             failed_linter = False
 
@@ -823,57 +841,18 @@ class Manager:
             if failed_linter:
                 raise Exception(errors)
 
-        # The libraries are extracted to the root of the code, while an
-        # entrypoint may live in a subdirectory of it. Python only looks next to
-        # the file it runs, so the root is added to the path to keep the
-        # libraries importable from anywhere in the code
-        environment = os.environ.copy()
-        environment["PYTHONPATH"] = "/workspace/code:" + environment.get(
-            "PYTHONPATH", ""
-        )
+            fds = os.listdir("/dev/pts/")
+            console_fd = str(max(map(int, fds[:-1])))
 
-        self.unpause_sim()
-        for entrypoint in entrypoints:
-            if entrypoint.endswith(".launch.py"):
-                application_process = subprocess.Popen(
-                    [
-                        f"source /workspace/code/install/setup.bash && ros2 launch {entrypoint}"
-                    ],
-                    stdin=open("/dev/pts/" + console_fd, "r"),
-                    stdout=open("/dev/pts/" + console_fd, "w"),
-                    stderr=sys.stdout,
-                    bufsize=1024,
-                    universal_newlines=True,
-                    shell=True,
-                    executable="/bin/bash",
-                    start_new_session=True,
-                    env=environment,
-                )
-            elif os.path.splitext(entrypoint)[1] == ".cpp":
-                application_process = subprocess.Popen(
-                    [
-                        "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
-                    ],
-                    stdin=open("/dev/pts/" + console_fd, "r"),
-                    stdout=open("/dev/pts/" + console_fd, "w"),
-                    stderr=sys.stdout,
-                    bufsize=1024,
-                    universal_newlines=True,
-                    shell=True,
-                    executable="/bin/bash",
-                    start_new_session=True,
-                    env=environment,
-                )
-            else:
-                application_process = subprocess.Popen(
-                    ["python3", entrypoint],
-                    stdin=open("/dev/pts/" + console_fd, "r"),
-                    stdout=open("/dev/pts/" + console_fd, "w"),
-                    stderr=sys.stdout,
-                    bufsize=1024,
-                    universal_newlines=True,
-                    env=environment,
-                )
+            self.unpause_sim()
+            application_process = subprocess.Popen(
+                ["python3", entrypoint],
+                stdin=open("/dev/pts/" + console_fd, "r"),
+                stdout=open("/dev/pts/" + console_fd, "w"),
+                stderr=sys.stdout,
+                bufsize=1024,
+                universal_newlines=True,
+            )
             self.application_processes.append(application_process)
 
         LogManager.logger.info("Run application transition finished")
@@ -919,8 +898,7 @@ class Manager:
             self.scene_launcher = None
             self.world_type = None
         for robot_launcher in self.robot_launchers:
-            if robot_launcher is not None:
-                robot_launcher.terminate()
+            robot_launcher.terminate()
         self.robot_launchers = []
         self.robot_configs = []
 
@@ -947,8 +925,6 @@ class Manager:
                 LogManager.logger.exception("Exception terminating tools launcher")
 
         for robot_launcher in self.robot_launchers:
-            if robot_launcher is None:
-                continue
             try:
                 robot_launcher.terminate()
             except Exception as e:
@@ -1036,32 +1012,25 @@ class Manager:
         and relaunches the robot if a launcher is available.
         """
         for robot_launcher in self.robot_launchers:
-            if robot_launcher is not None:
-                robot_launcher.terminate()
+            robot_launcher.terminate()
 
         try:
-            entities = [
-                robot_cfg["entity"]
-                for launcher, robot_cfg in zip(self.robot_launchers, self.robot_configs)
-                if launcher is not None
-            ]
+            entities = [robot_cfg["entity"] for robot_cfg in self.robot_configs]
             self.tools_launcher.reset(entities)
         except subprocess.TimeoutExpired as e:
             self.write_to_tool_terminal(f"{e}\n\n")
             raise Exception("Failed to reset simulator")
 
-        for launcher, robot_cfg in zip(self.robot_launchers, self.robot_configs):
-            if launcher is None:
-                continue
+        for robot_launcher, robot_cfg in zip(self.robot_launchers, self.robot_configs):
             try:
-                launcher.run(
+                robot_launcher.run(
                     robot_cfg["entity"],
                     robot_cfg["start_pose"],
                     robot_cfg["extra_config"],
                 )
             except Exception as e:
                 LogManager.logger.exception("Exception terminating scene launcher")
-        LauncherRobot.wait(self.robot_launchers)
+        wait_for_robots(self.robot_launchers)
 
     def start(self):
         """
@@ -1102,8 +1071,6 @@ class Manager:
                     LogManager.logger.exception("Exception terminating tools launcher")
 
             for robot_launcher in self.robot_launchers:
-                if robot_launcher is None:
-                    continue
                 try:
                     robot_launcher.terminate()
                 except Exception as e:
