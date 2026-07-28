@@ -24,6 +24,7 @@ class LauncherRobotRos2Api(ILauncher):
     module: str
     launch_file: str
     threads: List[Any] = []
+    entity: str = ""
 
     def run(self, entity, robot_pose, extra_config, callback):
         DRI_PATH = self.get_dri_path()
@@ -31,24 +32,26 @@ class LauncherRobotRos2Api(ILauncher):
 
         logging.getLogger("roslaunch").setLevel(logging.CRITICAL)
 
+        self.entity = entity
         x, y, z, R, P, Y = robot_pose
 
         if extra_config == "None":
             extra_config = ""
 
         if ACCELERATION_ENABLED:
-            exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} {extra_config}"
+            exercise_launch_cmd = f"export VGL_DISPLAY={DRI_PATH}; vglrun ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} entity:={entity} {extra_config}"
         else:
-            exercise_launch_cmd = f"ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} {extra_config}"
+            exercise_launch_cmd = f"ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} entity:={entity} {extra_config}"
 
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
         self.threads.append(exercise_launch_thread)
 
-        # Wait until robot entity has spawned
+    def wait(self, entities):
+        # Wait until every robot entity has spawned
         node = Node()
-        spawned = False
-        while not spawned:
+        pending = set(entities)
+        while pending:
             a = node.request(
                 f"/world/default/scene/info",
                 Empty(),
@@ -57,10 +60,8 @@ class LauncherRobotRos2Api(ILauncher):
                 1000,
             )
             if a[0]:
-                for model in a[1].model:
-                    if model.name == entity:
-                        spawned = True
-                        LogManager.logger.info("Robot spawned OK")
+                pending -= {model.name for model in a[1].model}
+        LogManager.logger.info("Robots spawned OK")
 
     def terminate(self):
         LogManager.logger.info(f"Terminating robot launcher")
