@@ -24,7 +24,6 @@ class LauncherRobotRos2Api(ILauncher):
     module: str
     launch_file: str
     threads: List[Any] = []
-    entity: str = ""
 
     def run(self, entity, robot_pose, extra_config, callback):
         DRI_PATH = self.get_dri_path()
@@ -32,7 +31,6 @@ class LauncherRobotRos2Api(ILauncher):
 
         logging.getLogger("roslaunch").setLevel(logging.CRITICAL)
 
-        self.entity = entity
         x, y, z, R, P, Y = robot_pose
 
         if extra_config == "None":

@@ -27,6 +27,62 @@ worlds = {
 }
 
 
+def make_names_unique(robot_cfgs):
+    """Rename the robots whose names clash with an earlier one.
+
+    The entity names the model in the simulator and the namespace prefixes the
+    ROS topics, so they are made unique separately. The entity is a field of
+    its own, while the namespace is an argument inside extra_config.
+    """
+    for key in ("entity", "namespace"):
+        used = set()
+        for robot_cfg in robot_cfgs:
+            if key == "entity":
+                name = robot_cfg.get("entity")
+            else:
+                match = re.search(
+                    r"namespace:=(\S+)", robot_cfg.get("extra_config", "")
+                )
+                name = match.group(1) if match else None
+
+            if not name:
+                continue
+            if name not in used:
+                used.add(name)
+                continue
+
+            index = 1
+            while f"{name}_{index}" in used:
+                index += 1
+            new_name = f"{name}_{index}"
+
+            if key == "entity":
+                robot_cfg["entity"] = new_name
+            else:
+                robot_cfg["extra_config"] = re.sub(
+                    r"namespace:=\S+",
+                    f"namespace:={new_name}",
+                    robot_cfg["extra_config"],
+                )
+            used.add(new_name)
+
+
+def wait_for_robots(robot_launchers):
+    """Wait until every robot has spawned in the simulator.
+
+    All the entities are checked in a single loop, so the robots spawn at the
+    same time instead of one after another.
+    """
+    entities = []
+    launchers = []
+    for robot_launcher in robot_launchers:
+        entities.append(robot_launcher.entity)
+        launchers.extend(robot_launcher.launchers)
+
+    if launchers:
+        launchers[0].wait(entities)
+
+
 class LauncherRobot(BaseModel):
     """Class for managing robot launchers in different simulation worlds."""
 
@@ -37,68 +93,6 @@ class LauncherRobot(BaseModel):
     launchers: Optional[ILauncher] = []
     entity: str = ""
     start_pose: Optional[list] = []
-
-    @staticmethod
-    def make_names_unique(robot_cfgs):
-        """Rename the robots whose names clash with an earlier one.
-
-        The first robot to use a name keeps it and a later one asking for the
-        same name gets a numbered suffix, so car, vehicle, car becomes car,
-        vehicle, car_1. The entity and the namespace are two different things:
-        the entity names the model in the simulator and the namespace prefixes
-        the ROS topics, so they are made unique separately. The entity is a
-        field of its own, while the namespace is an argument inside
-        extra_config, which is why the namespace is read and written there.
-        """
-        for key in ("entity", "namespace"):
-            used = set()
-            for robot_cfg in robot_cfgs:
-                if key == "entity":
-                    name = robot_cfg.get("entity")
-                else:
-                    match = re.search(
-                        r"namespace:=(\S+)", robot_cfg.get("extra_config", "")
-                    )
-                    name = match.group(1) if match else None
-
-                if not name:
-                    continue
-                if name not in used:
-                    used.add(name)
-                    continue
-
-                index = 1
-                while f"{name}_{index}" in used:
-                    index += 1
-                new_name = f"{name}_{index}"
-
-                if key == "entity":
-                    robot_cfg["entity"] = new_name
-                else:
-                    robot_cfg["extra_config"] = re.sub(
-                        r"namespace:=\S+",
-                        f"namespace:={new_name}",
-                        robot_cfg["extra_config"],
-                    )
-                used.add(new_name)
-
-    @staticmethod
-    def wait(robot_launchers):
-        """Wait until every robot has spawned in the simulator.
-
-        All the entities are checked in a single loop, so the robots spawn at
-        the same time instead of one after another.
-        """
-        entities = []
-        launchers = []
-        for robot_launcher in robot_launchers:
-            if robot_launcher is None:
-                continue
-            entities.append(robot_launcher.entity)
-            launchers.extend(robot_launcher.launchers)
-
-        if launchers:
-            launchers[0].wait(entities)
 
     def run(self, entity="", start_pose=None, extra_config=None):
         """Run the robot launcher with an optional start pose."""

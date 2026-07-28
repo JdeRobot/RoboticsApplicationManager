@@ -121,7 +121,7 @@ class LauncherTools(BaseModel):
         for launcher in self.launchers:
             launcher.unpause()
 
-    def reset(self, robot_entities=None):
+    def reset(self, robot_entities=[]):
         for launcher in self.launchers:
             launcher.reset(robot_entities)
 
