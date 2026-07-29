@@ -807,20 +807,17 @@ class Manager:
         fds = os.listdir("/dev/pts/")
         console_fd = str(max(map(int, fds[:-1])))
 
-        # Pass the linter right now only for Python code entrypoints
-        for entrypoint in entrypoints:
-            if entrypoint.endswith(".cpp"):
-                continue
-            errors = self.linter.evaluate_source_code(to_lint)
-            failed_linter = False
+        # Pass the linter
+        errors = self.linter.evaluate_source_code(to_lint)
+        failed_linter = False
 
-            for error in errors:
-                if error != "":
-                    failed_linter = True
-                    self.write_to_tool_terminal(error + "\n\n")
+        for error in errors:
+            if error != "":
+                failed_linter = True
+                self.write_to_tool_terminal(error + "\n\n")
 
-            if failed_linter:
-                raise Exception(errors)
+        if failed_linter:
+            raise Exception(errors)
 
         needs_compile = False
 
