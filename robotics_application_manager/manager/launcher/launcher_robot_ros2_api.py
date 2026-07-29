@@ -13,10 +13,6 @@ import sys
 
 import logging
 from robotics_application_manager import LogManager
-from gz.transport13 import Node
-
-from gz.msgs10.empty_pb2 import Empty
-from gz.msgs10.scene_pb2 import Scene
 
 
 class LauncherRobotRos2Api(ILauncher):
@@ -44,23 +40,6 @@ class LauncherRobotRos2Api(ILauncher):
         exercise_launch_thread = DockerThread(exercise_launch_cmd)
         exercise_launch_thread.start()
         self.threads.append(exercise_launch_thread)
-
-        # Wait until robot entity has spawned
-        node = Node()
-        spawned = False
-        while not spawned:
-            a = node.request(
-                f"/world/default/scene/info",
-                Empty(),
-                Empty,
-                Scene,
-                1000,
-            )
-            if a[0]:
-                for model in a[1].model:
-                    if model.name == entity:
-                        spawned = True
-                        LogManager.logger.info("Robot spawned OK")
 
     def terminate(self):
         LogManager.logger.info(f"Terminating robot launcher")

@@ -14,7 +14,7 @@ worlds = {
         "2": [
             {
                 "type": "gz",
-                "module": "ros2_api",
+                "module": "ros2_gz_api",
                 "parameters": [],
                 "launch_file": [],
             }
@@ -85,6 +85,10 @@ class LauncherScene(BaseModel):
 
     def launch_command(self, configuration):
         pass
+
+    def wait_robots_spawn(self, entities):
+        for launcher in self.launchers:
+            launcher.wait_robots_spawn(entities)
 
 
 class LauncherSceneException(Exception):
