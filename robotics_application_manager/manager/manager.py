@@ -774,9 +774,13 @@ class Manager:
                 LogManager.logger.info("User code not found")
                 raise Exception("User code not found")
 
-        _, file_extension = os.path.splitext(entrypoints[0])
+        needs_compile = False
+        for entrypoint in entrypoints:
+            _, file_extension = os.path.splitext(entrypoint)
+            if file_extension == ".cpp" or entrypoint.endswith(".launch.py"):
+                needs_compile = True
 
-        if file_extension == ".cpp" or entrypoints[0].endswith(".launch.py"):
+        if needs_compile:
             fds = os.listdir("/dev/pts/")
             console_fd = str(max(map(int, fds[:-1])))
 
@@ -796,8 +800,14 @@ class Manager:
             if returncode != 0:
                 raise Exception("Failed to compile")
 
-            self.unpause_sim()
-            for entrypoint in entrypoints:
+        for entrypoint in entrypoints:
+            _, file_extension = os.path.splitext(entrypoint)
+
+            if file_extension == ".cpp" or entrypoint.endswith(".launch.py"):
+                fds = os.listdir("/dev/pts/")
+                console_fd = str(max(map(int, fds[:-1])))
+
+                self.unpause_sim()
                 if entrypoint.endswith(".launch.py"):
                     application_process = subprocess.Popen(
                         [
@@ -828,25 +838,24 @@ class Manager:
                         start_new_session=True,
                     )
                 self.application_processes.append(application_process)
-            return
+                continue
 
-        # Pass the linter
-        errors = self.linter.evaluate_source_code(to_lint)
-        failed_linter = False
+            # Pass the linter
+            errors = self.linter.evaluate_source_code(to_lint)
+            failed_linter = False
 
-        for error in errors:
-            if error != "":
-                failed_linter = True
-                self.write_to_tool_terminal(error + "\n\n")
+            for error in errors:
+                if error != "":
+                    failed_linter = True
+                    self.write_to_tool_terminal(error + "\n\n")
 
-        if failed_linter:
-            raise Exception(errors)
+            if failed_linter:
+                raise Exception(errors)
 
-        fds = os.listdir("/dev/pts/")
-        console_fd = str(max(map(int, fds[:-1])))
+            fds = os.listdir("/dev/pts/")
+            console_fd = str(max(map(int, fds[:-1])))
 
-        self.unpause_sim()
-        for entrypoint in entrypoints:
+            self.unpause_sim()
             application_process = subprocess.Popen(
                 ["python3", entrypoint],
                 stdin=open("/dev/pts/" + console_fd, "r"),
