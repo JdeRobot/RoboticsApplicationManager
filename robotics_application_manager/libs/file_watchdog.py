@@ -15,11 +15,14 @@ class Handler(FileSystemEventHandler):
 
     def on_modified(self, event):
         if event.event_type == "modified":
-            with open(self.file, "r") as f:
-                data = f.read()
-            if self.hash is None or self.hash != hash(data):
-                self.hash = hash(data)
-                self.update_callback(data)
+            try:
+                with open(self.file, "rb") as f:
+                    raw = f.read()
+            except OSError:
+                return
+            if self.hash is None or self.hash != hash(raw):
+                self.hash = hash(raw)
+                self.update_callback(raw.decode("utf-8", errors="replace"))
 
 
 class FileWatchdog(threading.Thread):
@@ -31,8 +34,8 @@ class FileWatchdog(threading.Thread):
         super().__init__()
         # Create blank file
         if not os.path.exists(file):
-            with open(file, "w") as f:
-                f.write("")
+            with open(file, "wb") as f:
+                f.write(b"")
         event_handler = Handler(file, callback)
         self.observer = watchdog.observers.Observer()
         self.observer.schedule(event_handler, path=file)
