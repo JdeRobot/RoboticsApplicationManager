@@ -40,7 +40,7 @@ class LauncherWebGui:
     def unpause(self):
         pass
 
-    def reset(self, robot_entity=None):
+    def reset(self, robot_entities=[]):
         pass
 
     def died(self):
