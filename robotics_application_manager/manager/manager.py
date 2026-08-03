@@ -1046,9 +1046,10 @@ class Manager:
             robot_launcher.terminate()
 
         try:
+            entities = []
             for robot_config in self.robot_configs:
-                entity = robot_config["entity"]
-                self.tools_launcher.reset(entity)
+                entities.append(robot_config["entity"])
+            self.tools_launcher.reset(entities)
         except subprocess.TimeoutExpired as e:
             self.write_to_tool_terminal(f"{e}\n\n")
             raise Exception("Failed to reset simulator")

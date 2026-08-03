@@ -103,7 +103,7 @@ class LauncherGzsim(ILauncher):
             10000,
         )
 
-    def reset(self, robot_entity=None):
+    def reset(self, robot_entities=[]):
         node = Node()
 
         node.request(
@@ -114,7 +114,7 @@ class LauncherGzsim(ILauncher):
             10000,
         )
 
-        if robot_entity is not None:
+        for robot_entity in robot_entities:
             node.request(
                 f"/world/default/remove",
                 Entity(name=robot_entity, type=Entity.MODEL),
