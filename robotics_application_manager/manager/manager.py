@@ -353,7 +353,7 @@ class Manager:
                 else:
                     cfg[key] = new_val
 
-                new_values.push(new_val)
+                new_values.add(new_val)
 
         make_unique(robot_cfgs, "entity")
         make_unique(robot_cfgs, "extra_config", param="namespace")
