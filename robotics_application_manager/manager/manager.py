@@ -224,10 +224,10 @@ class Manager:
         self.consumer = ManagerConsumer(host, port, self.queue)
         self.scene_launcher = None
         self.world_type = None
-        self.robot_launcher = None
-        self.robot_config = None
+        self.robot_launchers = []
+        self.robot_configs = []
         self.tools_launcher = None
-        self.application_process = None
+        self.application_processes = []
         self.running = True
         self.linter = Lint()
 
@@ -323,11 +323,40 @@ class Manager:
         """
         cfg_dict = event.kwargs.get("data", {})
         scene_cfg = cfg_dict["scene"]
-        robot_cfg = cfg_dict["robot"]
+        robot_cfgs = cfg_dict["robot"]
 
-        # Backwards compatibility for now
-        if isinstance(robot_cfg, list):
-            robot_cfg = robot_cfg[0]
+        def make_unique(cfgs, key, param=None):
+            new_values = set()
+
+            for cfg in cfgs:
+                new_val = cfg[key]
+                if new_val is None:
+                    continue
+
+                if param is not None:
+                    new_val = re.search(rf"{param}:=(\S+)", new_val)
+                    if new_val is None:
+                        continue
+                    new_val = new_val.group(1)
+
+                index = 1
+                while new_val in new_values:
+                    new_val = f"{new_val}_{index}"
+                    index += 1
+
+                if param is not None:
+                    cfg[key] = re.sub(
+                        rf"{param}:=\S+",
+                        f"{param}:={new_val}",
+                        cfg[key],
+                    )
+                else:
+                    cfg[key] = new_val
+
+                new_values.add(new_val)
+
+        make_unique(robot_cfgs, "entity")
+        make_unique(robot_cfgs, "extra_config", param="namespace")
 
         # Launch scene
         try:
@@ -352,8 +381,9 @@ class Manager:
         LogManager.logger.info(str(self.scene_launcher))
 
         # Launch robot
-        self.robot_launcher = None
-        if robot_cfg["type"] is not None:
+        self.robot_launchers = []
+        self.robot_configs = []
+        for robot_cfg in robot_cfgs:
             try:
                 cfg = ConfigurationManager.validate(robot_cfg)
                 LogManager.logger.info("Launching robot from the RB")
@@ -361,15 +391,21 @@ class Manager:
             except ValueError as e:
                 LogManager.logger.error(f"Configuration validation failed: {e}")
 
-            self.robot_launcher = LauncherRobot(**cfg.model_dump())
-            self.robot_config = robot_cfg
-            LogManager.logger.info(str(self.robot_launcher))
+            robot_launcher = LauncherRobot(**cfg.model_dump())
+            self.robot_launchers.append(robot_launcher)
+            self.robot_configs.append(robot_cfg)
+            LogManager.logger.info(str(robot_launcher))
 
         self.scene_launcher.run()
-        if self.robot_launcher is not None:
-            self.robot_launcher.run(
-                robot_cfg["entity"], robot_cfg["start_pose"], robot_cfg["extra_config"]
-            )
+
+        robots_data = zip(self.robot_launchers, self.robot_configs)
+        entities = []
+        for launcher, cfg in robots_data:
+            launcher.run(cfg["entity"], cfg["start_pose"], cfg["extra_config"])
+            entities.append(cfg["entity"])
+
+        self.scene_launcher.wait_robots_spawn(entities)
+
         LogManager.logger.info("Launch transition finished")
 
     def prepare_custom_world(self, cfg_dict):
@@ -740,12 +776,14 @@ class Manager:
             event: The event object containing application configuration and code data.
         """
         # Kill already running code
-        try:
-            proc = psutil.Process(self.application_process.pid)
-            proc.suspend()
-            proc.kill()
-        except Exception:
-            pass
+        for process in self.application_processes:
+            try:
+                proc = psutil.Process(process.pid)
+                proc.suspend()
+                proc.kill()
+            except Exception:
+                pass
+        self.application_processes = []
 
         # Delete old files
         if os.path.exists("/workspace/code"):
@@ -754,12 +792,7 @@ class Manager:
 
         # Extract app config
         app_cfg = event.kwargs.get("data", {})
-        entrypoint = app_cfg["entrypoint"]
-
-        # Backwards compatibility for now
-        if isinstance(entrypoint, list):
-            entrypoint = entrypoint[0]
-
+        entrypoints = app_cfg["entrypoint"]
         to_lint = app_cfg["linter"]
 
         # Unzip the app
@@ -771,16 +804,29 @@ class Manager:
         zip_ref.extractall("/workspace/code")
         zip_ref.close()
 
-        if not os.path.isfile(entrypoint):
-            LogManager.logger.info("User code not found")
-            raise Exception("User code not found")
+        fds = os.listdir("/dev/pts/")
+        console_fd = str(max(map(int, fds[:-1])))
 
-        _, file_extension = os.path.splitext(entrypoint)
+        # Pass the linter
+        errors = self.linter.evaluate_source_code(to_lint)
+        failed_linter = False
 
-        if file_extension == ".cpp" or entrypoint.endswith(".launch.py"):
-            fds = os.listdir("/dev/pts/")
-            console_fd = str(max(map(int, fds[:-1])))
+        for error in errors:
+            if error != "":
+                failed_linter = True
+                self.write_to_tool_terminal(error + "\n\n")
 
+        if failed_linter:
+            raise Exception(errors)
+
+        needs_compile = False
+
+        for entrypoint in entrypoints:
+            if entrypoint.endswith((".launch.py", ".cpp")):
+                needs_compile = True
+                break
+
+        if needs_compile:
             compile_process = subprocess.Popen(
                 [
                     "cd /workspace/code && source /opt/ros/humble/setup.bash && colcon build && source install/setup.bash && cd ../.."
@@ -797,62 +843,46 @@ class Manager:
             if returncode != 0:
                 raise Exception("Failed to compile")
 
-            self.unpause_sim()
+        for entrypoint in entrypoints:
+            if not os.path.isfile(entrypoint):
+                LogManager.logger.info("User code not found")
+                raise Exception("User code not found")
+
+            command = ["python3", entrypoint]
+            executable = None
+            shell = False
+
             if entrypoint.endswith(".launch.py"):
-                self.application_process = subprocess.Popen(
-                    [
-                        f"source /workspace/code/install/setup.bash && ros2 launch {entrypoint}"
-                    ],
-                    stdin=open("/dev/pts/" + console_fd, "r"),
-                    stdout=open("/dev/pts/" + console_fd, "w"),
-                    stderr=sys.stdout,
-                    bufsize=1024,
-                    universal_newlines=True,
-                    shell=True,
-                    executable="/bin/bash",
-                    start_new_session=True,
-                )
-            else:
+                command = [
+                    f"source /workspace/code/install/setup.bash && ros2 launch {entrypoint}"
+                ]
+                executable = "/bin/bash"
+                shell = True
+            elif entrypoint.endswith(".cpp"):
+                command = [
+                    "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
+                ]
+                executable = "/bin/bash"
+                shell = True
 
-                self.application_process = subprocess.Popen(
-                    [
-                        "source /workspace/code/install/setup.bash && ros2 run academy academyCode"
-                    ],
-                    stdin=open("/dev/pts/" + console_fd, "r"),
-                    stdout=open("/dev/pts/" + console_fd, "w"),
-                    stderr=sys.stdout,
-                    bufsize=1024,
-                    universal_newlines=True,
-                    shell=True,
-                    executable="/bin/bash",
-                    start_new_session=True,
-                )
-            return
+            proc = subprocess.Popen(
+                command,
+                stdin=open("/dev/pts/" + console_fd, "r"),
+                stdout=open("/dev/pts/" + console_fd, "w"),
+                stderr=sys.stdout,
+                bufsize=1024,
+                universal_newlines=True,
+                shell=shell,
+                executable=executable,
+                start_new_session=True,
+            )
 
-        # Pass the linter
-        errors = self.linter.evaluate_source_code(to_lint)
-        failed_linter = False
-
-        for error in errors:
-            if error != "":
-                failed_linter = True
-                self.write_to_tool_terminal(error + "\n\n")
-
-        if failed_linter:
-            raise Exception(errors)
-
-        fds = os.listdir("/dev/pts/")
-        console_fd = str(max(map(int, fds[:-1])))
+            proc.send_signal(signal.SIGSTOP)
+            self.application_processes.append(proc)
 
         self.unpause_sim()
-        self.application_process = subprocess.Popen(
-            ["python3", entrypoint],
-            stdin=open("/dev/pts/" + console_fd, "r"),
-            stdout=open("/dev/pts/" + console_fd, "w"),
-            stderr=sys.stdout,
-            bufsize=1024,
-            universal_newlines=True,
-        )
+        for app in self.application_processes:
+            app.send_signal(signal.SIGCONT)
 
         LogManager.logger.info("Run application transition finished")
 
@@ -866,15 +896,17 @@ class Manager:
         Parameters:
             event: The event object associated with the termination request.
         """
-        if self.application_process:
+        for process in self.application_processes:
             try:
-                stop_process_and_children(self.application_process)
-                self.application_process = None
-                self.pause_sim()
-                self.reset_sim()
+                stop_process_and_children(process)
             except Exception:
                 LogManager.logger.exception("No application running")
                 print(traceback.format_exc())
+
+        if len(self.application_processes) > 0:
+            self.pause_sim()
+            self.reset_sim()
+            self.application_processes = []
 
     def on_terminate_tools(self, event):
 
@@ -895,9 +927,10 @@ class Manager:
             self.scene_launcher.terminate()
             self.scene_launcher = None
             self.world_type = None
-        if self.robot_launcher is not None:
-            self.robot_launcher.terminate()
-            self.robot_launcher = None
+
+        for launcher in self.robot_launchers:
+            launcher.terminate()
+        self.robot_launchers = []
 
     def on_disconnect(self, event):
         """
@@ -907,12 +940,12 @@ class Manager:
         terminates launchers, and restarts the script.
         """
 
-        if self.application_process:
-            try:
-                stop_process_and_children(self.application_process)
-                self.application_process = None
-            except Exception as e:
-                LogManager.logger.exception("Exception stopping application process")
+        try:
+            for process in self.application_processes:
+                stop_process_and_children(process)
+            self.application_processes = []
+        except Exception:
+            LogManager.logger.exception("Exception stopping application process")
 
         if self.tools_launcher:
             try:
@@ -920,11 +953,12 @@ class Manager:
             except Exception as e:
                 LogManager.logger.exception("Exception terminating tools launcher")
 
-        if self.robot_launcher:
-            try:
-                self.robot_launcher.terminate()
-            except Exception as e:
-                LogManager.logger.exception("Exception terminating robot launcher")
+        try:
+            for launcher in self.robot_launchers:
+                launcher.terminate()
+            self.robot_launchers = []
+        except Exception as e:
+            LogManager.logger.exception("Exception terminating robot launcher")
 
         if self.scene_launcher:
             try:
@@ -943,15 +977,16 @@ class Manager:
         self.consumer.send_message(message.response(response))
 
     def on_pause(self, msg):
-        if self.application_process is not None:
-            proc = psutil.Process(self.application_process.pid)
-            children = proc.children(recursive=True)
-            children.append(proc)
-            for p in children:
-                try:
-                    p.suspend()
-                except psutil.NoSuchProcess:
-                    pass
+        if len(self.application_processes) > 0:
+            for process in self.application_processes:
+                proc = psutil.Process(process.pid)
+                children = proc.children(recursive=True)
+                children.append(proc)
+                for p in children:
+                    try:
+                        p.suspend()
+                    except psutil.NoSuchProcess:
+                        pass
             self.pause_sim()
         else:
             LogManager.logger.warning(
@@ -967,15 +1002,16 @@ class Manager:
         Parameters:
             msg: The event or message triggering the resume action.
         """
-        if self.application_process is not None:
-            proc = psutil.Process(self.application_process.pid)
-            children = proc.children(recursive=True)
-            children.append(proc)
-            for p in children:
-                try:
-                    p.resume()
-                except psutil.NoSuchProcess:
-                    pass
+        if len(self.application_processes) > 0:
+            for process in self.application_processes:
+                proc = psutil.Process(process.pid)
+                children = proc.children(recursive=True)
+                children.append(proc)
+                for p in children:
+                    try:
+                        p.resume()
+                    except psutil.NoSuchProcess:
+                        pass
             self.unpause_sim()
         else:
             LogManager.logger.warning(
@@ -1005,27 +1041,22 @@ class Manager:
         the appropriate ROS or Gazebo services based on the visualization type,
         and relaunches the robot if a launcher is available.
         """
-        if self.robot_launcher:
-            self.robot_launcher.terminate()
+
+        for robot_launcher in self.robot_launchers:
+            robot_launcher.terminate()
 
         try:
-            entity = None
-            if self.robot_config is not None:
-                entity = self.robot_config["entity"]
-            self.tools_launcher.reset(entity)
+            entities = []
+            for robot_config in self.robot_configs:
+                entities.append(robot_config["entity"])
+            self.tools_launcher.reset(entities)
         except subprocess.TimeoutExpired as e:
             self.write_to_tool_terminal(f"{e}\n\n")
             raise Exception("Failed to reset simulator")
 
-        if self.robot_launcher:
-            try:
-                self.robot_launcher.run(
-                    self.robot_config["entity"],
-                    self.robot_config["start_pose"],
-                    self.robot_config["extra_config"],
-                )
-            except Exception as e:
-                LogManager.logger.exception("Exception terminating scene launcher")
+        robots_data = zip(self.robot_launchers, self.robot_configs)
+        for launcher, cfg in robots_data:
+            launcher.run(cfg["entity"], cfg["start_pose"], cfg["extra_config"])
 
     def start(self):
         """
@@ -1049,14 +1080,12 @@ class Manager:
             except Exception as e:
                 LogManager.logger.exception("Exception stopping consumer")
 
-            if self.application_process:
-                try:
-                    stop_process_and_children(self.application_process)
-                    self.application_process = None
-                except Exception as e:
-                    LogManager.logger.exception(
-                        "Exception stopping application process"
-                    )
+            try:
+                for process in self.application_processes:
+                    stop_process_and_children(process)
+                self.application_processes = []
+            except Exception:
+                LogManager.logger.exception("Exception stopping application process")
 
             if self.tools_launcher:
                 try:
@@ -1064,11 +1093,12 @@ class Manager:
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating tools launcher")
 
-            if self.robot_launcher:
-                try:
-                    self.robot_launcher.terminate()
-                except Exception as e:
-                    LogManager.logger.exception("Exception terminating robot launcher")
+            try:
+                for launcher in self.robot_launchers:
+                    launcher.terminate()
+                self.robot_launchers = []
+            except Exception as e:
+                LogManager.logger.exception("Exception terminating robot launcher")
 
             if self.scene_launcher:
                 try:

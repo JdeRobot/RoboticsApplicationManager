@@ -11,11 +11,13 @@ from .launcher_interface import (
 from robotics_application_manager.manager.docker_thread import DockerThread
 import subprocess
 from robotics_application_manager import LogManager
-
+from gz.transport13 import Node
+from gz.msgs10.empty_pb2 import Empty
+from gz.msgs10.scene_pb2 import Scene
 import logging
 
 
-class LauncherRos2Api(ILauncher):
+class LauncherRos2GzApi(ILauncher):
     type: str
     module: str
     launch_file: str
@@ -49,5 +51,20 @@ class LauncherRos2Api(ILauncher):
                 thread.join()
             self.threads.remove(thread)
 
-    def wait_robot_spawn(self, entities):
-        pass
+    def wait_robots_spawn(self, entities):
+        # Wait until robots entities has spawned
+        node = Node()
+        missing_entities = entities
+        while len(missing_entities) > 0:
+            resp, output = node.request(
+                f"/world/default/scene/info",
+                Empty(),
+                Empty,
+                Scene,
+                1000,
+            )
+            if resp:
+                for model in output.model:
+                    if model.name in missing_entities:
+                        missing_entities.remove(model.name)
+                        LogManager.logger.info(f"Robot ${model.name} spawned OK")

@@ -90,3 +90,6 @@ class LauncherO3deApi(ILauncher):
                 bufsize=1024,
                 universal_newlines=True,
             )
+
+    def wait_robot_spawn(self, entities):
+        pass
