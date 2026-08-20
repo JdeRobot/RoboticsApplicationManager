@@ -41,7 +41,16 @@ class LauncherGzsim(ILauncher):
         # Configure browser screen width and height for gz GUI
         gzclient_config_cmds = f"sed -i 's/<width>.*<\/width>/<width>{self.width}<\/width>/; s/<height>.*<\/height>/<height>{self.height}<\/height>/' {config_file};"
 
-        if ACCELERATION_ENABLED:
+        if os.path.exists("/dev/dxg"):
+            self.gz_vnc.start_vnc_wsl(
+                self.display, self.internal_port, self.external_port
+            )
+            gzclient_cmd = (
+                f"export DISPLAY={self.display}; {gzclient_config_cmds} "
+                f"export GALLIUM_DRIVER=d3d12; "
+                f"gz sim -g -v4 --gui-config {config_file}"
+            )
+        elif ACCELERATION_ENABLED:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc_gpu(
                 self.display, self.internal_port, self.external_port, DRI_PATH

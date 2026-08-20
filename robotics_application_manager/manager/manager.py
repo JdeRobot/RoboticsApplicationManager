@@ -851,6 +851,7 @@ class Manager:
             command = ["python3", entrypoint]
             executable = None
             shell = False
+            environment = None
 
             if entrypoint.endswith(".launch.py"):
                 command = [
@@ -864,6 +865,23 @@ class Manager:
                 ]
                 executable = "/bin/bash"
                 shell = True
+            elif entrypoint.endswith(".py") and os.path.exists("/dev/dxg"):
+                command = [
+                    "bash",
+                    "-c",
+                    'source /opt/ros/humble/setup.bash && exec python3 "$1"',
+                    "bash",
+                    entrypoint,
+                ]
+                environment = os.environ.copy()
+                environment["PYTHONPATH"] = os.pathsep.join(
+                    [
+                        "/workspace/code/hal_interfaces",
+                        "/workspace/code/gui_interfaces",
+                        "/workspace/code/console_interfaces",
+                        environment.get("PYTHONPATH", ""),
+                    ]
+                )
 
             proc = subprocess.Popen(
                 command,
@@ -875,6 +893,7 @@ class Manager:
                 shell=shell,
                 executable=executable,
                 start_new_session=True,
+                env=environment,
             )
 
             proc.send_signal(signal.SIGSTOP)

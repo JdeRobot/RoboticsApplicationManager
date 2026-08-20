@@ -4,13 +4,15 @@ Provides classes and functions to start and manage VNC and noVNC servers,
 including GPU-accelerated sessions and desktop icon creation.
 """
 
-import time
-import socket
-from robotics_application_manager.manager.docker_thread import DockerThread
-import subprocess
-from typing import List, Any
 import os
+import signal
+import subprocess
+import socket
+import time
+from typing import Any, List
+
 from robotics_application_manager.libs import wait_for_xserver
+from robotics_application_manager.manager.docker_thread import DockerThread
 
 
 class Vnc_server:
@@ -115,6 +117,82 @@ class Vnc_server:
         self.wait_for_port("localhost", internal_port)
         self.wait_for_port("localhost", external_port)
 
+    def start_vnc_wsl(self, display, internal_port, external_port):
+        """Start the WSL2 Xvfb, x11vnc, and noVNC backend."""
+        self.wsl_processes = []
+
+        try:
+            self._start_wsl_process(["Xvfb", display, "-screen", "0", "1920x1080x24"])
+            wait_for_xserver(display)
+
+            self._start_wsl_process(
+                [
+                    "x11vnc",
+                    "-display",
+                    display,
+                    "-rfbport",
+                    str(internal_port),
+                    "-nopw",
+                    "-forever",
+                    "-noxdamage",
+                    "-shared",
+                ]
+            )
+
+            novnc_cmd = [
+                "/noVNC/utils/novnc_proxy",
+                "--listen",
+                str(external_port),
+                "--vnc",
+                f"localhost:{internal_port}",
+                "--web",
+                "/noVNC",
+            ]
+            if os.path.isfile("/etc/certs/cert.pem"):
+                novnc_cmd += [
+                    "--cert",
+                    "/etc/certs/cert.pem",
+                    "--key",
+                    "/etc/certs/privkey.pem",
+                ]
+
+            self._start_wsl_process(novnc_cmd)
+            self.wait_for_port("localhost", internal_port)
+            self.wait_for_port("localhost", external_port)
+            self.running = True
+        except Exception:
+            self.terminate_wsl_processes()
+            raise
+
+    def _start_wsl_process(self, command):
+        """Start and track one WSL VNC process."""
+        self.wsl_processes.append(
+            subprocess.Popen(
+                command,
+                start_new_session=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        )
+
+    def terminate_wsl_processes(self):
+        """Terminate only the processes started by the WSL2 VNC backend."""
+        for process in reversed(getattr(self, "wsl_processes", [])):
+            if process.poll() is None:
+                try:
+                    process_group = os.getpgid(process.pid)
+                    os.killpg(process_group, signal.SIGTERM)
+                    process.wait(timeout=10)
+                except ProcessLookupError:
+                    continue
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(process_group, signal.SIGKILL)
+                    except ProcessLookupError:
+                        continue
+                    process.wait()
+        self.wsl_processes = []
+
     def wait_for_port(self, host, port, timeout=120):
         """Wait for a TCP port on a host to become available within a timeout period.
 
@@ -153,6 +231,7 @@ class Vnc_server:
 
     def terminate(self):
         """Terminate all running threads and stop the VNC server."""
+        self.terminate_wsl_processes()
         for thread in self.threads:
             if thread.is_alive():
                 thread.terminate()
