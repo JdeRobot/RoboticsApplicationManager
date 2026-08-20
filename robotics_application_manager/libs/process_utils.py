@@ -130,6 +130,16 @@ def wait_for_process_to_start(process_name, timeout=60):
 
 def check_gpu_acceleration():
     try:
+        if os.path.exists("/dev/dxg"):
+            result = subprocess.run(
+                ["nvidia-smi"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+                check=False,
+            )
+            return "NVIDIA" if result.returncode == 0 else "OFF"
+
         # Verifica si /dev/dri existe
         if not os.path.exists("/dev/dri"):
             LogManager.logger.error("/dev/dri does not exist. No direct GPU access.")
