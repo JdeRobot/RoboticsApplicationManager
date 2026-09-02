@@ -71,7 +71,7 @@ class LauncherO3deApi(ILauncher):
     def terminate(self):
         self.gz_vnc.terminate()
         if self.threads is not None:
-            for thread in self.threads:
+            for thread in self.threads[:]:
                 if thread.is_alive():
                     thread.terminate()
                     thread.join()

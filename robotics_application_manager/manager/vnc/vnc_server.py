@@ -153,7 +153,7 @@ class Vnc_server:
 
     def terminate(self):
         """Terminate all running threads and stop the VNC server."""
-        for thread in self.threads:
+        for thread in self.threads[:]:
             if thread.is_alive():
                 thread.terminate()
                 thread.join()
