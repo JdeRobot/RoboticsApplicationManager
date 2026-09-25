@@ -22,7 +22,16 @@ worlds = {
             }
         ],
     },
-    "physical": {},
+    "physical": {
+        "2": [
+            {
+                "type": "real",
+                "module": "robot_ros2_api",
+                "parameters": [],
+                "launch_file": [],
+            }
+        ],
+    },
 }
 
 

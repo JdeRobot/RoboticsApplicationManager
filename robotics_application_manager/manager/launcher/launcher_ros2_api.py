@@ -49,5 +49,5 @@ class LauncherRos2Api(ILauncher):
                 thread.join()
             self.threads.remove(thread)
 
-    def wait_robot_spawn(self, entities):
+    def wait_robots_spawn(self, entities):
         pass
