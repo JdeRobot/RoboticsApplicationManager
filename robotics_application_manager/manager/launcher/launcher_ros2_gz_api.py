@@ -11,9 +11,9 @@ from .launcher_interface import (
 from robotics_application_manager.manager.docker_thread import DockerThread
 import subprocess
 from robotics_application_manager import LogManager
-from gz.transport13 import Node
-from gz.msgs10.empty_pb2 import Empty
-from gz.msgs10.scene_pb2 import Scene
+from gz.transport import Node
+from gz.msgs.empty_pb2 import Empty
+from gz.msgs.scene_pb2 import Scene
 import logging
 
 
@@ -39,7 +39,7 @@ class LauncherRos2GzApi(ILauncher):
         else:
             exercise_launch_cmd = f"source /.env;ros2 launch {self.launch_file}"
 
-        exercise_launch_thread = DockerThread(exercise_launch_cmd)
+        exercise_launch_thread = DockerThread(exercise_launch_cmd,debug=True)
         exercise_launch_thread.start()
         self.threads.append(exercise_launch_thread)
 

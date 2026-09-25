@@ -37,7 +37,7 @@ class LauncherRobotRos2Api(ILauncher):
         else:
             exercise_launch_cmd = f"ros2 launch {self.launch_file} x:={x} y:={y} z:={z} R:={R} P:={P} Y:={Y} entity:={entity} {extra_config}"
 
-        exercise_launch_thread = DockerThread(exercise_launch_cmd)
+        exercise_launch_thread = DockerThread(exercise_launch_cmd,debug=True)
         exercise_launch_thread.start()
         self.threads.append(exercise_launch_thread)
 
