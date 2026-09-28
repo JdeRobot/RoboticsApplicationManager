@@ -1,5 +1,9 @@
 # Robotics Application Manager (RAM) Documentation
 
+## How to contribute?
+
+Take a look at the [contributing](CONTRIBUTING.md) guidelines.
+
 ## Table of Contents
 
 1. [Project Overview](#project-overview)
