@@ -26,8 +26,8 @@ class LauncherWebGui:
         if self.consumer is not None:
             await self.consumer.send_message({"update": data}, command="update")
 
-    def run(self, config_file, callback):
-        self.server.start()
+    async def run(self, config_file, callback):
+        await self.server.start()
         self.running = True
 
     async def get_msg(self, data):
@@ -36,8 +36,8 @@ class LauncherWebGui:
     def is_running(self):
         return self.running
 
-    def terminate(self):
-        self.server.stop()
+    async def terminate(self):
+        await self.server.stop()
         self.running = False
 
     def pause(self):

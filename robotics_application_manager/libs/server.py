@@ -13,6 +13,7 @@ class Server:
         port,
         callback,
     ):
+        self.host = "127.0.0.1"
         self.port = port
         self.update_callback = callback
         self.client = None
@@ -27,7 +28,7 @@ class Server:
 
     # A method that creates an instance of the class asynchronously
     async def create(self):
-        self.server = await serve(self.manage_conection, "127.0.0.1", self.port)
+        self.server = await serve(self.manage_conection, self.host, self.port, start_serving=False)
         return self
 
     async def manage_conection(self, websocket):
@@ -42,36 +43,33 @@ class Server:
             LogManager.logger.info(f"Client connected: {self.client}")
 
             await self.process_msg(websocket)
+        except:
+          pass
         finally:
             LogManager.logger.info("Connection with client closed")
-            await self.send_message(message)
             with self.client_lock:
               self.client = None
 
     async def process_msg(self, websocket):
-        while True:
-            async for raw_msg in websocket:
-              try:
-                  json_msg = json.loads(raw_msg)
-                  LogManager.logger.debug(f"Message received from template: {raw_msg[:30]}")
-                  await self.update_callback(json_msg)
-              except Exception as e:
-                  ex = ManagerConsumerMessageException(id=str(uuid4()), message=str(e))
-                  await self.send_message(ex)
-                  LogManager.logger.error(e, exc_info=True)
+      async for raw_msg in websocket:
+        try:
+            json_msg = json.loads(raw_msg)
+            await self.update_callback(json_msg)
+        except Exception as e:
+            ex = ManagerConsumerMessageException(id=str(uuid4()), message=str(e))
+            await self.send_message(ex)
+            LogManager.logger.error(e, exc_info=True)
 
     async def send(self, data):
         with self.client_lock:
             if self.client is not None:
                 await self.client.send(data)
 
-    def start(self):
+    async def start(self):
         """Start the WebSocket server in a separate thread."""
-        self.server_task = asyncio.create_task(self.server.serve_forever())
+        await self.server.start_serving()
 
     async def stop(self):
         """Stop the WebSocket server gracefully."""
-        await self.server.close()
-        if self.server_task is not None:
-          self.server_task.cancel()
-          await self.server_task
+        self.server.close()
+        await self.server.wait_closed()

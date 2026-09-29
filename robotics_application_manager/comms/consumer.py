@@ -14,9 +14,9 @@ from .consumer_message import (
     ManagerConsumerMessageException,
     ManagerConsumerMessage,
 )
-from .websocket_server import WebsocketServer
 from robotics_application_manager import LogManager
 from websockets.asyncio.server import serve
+from websockets.exceptions import ConnectionClosedOK
 import asyncio
 
 class ManagerConsumer:
@@ -26,8 +26,8 @@ class ManagerConsumer:
     Supports single client connection to RAM
     TODO: Better handling of single client connections, closing and redirecting
     """
-
     def __init__(self, host, port, process_callback):
+
         """
         Initialize the ManagerConsumer with host, port, and manager_queue.
 
@@ -43,10 +43,10 @@ class ManagerConsumer:
         self.server_task = None
 
         # Configurar el logger de websocket_server para salida a consola
-        ws_logger = logging.getLogger("websocket_server.websocket_server")
-        ws_logger.propagate = False
-        ws_logger.setLevel(logging.INFO)
-        ws_logger.handlers.clear()
+        self.ws_logger = logging.getLogger("websocket_server.websocket_server")
+        self.ws_logger.propagate = False
+        self.ws_logger.setLevel(logging.INFO)
+        self.ws_logger.handlers.clear()
         ws_formatter = logging.Formatter(
             "%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s] "
             "(%(name)s)  %(message)s",
@@ -54,7 +54,7 @@ class ManagerConsumer:
         )
         ws_console_handler = logging.StreamHandler()
         ws_console_handler.setFormatter(ws_formatter)
-        ws_logger.addHandler(ws_console_handler)
+        self.ws_logger.addHandler(ws_console_handler)
 
     # Use the __await__ method to make the class awaitable
     def __await__(self):
@@ -63,7 +63,7 @@ class ManagerConsumer:
 
     # A method that creates an instance of the class asynchronously
     async def create(self):
-        self.server = await serve(self.manage_conection, self.host, self.port)
+        self.server = await serve(self.manage_conection, self.host, self.port, start_serving=False, max_size=None, logger=self.ws_logger)
         return self
 
     async def manage_conection(self, websocket):
@@ -76,54 +76,51 @@ class ManagerConsumer:
             LogManager.logger.info(f"client connected: {self.client}")
 
             await self.process_msg(websocket)
+        except ConnectionClosedOK as e:
+            pass
         finally:
             now = datetime.now()
             time_str = now.strftime("%H:%M:%S")
             LogManager.logger.info(f"Client disconnected {time_str}: {self.client}")
-            message = ManagerConsumerMessage(id=str(uuid4()), command="disconnect")
-            await self.send_message(message)
             self.client = None
 
     async def process_msg(self, websocket):
-        while True:
-            async for raw_msg in websocket:
-              try:
-                  json_msg = json.loads(raw_msg)
-                  await self.process_callback(ManagerConsumerMessage(**json_msg))
-              except Exception as e:
-                  ex = ManagerConsumerMessageException(id=str(uuid4()), message=str(e))
-                  await self.send_message(ex)
-                  LogManager.logger.error(e, exc_info=True)
+      async for raw_msg in websocket:
+        try:
+            json_msg = json.loads(raw_msg)
+            await self.process_callback(ManagerConsumerMessage(**json_msg))
+        except Exception as e:
+            ex = ManagerConsumerMessageException(id=str(uuid4()), message=str(e))
+            await self.send_message(ex)
+            LogManager.logger.error(e, exc_info=True)
 
     async def send_message(self, message_data, command=None):
-            """
-            Send a message to the connected client.
+        """
+        Send a message to the connected client.
 
-            Args:
-                message_data: The message data to send, can be a ManagerConsumerMessage,
-                    ManagerConsumerMessageException, or other data.
-                command (str, optional): The command associated with the message,
-                    used if message_data is not a ManagerConsumerMessage.
-            """
-            if self.client is not None and self.server is not None:
-                if isinstance(message_data, ManagerConsumerMessage):
-                    message = message_data
-                elif isinstance(message_data, ManagerConsumerMessageException):
-                    message = message_data.consumer_message()
-                else:
-                    message = ManagerConsumerMessage(
-                        id=str(uuid4()), command=command, data=message_data
-                    )
+        Args:
+            message_data: The message data to send, can be a ManagerConsumerMessage,
+                ManagerConsumerMessageException, or other data.
+            command (str, optional): The command associated with the message,
+                used if message_data is not a ManagerConsumerMessage.
+        """
+        if self.client is not None and self.server is not None:
+            if isinstance(message_data, ManagerConsumerMessage):
+                message = message_data
+            elif isinstance(message_data, ManagerConsumerMessageException):
+                message = message_data.consumer_message()
+            else:
+                message = ManagerConsumerMessage(
+                    id=str(uuid4()), command=command, data=message_data
+                )
 
-                await self.client.send(str(message))
+            await self.client.send(str(message))
 
-    def start(self):
+    async def start(self):
         """Start the WebSocket server in a separate thread."""
-        self.server_task = asyncio.create_task(self.server.serve_forever())
+        await self.server.start_serving()
 
     async def stop(self):
         """Stop the WebSocket server gracefully."""
-        await self.server.close()
-        if self.server_task is not None:
-          self.server_task.cancel()
-          await self.server_task
+        self.server.close()
+        await self.server.wait_closed()

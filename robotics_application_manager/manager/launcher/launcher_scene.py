@@ -61,11 +61,11 @@ class LauncherScene(BaseModel):
             launcher = await self.launch_module(module)
             self.launchers.append(launcher)
 
-    def terminate(self):
+    async def terminate(self):
         LogManager.logger.info("Terminating scenes launchers")
         if self.launchers:
             for launcher in self.launchers:
-                launcher.terminate()
+                await launcher.terminate()
         self.launchers = []
 
     async def launch_module(self, configuration):
@@ -80,7 +80,7 @@ class LauncherScene(BaseModel):
         launcher_module = f"{self.module}.launcher_{launcher_module_name}.Launcher{class_from_module(launcher_module_name)}"
         launcher_class = get_class(launcher_module)
         launcher = await launcher_class.from_config(launcher_class, configuration)
-        launcher.run(process_terminated)
+        await launcher.run(process_terminated)
         return launcher
 
     def launch_command(self, configuration):

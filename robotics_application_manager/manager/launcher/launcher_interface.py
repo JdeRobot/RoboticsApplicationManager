@@ -11,13 +11,13 @@ class ILauncher(BaseModel):
     async def create(self):
         return self
 
-    def run(self, callback: callable):
+    async def run(self, callback: callable):
         raise NotImplemented("Launcher must implement run method")
 
     def is_running(self):
         raise NotImplemented("Launcher must implement run method")
 
-    def terminate(self):
+    async def terminate(self):
         raise NotImplemented("Launcher must implement run method")
 
     def died(self, callback):

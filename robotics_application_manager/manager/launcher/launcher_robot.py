@@ -62,12 +62,12 @@ class LauncherRobot(BaseModel):
             self.launchers.append(launcher)
         LogManager.logger.info(self.launchers)
 
-    def terminate(self):
+    async def terminate(self):
         """Terminate all robot launchers and clear the launchers list."""
         LogManager.logger.info("Terminating robots launchers")
         if self.launchers:
             for launcher in self.launchers:
-                launcher.terminate()
+                await launcher.terminate()
         self.launchers = []
 
     async def launch_module(self, configuration, extra_config=None):
@@ -88,7 +88,7 @@ class LauncherRobot(BaseModel):
         launcher_class = get_class(launcher_module)
         launcher = await launcher_class.from_config(launcher_class, configuration)
 
-        launcher.run(self.entity, self.start_pose, extra_config, process_terminated)
+        await launcher.run(self.entity, self.start_pose, extra_config, process_terminated)
         return launcher
 
     def launch_command(self, configuration):

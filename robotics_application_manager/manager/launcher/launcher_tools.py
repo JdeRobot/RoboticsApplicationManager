@@ -83,11 +83,11 @@ class LauncherTools(BaseModel):
             launcher = await self.launch_module(tool, module, consumer)
             self.launchers.append(launcher)
 
-    def terminate(self):
+    async def terminate(self):
         LogManager.logger.info("Terminating tools launchers")
         for launcher in self.launchers:
             if launcher.is_running():
-                launcher.terminate()
+                await launcher.terminate()
         self.launchers = []
 
     async def launch_module(self, name, configuration, consumer):
@@ -110,7 +110,7 @@ class LauncherTools(BaseModel):
             config = self.tools_config[name]
 
         launcher = await launcher_class.from_config(launcher_class, configuration)
-        launcher.run(config, process_terminated)
+        await launcher.run(config, process_terminated)
         return launcher
 
     def pause(self):

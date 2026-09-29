@@ -30,6 +30,7 @@ from uuid import uuid4
 from transitions.extensions import AsyncMachine
 from robotics_application_manager.comms import (
     ManagerConsumerMessageException,
+    ManagerConsumerMessage,
     ManagerConsumer,
 )
 from robotics_application_manager.libs import (
@@ -448,9 +449,7 @@ class Manager:
         )
 
     async def on_prepare_tools(self, event):
-
         LogManager.logger.info("Tools transition started")
-
         cfg_dict = event.kwargs.get("data", {})
         tools = cfg_dict["tools"]
         config = cfg_dict["config"]
@@ -831,7 +830,7 @@ class Manager:
         if needs_compile:
             compile_process = subprocess.Popen(
                 [
-                    "cd /workspace/code && source /opt/ros/humble/setup.bash && colcon build && source install/setup.bash && cd ../.."
+                    "cd /workspace/code && source /opt/ros/lyrical/setup.bash && colcon build && source install/setup.bash && cd ../.."
                 ],
                 stdin=open("/dev/pts/" + console_fd, "r"),
                 stdout=open("/dev/pts/" + console_fd, "w"),
@@ -843,7 +842,9 @@ class Manager:
             )
             returncode = compile_process.wait()
             if returncode != 0:
-                raise Exception("Failed to compile")
+                # raise Exception("Failed to compile")
+                LogManager.logger.info("Failed to compile")
+                return
 
         for entrypoint in entrypoints:
             if not os.path.isfile(entrypoint):
@@ -911,7 +912,7 @@ class Manager:
 
     async def on_terminate_tools(self, event):
 
-        self.tools_launcher.terminate()
+        await self.tools_launcher.terminate()
         self.tools_launcher = None
 
     async def on_terminate_world(self, event):
@@ -925,12 +926,12 @@ class Manager:
             event: The event object associated with the termination request.
         """
         if self.scene_launcher is not None:
-            self.scene_launcher.terminate()
+            await self.scene_launcher.terminate()
             self.scene_launcher = None
             self.world_type = None
 
         for launcher in self.robot_launchers:
-            launcher.terminate()
+            await launcher.terminate()
         self.robot_launchers = []
 
     async def on_disconnect(self, event):
@@ -940,7 +941,7 @@ class Manager:
         This method stops all running processes,
         terminates launchers, and restarts the script.
         """
-
+        LogManager.logger.info("-------------------Disconnecting--------------------------")
         try:
             for process in self.application_processes:
                 stop_process_and_children(process)
@@ -950,20 +951,20 @@ class Manager:
 
         if self.tools_launcher:
             try:
-                self.tools_launcher.terminate()
+                await self.tools_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating tools launcher")
 
         try:
             for launcher in self.robot_launchers:
-                launcher.terminate()
+                await launcher.terminate()
             self.robot_launchers = []
         except Exception as e:
             LogManager.logger.exception("Exception terminating robot launcher")
 
         if self.scene_launcher:
             try:
-                self.scene_launcher.terminate()
+                await self.scene_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating scene launcher")
 
@@ -974,6 +975,7 @@ class Manager:
             return
 
         await self.trigger(message.command, data=message.data or None)
+
         response = {"message": f"Exercise state changed to {self.state}"}
         await self.consumer.send_message(message.response(response))
 
@@ -1044,7 +1046,7 @@ class Manager:
         """
 
         for robot_launcher in self.robot_launchers:
-            robot_launcher.terminate()
+            await robot_launcher.terminate()
 
         try:
             entities = []
@@ -1071,17 +1073,16 @@ class Manager:
             f"Starting RAM consumer in {self.host}:{self.port}"
         )
 
-        self.consumer.start()
+        await self.consumer.start()
 
         async def signal_handler(sign, frame):
-            print("\nprogram exiting gracefully")
+            LogManager.logger.info("Program exiting gracefully")
             self.running = False
 
             try:
                 await self.consumer.stop()
             except Exception as e:
                 LogManager.logger.exception("Exception stopping consumer")
-
             try:
                 for process in self.application_processes:
                     stop_process_and_children(process)
@@ -1091,23 +1092,22 @@ class Manager:
 
             if self.tools_launcher:
                 try:
-                    self.tools_launcher.terminate()
+                    await self.tools_launcher.terminate()
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating tools launcher")
 
             try:
                 for launcher in self.robot_launchers:
-                    launcher.terminate()
+                    await launcher.terminate()
                 self.robot_launchers = []
             except Exception as e:
                 LogManager.logger.exception("Exception terminating robot launcher")
 
             if self.scene_launcher:
                 try:
-                    self.scene_launcher.terminate()
+                    await self.scene_launcher.terminate()
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating scene launcher")
-
             exit()
 
         signal.signal(signal.SIGINT, signal_handler)
@@ -1121,7 +1121,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "host", type=str, help="Host to listen to  (0.0.0.0 or all hosts)"
+        "host", type=str, help="Host to listen to (0.0.0.0 or all hosts)"
     )
     parser.add_argument("port", type=int, help="Port to listen to")
     args = parser.parse_args()
