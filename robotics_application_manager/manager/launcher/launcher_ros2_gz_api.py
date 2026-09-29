@@ -11,9 +11,9 @@ from .launcher_interface import (
 from robotics_application_manager.manager.docker_thread import DockerThread
 import subprocess
 from robotics_application_manager import LogManager
-from gz.transport13 import Node
-from gz.msgs10.empty_pb2 import Empty
-from gz.msgs10.scene_pb2 import Scene
+from gz.transport import Node
+from gz.msgs.empty_pb2 import Empty
+from gz.msgs.scene_pb2 import Scene
 import logging
 
 

@@ -13,19 +13,25 @@ class LauncherWebGui:
     def __init__(self, type, module, internal_port, consumer):
         self.internal_port = internal_port
         self.consumer = consumer
-        self.server = Server(self.internal_port, self.update)
 
-    def update(self, data):
+    def __await__(self):
+        return self.create().__await__()
+
+    async def create(self):
+        self.server = await Server(self.internal_port, self.update)
+        return self
+
+    async def update(self, data):
         LogManager.logger.debug(f"Sending update to client")
         if self.consumer is not None:
-            self.consumer.send_message({"update": data}, command="update")
+            await self.consumer.send_message({"update": data}, command="update")
 
     def run(self, config_file, callback):
         self.server.start()
         self.running = True
 
-    def get_msg(self, data):
-        self.server.send(data)
+    async def get_msg(self, data):
+        await self.server.send(data)
 
     def is_running(self):
         return self.running
@@ -46,6 +52,6 @@ class LauncherWebGui:
     def died(self):
         pass
 
-    def from_config(cls, config):
-        obj = cls(**config)
+    async def from_config(cls, config):
+        obj = await cls(**config)
         return obj

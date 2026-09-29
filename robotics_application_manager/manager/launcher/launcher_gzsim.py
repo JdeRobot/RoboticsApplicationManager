@@ -13,11 +13,11 @@ import stat
 from typing import List, Any
 from robotics_application_manager import LogManager
 
-from gz.msgs10.world_control_pb2 import WorldControl
-from gz.msgs10.world_reset_pb2 import WorldReset
-from gz.msgs10.entity_pb2 import Entity
-from gz.msgs10.boolean_pb2 import Boolean
-from gz.transport13 import Node
+from gz.msgs.world_control_pb2 import WorldControl
+from gz.msgs.world_reset_pb2 import WorldReset
+from gz.msgs.entity_pb2 import Entity
+from gz.msgs.boolean_pb2 import Boolean
+from gz.transport import Node
 
 
 class LauncherGzsim(ILauncher):

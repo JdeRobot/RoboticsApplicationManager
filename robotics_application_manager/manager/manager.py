@@ -23,10 +23,11 @@ import base64
 import zipfile
 import jedi
 import traceback
+import asyncio
 
 from queue import Queue
 from uuid import uuid4
-from transitions import Machine
+from transitions.extensions import AsyncMachine
 from robotics_application_manager.comms import (
     ManagerConsumerMessageException,
     ManagerConsumer,
@@ -211,7 +212,7 @@ class Manager:
             host (str): The host address to listen to.
             port (int): The port number to listen to.
         """
-        self.machine = Machine(
+        self.machine = AsyncMachine(
             model=self,
             states=Manager.states,
             transitions=Manager.transitions,
@@ -220,8 +221,7 @@ class Manager:
             after_state_change=self.state_change,
         )
         self.ros_version = subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])
-        self.queue = Queue()
-        self.consumer = ManagerConsumer(host, port, self.queue)
+        self.consumer = None
         self.scene_launcher = None
         self.world_type = None
         self.robot_launchers = []
@@ -230,6 +230,8 @@ class Manager:
         self.application_processes = []
         self.running = True
         self.linter = Lint()
+        self.host = host
+        self.port = port
 
         # Creates workspace directories
         worlds_dir = "/workspace/worlds"
@@ -242,7 +244,7 @@ class Manager:
         if not os.path.isdir(binaries_dir):
             os.makedirs(binaries_dir)
 
-    def state_change(self, event):
+    async def state_change(self, event):
         """
         Handle actions to be performed after a state change in the state machine.
 
@@ -251,9 +253,9 @@ class Manager:
         """
         LogManager.logger.info(f"State changed to {self.state}")
         if self.consumer is not None:
-            self.consumer.send_message({"state": self.state}, command="state-changed")
+            await self.consumer.send_message({"state": self.state}, command="state-changed")
 
-    def update(self, data):
+    async def update(self, data):
         """
         Send an update message to the client with the provided data.
 
@@ -262,9 +264,9 @@ class Manager:
         """
         LogManager.logger.debug("Sending update to client")
         if self.consumer is not None:
-            self.consumer.send_message({"update": data}, command="update")
+            await self.consumer.send_message({"update": data}, command="update")
 
-    def update_bt_studio(self, data):
+    async def update_bt_studio(self, data):
         """
         Send an update message to the client for BT Studio with the provided data.
 
@@ -273,9 +275,9 @@ class Manager:
         """
         LogManager.logger.debug("Sending update to client")
         if self.consumer is not None:
-            self.consumer.send_message({"update": data}, command="update")
+            await self.consumer.send_message({"update": data}, command="update")
 
-    def on_connect(self, event):
+    async def on_connect(self, event):
         """
         Triggered when the application transitions to the 'connected' state.
 
@@ -289,7 +291,7 @@ class Manager:
         - `ros_version`: The current ROS (Robot Operating System) distribution version.
         - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
         """
-        self.consumer.send_message(
+        await self.consumer.send_message(
             {
                 "robotics_backend_version": subprocess.check_output(
                     ["bash", "-c", "echo $IMAGE_TAG"]
@@ -300,7 +302,7 @@ class Manager:
             command="introspection",
         )
 
-    def on_launch_world(self, event):
+    async def on_launch_world(self, event):
         """
         Handle the 'launch' event, transitioning the application from 'connected' to 'ready' state.
 
@@ -396,19 +398,19 @@ class Manager:
             self.robot_configs.append(robot_cfg)
             LogManager.logger.info(str(robot_launcher))
 
-        self.scene_launcher.run()
+        await self.scene_launcher.run()
 
         robots_data = zip(self.robot_launchers, self.robot_configs)
         entities = []
         for launcher, cfg in robots_data:
-            launcher.run(cfg["entity"], cfg["start_pose"], cfg["extra_config"])
+            await launcher.run(cfg["entity"], cfg["start_pose"], cfg["extra_config"])
             entities.append(cfg["entity"])
 
         self.scene_launcher.wait_robots_spawn(entities)
 
         LogManager.logger.info("Launch transition finished")
 
-    def prepare_custom_world(self, cfg_dict):
+    async def prepare_custom_world(self, cfg_dict):
         """
         Prepare and extract a custom world from a base64-encoded zip file.
 
@@ -445,7 +447,7 @@ class Manager:
             '/bin/bash -c "cd /workspace/worlds; source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."'
         )
 
-    def on_prepare_tools(self, event):
+    async def on_prepare_tools(self, event):
 
         LogManager.logger.info("Tools transition started")
 
@@ -457,7 +459,7 @@ class Manager:
             world_type=self.world_type, tools=tools, tools_config=config
         )
 
-        self.tools_launcher.run(self.consumer)
+        await self.tools_launcher.run(self.consumer)
         LogManager.logger.info("Tools transition finished")
 
     def write_to_tool_terminal(self, msg):
@@ -481,7 +483,7 @@ class Manager:
             with open(i, "w") as console:
                 console.write(msg)
 
-    def on_style_check_application(self, event):
+    async def on_style_check_application(self, event):
         """
         Handle the 'style_check' event.
 
@@ -527,7 +529,7 @@ class Manager:
         self.write_to_tool_terminal(errors + "\n\n")
         raise Exception(errors)
 
-    def on_code_analysis(self, event):
+    async def on_code_analysis(self, event):
         """
         Handle the 'code_analysis' event.
 
@@ -592,7 +594,7 @@ class Manager:
             command="code-analysis",
         )
 
-    def on_code_format(self, event):
+    async def on_code_format(self, event):
         """
         Handle the 'code_format' event.
 
@@ -764,7 +766,7 @@ class Manager:
         except Exception as e:
             LogManager.logger.exception(f"Error refreshing GTK applications: {e}")
 
-    def on_run_application(self, event):
+    async def on_run_application(self, event):
         """
         Handle the 'run_application' event.
 
@@ -886,7 +888,7 @@ class Manager:
 
         LogManager.logger.info("Run application transition finished")
 
-    def on_terminate_application(self, event):
+    async def on_terminate_application(self, event):
         """
         Handle the 'terminate_application' event.
 
@@ -901,19 +903,18 @@ class Manager:
                 stop_process_and_children(process)
             except Exception:
                 LogManager.logger.exception("No application running")
-                print(traceback.format_exc())
 
         if len(self.application_processes) > 0:
             self.pause_sim()
-            self.reset_sim()
+            await self.reset_sim()
             self.application_processes = []
 
-    def on_terminate_tools(self, event):
+    async def on_terminate_tools(self, event):
 
         self.tools_launcher.terminate()
         self.tools_launcher = None
 
-    def on_terminate_world(self, event):
+    async def on_terminate_world(self, event):
         """
         Handle the 'terminate_world' event.
 
@@ -932,7 +933,7 @@ class Manager:
             launcher.terminate()
         self.robot_launchers = []
 
-    def on_disconnect(self, event):
+    async def on_disconnect(self, event):
         """
         Handle the 'disconnect' event.
 
@@ -966,17 +967,17 @@ class Manager:
             except Exception as e:
                 LogManager.logger.exception("Exception terminating scene launcher")
 
-    def process_message(self, message):
+    async def process_message(self, message):
         if message.command == "gui":
             if self.tools_launcher is not None:
-                self.tools_launcher.pass_msg(message.data)
+                await self.tools_launcher.pass_msg(message.data)
             return
 
-        self.trigger(message.command, data=message.data or None)
+        await self.trigger(message.command, data=message.data or None)
         response = {"message": f"Exercise state changed to {self.state}"}
-        self.consumer.send_message(message.response(response))
+        await self.consumer.send_message(message.response(response))
 
-    def on_pause(self, msg):
+    async def on_pause(self, msg):
         if len(self.application_processes) > 0:
             for process in self.application_processes:
                 proc = psutil.Process(process.pid)
@@ -993,9 +994,9 @@ class Manager:
                 "Application process was None during pause. Calling termination."
             )
             self.pause_sim()
-            self.reset_sim()
+            await self.reset_sim()
 
-    def on_resume(self, msg):
+    async def on_resume(self, msg):
         """
         Resume the application process if it exists, otherwise reset the simulation.
 
@@ -1017,7 +1018,7 @@ class Manager:
             LogManager.logger.warning(
                 "Application process was None during resume. Calling termination."
             )
-            self.reset_sim()
+            await self.reset_sim()
 
     def pause_sim(self):
         try:
@@ -1033,7 +1034,7 @@ class Manager:
             self.write_to_tool_terminal(f"{e}\n\n")
             raise Exception("Failed to start simulator")
 
-    def reset_sim(self):
+    async def reset_sim(self):
         """
         Reset the simulation environment and relaunch the robot if applicable.
 
@@ -1056,27 +1057,28 @@ class Manager:
 
         robots_data = zip(self.robot_launchers, self.robot_configs)
         for launcher, cfg in robots_data:
-            launcher.run(cfg["entity"], cfg["start_pose"], cfg["extra_config"])
+            await launcher.run(cfg["entity"], cfg["start_pose"], cfg["extra_config"])
 
-    def start(self):
+    async def start(self):
         """
         Start the RAM.
 
         RAM must be run in main thread to be able to handle signaling other processes,
         for instance ROS launcher.
         """
+        self.consumer = await ManagerConsumer(self.host, self.port, self.process_message)
         LogManager.logger.info(
-            f"Starting RAM consumer in {self.consumer.server}:{self.consumer.port}"
+            f"Starting RAM consumer in {self.host}:{self.port}"
         )
 
         self.consumer.start()
 
-        def signal_handler(sign, frame):
+        async def signal_handler(sign, frame):
             print("\nprogram exiting gracefully")
             self.running = False
 
             try:
-                self.consumer.stop()
+                await self.consumer.stop()
             except Exception as e:
                 LogManager.logger.exception("Exception stopping consumer")
 
@@ -1111,22 +1113,7 @@ class Manager:
         signal.signal(signal.SIGINT, signal_handler)
 
         while self.running:
-            message = None
-            try:
-                if self.queue.empty():
-                    time.sleep(0.1)
-                else:
-                    message = self.queue.get()
-                    self.process_message(message)
-            except Exception as e:
-                if message is not None:
-                    ex = ManagerConsumerMessageException(id=message.id, message=str(e))
-                else:
-                    ex = ManagerConsumerMessageException(
-                        id=str(uuid4()), message=str(e)
-                    )
-                self.consumer.send_message(ex)
-                LogManager.logger.error(e, exc_info=True)
+            await asyncio.sleep(1)
 
 
 if __name__ == "__main__":
@@ -1140,4 +1127,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     RAM = Manager(args.host, args.port)
-    RAM.start()
+    asyncio.run(RAM.start())
