@@ -3,9 +3,12 @@ import json
 
 from websockets.asyncio.server import serve
 import asyncio
+from uuid import uuid4
 
 from robotics_application_manager import LogManager
-
+from robotics_application_manager.comms import (
+    ManagerConsumerMessageException,
+)
 
 class Server:
     def __init__(
@@ -28,7 +31,7 @@ class Server:
 
     # A method that creates an instance of the class asynchronously
     async def create(self):
-        self.server = await serve(self.manage_conection, self.host, self.port, start_serving=False)
+        self.server = await serve(self.manage_conection, self.host, self.port, start_serving=False,ping_interval=None, ping_timeout=None)
         return self
 
     async def manage_conection(self, websocket):
@@ -43,7 +46,8 @@ class Server:
             LogManager.logger.info(f"Client connected: {self.client}")
 
             await self.process_msg(websocket)
-        except:
+        except Exception as e:
+          LogManager.logger.info(f"Client disconnected: {str(e)}")
           pass
         finally:
             LogManager.logger.info("Connection with client closed")
@@ -57,7 +61,7 @@ class Server:
             await self.update_callback(json_msg)
         except Exception as e:
             ex = ManagerConsumerMessageException(id=str(uuid4()), message=str(e))
-            await self.send_message(ex)
+            await self.send(ex.consumer_message())
             LogManager.logger.error(e, exc_info=True)
 
     async def send(self, data):

@@ -1126,5 +1126,5 @@ if __name__ == "__main__":
     parser.add_argument("port", type=int, help="Port to listen to")
     args = parser.parse_args()
 
-    RAM = Manager(args.host, args.port)
+    RAM = Manager(args.host, 7165)
     asyncio.run(RAM.start())
