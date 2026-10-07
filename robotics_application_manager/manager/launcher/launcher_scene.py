@@ -55,20 +55,20 @@ class LauncherScene(BaseModel):
     ros_version: int = get_ros_version()
     launchers: Optional[ILauncher] = []
 
-    def run(self):
+    async def run(self):
         for module in worlds[self.type][str(self.ros_version)]:
             module["launch_file"] = self.launch_file_path
-            launcher = self.launch_module(module)
+            launcher = await self.launch_module(module)
             self.launchers.append(launcher)
 
-    def terminate(self):
+    async def terminate(self):
         LogManager.logger.info("Terminating scenes launchers")
         if self.launchers:
             for launcher in self.launchers:
-                launcher.terminate()
+                await launcher.terminate()
         self.launchers = []
 
-    def launch_module(self, configuration):
+    async def launch_module(self, configuration):
         def process_terminated(name, exit_code):
             LogManager.logger.info(
                 f"LauncherEngine: {name} exited with code {exit_code}"
@@ -79,8 +79,8 @@ class LauncherScene(BaseModel):
         launcher_module_name = configuration["module"]
         launcher_module = f"{self.module}.launcher_{launcher_module_name}.Launcher{class_from_module(launcher_module_name)}"
         launcher_class = get_class(launcher_module)
-        launcher = launcher_class.from_config(launcher_class, configuration)
-        launcher.run(process_terminated)
+        launcher = await launcher_class.from_config(launcher_class, configuration)
+        await launcher.run(process_terminated)
         return launcher
 
     def launch_command(self, configuration):

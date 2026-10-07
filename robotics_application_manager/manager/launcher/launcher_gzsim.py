@@ -13,11 +13,11 @@ import stat
 from typing import List, Any
 from robotics_application_manager import LogManager
 
-from gz.msgs10.world_control_pb2 import WorldControl
-from gz.msgs10.world_reset_pb2 import WorldReset
-from gz.msgs10.entity_pb2 import Entity
-from gz.msgs10.boolean_pb2 import Boolean
-from gz.transport13 import Node
+from gz.msgs.world_control_pb2 import WorldControl
+from gz.msgs.world_reset_pb2 import WorldReset
+from gz.msgs.entity_pb2 import Entity
+from gz.msgs.boolean_pb2 import Boolean
+from gz.transport import Node
 
 
 class LauncherGzsim(ILauncher):
@@ -31,7 +31,7 @@ class LauncherGzsim(ILauncher):
     acceptsMsgs: bool = False
     gz_vnc: Any = Vnc_server()
 
-    def run(self, config_file, callback):
+    async def run(self, config_file, callback):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
@@ -72,7 +72,7 @@ class LauncherGzsim(ILauncher):
     def is_running(self):
         return self.running
 
-    def terminate(self):
+    async def terminate(self):
         LogManager.logger.info(f"Terminating gz tool")
         self.gz_vnc.terminate()
         for thread in self.threads[:]:

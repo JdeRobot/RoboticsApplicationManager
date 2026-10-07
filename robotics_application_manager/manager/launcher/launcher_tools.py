@@ -71,7 +71,7 @@ class LauncherTools(BaseModel):
     tools_config: Optional[dict] = None
     launchers: Optional[ILauncher] = []
 
-    def run(self, consumer):
+    async def run(self, consumer):
         for tool in self.tools:
             if tool == "simulator":
                 if self.world_type is None or self.world_type == "physical":
@@ -80,17 +80,17 @@ class LauncherTools(BaseModel):
             module = tools[tool]
             if module["module"] is None:
                 continue
-            launcher = self.launch_module(tool, module, consumer)
+            launcher = await self.launch_module(tool, module, consumer)
             self.launchers.append(launcher)
 
-    def terminate(self):
+    async def terminate(self):
         LogManager.logger.info("Terminating tools launchers")
         for launcher in self.launchers:
             if launcher.is_running():
-                launcher.terminate()
+                await launcher.terminate()
         self.launchers = []
 
-    def launch_module(self, name, configuration, consumer):
+    async def launch_module(self, name, configuration, consumer):
         def process_terminated(name, exit_code):
             LogManager.logger.info(
                 f"LauncherEngine: {name} exited with code {exit_code}"
@@ -109,8 +109,8 @@ class LauncherTools(BaseModel):
         if self.tools_config is not None and name in self.tools_config:
             config = self.tools_config[name]
 
-        launcher = launcher_class.from_config(launcher_class, configuration)
-        launcher.run(config, process_terminated)
+        launcher = await launcher_class.from_config(launcher_class, configuration)
+        await launcher.run(config, process_terminated)
         return launcher
 
     def pause(self):
@@ -125,10 +125,10 @@ class LauncherTools(BaseModel):
         for launcher in self.launchers:
             launcher.reset(robot_entities)
 
-    def pass_msg(self, data):
+    async def pass_msg(self, data):
         for launcher in self.launchers:
             if launcher.acceptsMsgs:
-                launcher.get_msg(data)
+                await launcher.get_msg(data)
 
     def launch_command(self, configuration):
         pass

@@ -11,9 +11,9 @@ from .launcher_interface import (
 from robotics_application_manager.manager.docker_thread import DockerThread
 import subprocess
 from robotics_application_manager import LogManager
-from gz.transport13 import Node
-from gz.msgs10.empty_pb2 import Empty
-from gz.msgs10.scene_pb2 import Scene
+from gz.transport import Node
+from gz.msgs.empty_pb2 import Empty
+from gz.msgs.scene_pb2 import Scene
 import logging
 
 
@@ -23,7 +23,7 @@ class LauncherRos2GzApi(ILauncher):
     launch_file: str
     threads: List[Any] = []
 
-    def run(self, callback):
+    async def run(self, callback):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
@@ -43,7 +43,7 @@ class LauncherRos2GzApi(ILauncher):
         exercise_launch_thread.start()
         self.threads.append(exercise_launch_thread)
 
-    def terminate(self):
+    async def terminate(self):
         LogManager.logger.info(f"Terminating world launcher")
         for thread in self.threads[:]:
             if thread.is_alive():

@@ -17,7 +17,7 @@ class LauncherConsole(ILauncher):
     threads: List[Any] = []
     console_vnc: Any = Vnc_server()
 
-    def run(self, config_file, callback):
+    async def run(self, config_file, callback):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = False
 
@@ -52,7 +52,7 @@ class LauncherConsole(ILauncher):
     def is_running(self):
         return self.running
 
-    def terminate(self):
+    async def terminate(self):
         LogManager.logger.info(f"Terminating console tool")
         self.console_vnc.terminate()
         for thread in self.threads[:]:
