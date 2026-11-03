@@ -44,18 +44,6 @@ tools = {
         "file": "/tmp/tree_state",
         "consumer": None,
     },
-    "webcam": {
-        "type": "module",
-        "module": None,
-        "internal_port": 2303,
-        "consumer": None,
-    },
-    "video": {
-        "type": "module",
-        "module": None,
-        "internal_port": 2303,
-        "consumer": None,
-    },
 }
 
 simulator = {
@@ -74,8 +62,6 @@ class LauncherTools(BaseModel):
     async def run(self, consumer):
         for tool in self.tools:
             if tool == "simulator":
-                if self.world_type is None or self.world_type == "physical":
-                    continue
                 tool = simulator[self.world_type]["tool"]
             module = tools[tool]
             if module["module"] is None:

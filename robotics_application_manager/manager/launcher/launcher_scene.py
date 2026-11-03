@@ -56,6 +56,8 @@ class LauncherScene(BaseModel):
     launchers: Optional[ILauncher] = []
 
     async def run(self):
+        if self.type is None or self.type == str(None):
+          return
         for module in worlds[self.type][str(self.ros_version)]:
             module["launch_file"] = self.launch_file_path
             launcher = await self.launch_module(module)
