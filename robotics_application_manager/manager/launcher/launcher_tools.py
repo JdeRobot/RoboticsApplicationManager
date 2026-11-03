@@ -8,8 +8,8 @@ from .launcher_interface import ILauncher
 
 tools = {
     "console": {
+        "type": "module",
         "module": "console",
-        "display": ":1",
         "external_port": 6082,
         "internal_port": 5901,
     },
