@@ -869,7 +869,7 @@ class Manager:
                 command,
                 stdin=open("/dev/pts/" + console_fd, "r"),
                 stdout=open("/dev/pts/" + console_fd, "w"),
-                stderr=sys.stdout,
+                stderr=subprocess.STDOUT,
                 bufsize=1024,
                 universal_newlines=True,
                 shell=shell,
