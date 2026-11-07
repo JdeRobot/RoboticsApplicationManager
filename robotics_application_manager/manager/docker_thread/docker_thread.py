@@ -10,23 +10,36 @@ import sys
 class DockerThread(threading.Thread):
     """Threaded Docker Thread Class"""
 
-    def __init__(self, cmd, shell=True):
+    def __init__(self, cmd, shell=True, debug=False):
         threading.Thread.__init__(self)
         self.cmd = cmd
         self.process = None
         self.shell = shell
+        self.debug = debug
 
     def run(self):
-        self.process = subprocess.Popen(
-            self.cmd,
-            shell=self.shell,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            start_new_session=True,
-            bufsize=1024,
-            universal_newlines=True,
-            executable="/bin/bash",
-        )
+        if self.debug:
+          self.process = subprocess.Popen(
+              self.cmd,
+              shell=self.shell,
+              stdout=sys.stdout,
+              stderr=sys.stdout,
+              start_new_session=True,
+              bufsize=1024,
+              universal_newlines=True,
+              executable="/bin/bash",
+          )
+        else:
+          self.process = subprocess.Popen(
+              self.cmd,
+              shell=self.shell,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.PIPE,
+              start_new_session=True,
+              bufsize=1024,
+              universal_newlines=True,
+              executable="/bin/bash",
+          )
         self.process.communicate()
 
     def terminate(self):

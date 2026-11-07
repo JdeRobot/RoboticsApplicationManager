@@ -5,20 +5,26 @@ from pydantic import BaseModel
 
 
 class ILauncher(BaseModel):
-    def run(self, callback: callable):
+    def __await__(self):
+        return self.create().__await__()
+
+    async def create(self):
+        return self
+
+    async def run(self, callback: callable):
         raise NotImplemented("Launcher must implement run method")
 
     def is_running(self):
         raise NotImplemented("Launcher must implement run method")
 
-    def terminate(self):
+    async def terminate(self):
         raise NotImplemented("Launcher must implement run method")
 
     def died(self, callback):
         raise NotImplemented("Launcher must implement run method")
 
-    def from_config(cls, config):
-        obj = cls(**config)
+    async def from_config(cls, config):
+        obj = await cls(**config)
         return obj
 
     @staticmethod

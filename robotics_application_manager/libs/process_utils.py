@@ -8,7 +8,7 @@ from subprocess import Popen
 import subprocess
 import zipfile
 import base64
-
+import importlib
 import psutil
 
 from robotics_application_manager import LogManager
@@ -17,10 +17,9 @@ from robotics_application_manager import LogManager
 def get_class(kls):
     parts = kls.split(".")
     module = ".".join(parts[:-1])
-    m = __import__(module)
-    for comp in parts[1:]:
-        m = getattr(m, comp)
-    return m
+    m = importlib.import_module(module)
+    imp_class = getattr(m,parts[-1])
+    return imp_class
 
 
 def get_class_from_file(file_path: str, class_name: str):

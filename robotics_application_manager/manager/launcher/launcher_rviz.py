@@ -26,7 +26,7 @@ class LauncherRviz(ILauncher):
     threads: List[Any] = []
     vnc: Any = Vnc_server()
 
-    def run(self, config_file, callback):
+    async def run(self, config_file, callback):
         """
         Launches an RViz instance with a specific display configuration.
 
@@ -72,7 +72,7 @@ class LauncherRviz(ILauncher):
     def is_running(self):
         return self.running
 
-    def terminate(self):
+    async def terminate(self):
         LogManager.logger.info(f"Terminating rviz tool")
         self.vnc.terminate()
         for thread in self.threads[:]:

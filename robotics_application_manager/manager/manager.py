@@ -23,12 +23,14 @@ import base64
 import zipfile
 import jedi
 import traceback
+import asyncio
 
 from queue import Queue
 from uuid import uuid4
-from transitions import Machine
+from transitions.extensions import AsyncMachine
 from robotics_application_manager.comms import (
     ManagerConsumerMessageException,
+    ManagerConsumerMessage,
     ManagerConsumer,
 )
 from robotics_application_manager.libs import (
@@ -146,59 +148,6 @@ class Manager:
             "dest": "=",
             "before": "on_style_check_application",
         },
-        # Code analysis
-        {
-            "trigger": "code_analysis",
-            "source": [
-                "idle",
-                "connected",
-                "paused",
-                "world_ready",
-                "tools_ready",
-            ],
-            "dest": "=",
-            "before": "on_code_analysis",
-        },
-        # Code analysis
-        {
-            "trigger": "code_format",
-            "source": [
-                "idle",
-                "connected",
-                "paused",
-                "world_ready",
-                "tools_ready",
-            ],
-            "dest": "=",
-            "before": "on_code_format",
-        },
-        # Code analysis
-        {
-            "trigger": "code_autocomplete",
-            "source": [
-                "idle",
-                "connected",
-                "paused",
-                "world_ready",
-                "tools_ready",
-            ],
-            "dest": "=",
-            "before": "on_code_autocomplete",
-        },
-        # Theme change
-        {
-            "trigger": "change_style",
-            "source": [
-                "idle",
-                "connected",
-                "paused",
-                "world_ready",
-                "tools_ready",
-                "application_running",
-            ],
-            "dest": "=",
-            "before": "on_change_style",
-        },
     ]
 
     def __init__(self, host: str, port: int):
@@ -211,7 +160,7 @@ class Manager:
             host (str): The host address to listen to.
             port (int): The port number to listen to.
         """
-        self.machine = Machine(
+        self.machine = AsyncMachine(
             model=self,
             states=Manager.states,
             transitions=Manager.transitions,
@@ -220,8 +169,7 @@ class Manager:
             after_state_change=self.state_change,
         )
         self.ros_version = subprocess.check_output(["bash", "-c", "echo $ROS_DISTRO"])
-        self.queue = Queue()
-        self.consumer = ManagerConsumer(host, port, self.queue)
+        self.consumer = None
         self.scene_launcher = None
         self.world_type = None
         self.robot_launchers = []
@@ -230,6 +178,8 @@ class Manager:
         self.application_processes = []
         self.running = True
         self.linter = Lint()
+        self.host = host
+        self.port = port
 
         # Creates workspace directories
         worlds_dir = "/workspace/worlds"
@@ -242,7 +192,7 @@ class Manager:
         if not os.path.isdir(binaries_dir):
             os.makedirs(binaries_dir)
 
-    def state_change(self, event):
+    async def state_change(self, event):
         """
         Handle actions to be performed after a state change in the state machine.
 
@@ -251,9 +201,9 @@ class Manager:
         """
         LogManager.logger.info(f"State changed to {self.state}")
         if self.consumer is not None:
-            self.consumer.send_message({"state": self.state}, command="state-changed")
+            await self.consumer.send_message({"state": self.state}, command="state-changed")
 
-    def update(self, data):
+    async def update(self, data):
         """
         Send an update message to the client with the provided data.
 
@@ -262,9 +212,9 @@ class Manager:
         """
         LogManager.logger.debug("Sending update to client")
         if self.consumer is not None:
-            self.consumer.send_message({"update": data}, command="update")
+            await self.consumer.send_message({"update": data}, command="update")
 
-    def update_bt_studio(self, data):
+    async def update_bt_studio(self, data):
         """
         Send an update message to the client for BT Studio with the provided data.
 
@@ -273,9 +223,9 @@ class Manager:
         """
         LogManager.logger.debug("Sending update to client")
         if self.consumer is not None:
-            self.consumer.send_message({"update": data}, command="update")
+            await self.consumer.send_message({"update": data}, command="update")
 
-    def on_connect(self, event):
+    async def on_connect(self, event):
         """
         Triggered when the application transitions to the 'connected' state.
 
@@ -289,7 +239,7 @@ class Manager:
         - `ros_version`: The current ROS (Robot Operating System) distribution version.
         - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
         """
-        self.consumer.send_message(
+        await self.consumer.send_message(
             {
                 "robotics_backend_version": subprocess.check_output(
                     ["bash", "-c", "echo $IMAGE_TAG"]
@@ -300,7 +250,7 @@ class Manager:
             command="introspection",
         )
 
-    def on_launch_world(self, event):
+    async def on_launch_world(self, event):
         """
         Handle the 'launch' event, transitioning the application from 'connected' to 'ready' state.
 
@@ -396,19 +346,19 @@ class Manager:
             self.robot_configs.append(robot_cfg)
             LogManager.logger.info(str(robot_launcher))
 
-        self.scene_launcher.run()
+        await self.scene_launcher.run()
 
         robots_data = zip(self.robot_launchers, self.robot_configs)
         entities = []
         for launcher, cfg in robots_data:
-            launcher.run(cfg["entity"], cfg["start_pose"], cfg["extra_config"])
+            await launcher.run(cfg["entity"], cfg["start_pose"], cfg["extra_config"])
             entities.append(cfg["entity"])
 
         self.scene_launcher.wait_robots_spawn(entities)
 
         LogManager.logger.info("Launch transition finished")
 
-    def prepare_custom_world(self, cfg_dict):
+    async def prepare_custom_world(self, cfg_dict):
         """
         Prepare and extract a custom world from a base64-encoded zip file.
 
@@ -445,10 +395,8 @@ class Manager:
             '/bin/bash -c "cd /workspace/worlds; source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."'
         )
 
-    def on_prepare_tools(self, event):
-
+    async def on_prepare_tools(self, event):
         LogManager.logger.info("Tools transition started")
-
         cfg_dict = event.kwargs.get("data", {})
         tools = cfg_dict["tools"]
         config = cfg_dict["config"]
@@ -457,7 +405,7 @@ class Manager:
             world_type=self.world_type, tools=tools, tools_config=config
         )
 
-        self.tools_launcher.run(self.consumer)
+        await self.tools_launcher.run(self.consumer)
         LogManager.logger.info("Tools transition finished")
 
     def write_to_tool_terminal(self, msg):
@@ -481,290 +429,7 @@ class Manager:
             with open(i, "w") as console:
                 console.write(msg)
 
-    def on_style_check_application(self, event):
-        """
-        Handle the 'style_check' event.
-
-        Does not change the state and returns the current state.
-
-        It uses the linter to check if the style of the code is correct, if there
-        are errors it writes them in all the consoles and raises the errors.
-
-        Parameters:
-            event (Event): Has the fields code (user code), exercise_id and type (bt-studio or robotics-academy) .
-
-        Raises:
-            Exception: with the errors found in the linter
-        """
-        # TODO: redo
-
-        # Extract app config
-        app_cfg = event.kwargs.get("data", {})
-        try:
-            if app_cfg["type"] == "bt-studio":
-                return
-        except Exception:
-            pass
-
-        exercise_id = app_cfg["exercise_id"]
-        code = app_cfg["code"]
-
-        # Make code backwards compatible
-        code = code.replace("from GUI import GUI", "import GUI")
-        code = code.replace("from HAL import HAL", "import HAL")
-
-        # Create executable app
-        errors = self.linter.evaluate_code(
-            code,
-            exercise_id,
-            self.ros_version,
-            py_lint_source="pylint_checker_style.py",
-        )
-
-        if errors == "":
-            errors = "No errors found"
-
-        self.write_to_tool_terminal(errors + "\n\n")
-        raise Exception(errors)
-
-    def on_code_analysis(self, event):
-        """
-        Handle the 'code_analysis' event.
-
-        Does not change the state and returns the current state.
-        It uses pylint to check for the errors and warnings in the code.
-
-        Parameters:
-            event (Event): Has the fields code (user code) and disable_errors (disable errors id for pylint) .
-
-        Returns:
-            Sends the output of the pylint command in the code-analysis event for the frontend.
-        """
-        # Extract app config
-        app_cfg = event.kwargs.get("data", {})
-        code_string = app_cfg["code"]
-        disable_error_ids = app_cfg["disable_errors"]
-
-        # if code string is empty
-        if not code_string:
-            LogManager.logger.info("User code not found")
-            return
-
-        # Save the code string to a temporary file
-        with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_file:
-            temp_file.write(code_string.encode("utf-8"))
-            temp_file_path = temp_file.name
-
-        # terminal command
-        command = [
-            "pylint",
-            "--output-format=json",
-        ] + [temp_file_path]
-        # '--extension-pkg-whitelist=cv2'
-
-        # Add the disable option for specific error IDs
-        if disable_error_ids:
-            disable_str = ",".join(disable_error_ids)
-            command.append(f"--disable={disable_str}")
-
-        # run the command
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # Decode the results
-        pylint_output = result.stdout.decode("utf-8")
-        pylint_errors = result.stderr.decode("utf-8")
-
-        # Parse the JSON output if pylint output is not empty
-        try:
-            pylint_json = json.loads(pylint_output) if pylint_output else []
-        except json.JSONDecodeError as e:
-            LogManager.logger.info(f"Failed to parse JSON: {str(e)}")
-
-        # Clean up the temporary file after Pylint run
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-
-        if pylint_errors:
-            LogManager.logger.info("Found errors in code")
-
-        self.consumer.send_message(
-            {"pylint_output": pylint_json, "pylint_errors": pylint_errors},
-            command="code-analysis",
-        )
-
-    def on_code_format(self, event):
-        """
-        Handle the 'code_format' event.
-
-        Does not change the state and returns the current state.
-        It uses the black formatter to format the user code.
-
-        Parameters:
-            event (Event): Has the fields code (user code).
-
-        Returns:
-            Sends the output of the black format in
-                the code-format event for the frontend.
-        """
-        # Extract app config
-        app_cfg = event.kwargs.get("data", {})
-        code = app_cfg["code"]
-
-        # if code string is empty
-        if not code:
-            LogManager.logger.info("User code not found")
-            return
-
-        try:
-            # Format the code with Black
-            formatted_code = black.format_str(code, mode=black.Mode())
-            self.consumer.send_message(
-                {
-                    "formatted_code": formatted_code,
-                },
-                command="code-format",
-            )
-        except Exception as e:
-            LogManager.logger.info("Error formating code" + str(e))
-
-    def on_code_autocomplete(self, event):
-        """
-        Handle the 'code_autocomplete' event.
-
-        Does not change the state and returns the current state.
-        It uses jedi to find the possible autocompletions in the user code
-            given the cursor position.
-
-        Parameters:
-            event (Event): Has the fields code (user code), line and col .
-
-        Returns:
-            Sends the possible completions in
-                the code-autocomplete event for the frontend.
-        """
-        # Extract app config
-        app_cfg = event.kwargs.get("data", {})
-        code = app_cfg["code"]
-        line = app_cfg["line"]
-        col = app_cfg["col"]
-
-        jedi.settings.add_bracket_after_function = True
-
-        # if code string is empty
-        if not code:
-            LogManager.logger.info("User code not found")
-            return
-
-        if not line or not col:
-            LogManager.logger.info("User code position not found")
-            return
-
-        script = jedi.Script(code, path="/workspace/code/academy.py")
-
-        try:
-            completions = script.complete(line, col)
-            serialized_completions = serialize_completions(completions)
-
-            self.consumer.send_message(
-                {
-                    "completions": serialized_completions,
-                },
-                command="code-autocomplete",
-            )
-        except Exception as e:
-            LogManager.logger.info("Error formating code" + str(e))
-
-    def on_change_style(self, event):
-        """
-        Handle the 'change_style' event.
-
-        This method changes the GTK theme and xterm colors without restarting.
-
-        Parameters:
-            event (Event): Has the field 'theme' (dark or light) in data.
-        """
-        app_cfg = event.kwargs.get("data", {})
-        theme = app_cfg.get("theme", "dark")
-        LogManager.logger.info(f"Changing style to {theme}")
-
-        if theme == "dark":
-            # Xterm dark theme: background black, foreground white
-            xterm_cmd = "\033]11;black\007\033]10;white\007"
-            gtk_theme = "Adwaita-dark"
-        else:
-            # Xterm light theme: background white, foreground black
-            xterm_cmd = "\033]11;white\007\033]10;black\007"
-            gtk_theme = "Adwaita"
-
-        # Apply xterm theme to all active pseudoterminals
-        try:
-            self.write_to_tool_terminal(xterm_cmd)
-        except Exception as e:
-            LogManager.logger.exception(f"Error changing xterm style: {e}")
-
-        # Update GTK settings for new windows
-        # Write ~/.gtkrc-2.0
-        gtkrc_path = os.path.expanduser("~/.gtkrc-2.0")
-        try:
-            with open(gtkrc_path, "w") as f:
-                f.write(f'gtk-theme-name="{gtk_theme}"\n')
-        except Exception as e:
-            LogManager.logger.exception(f"Error writing {gtkrc_path}: {e}")
-
-        # Write ~/.config/gtk-3.0/settings.ini
-        gtk3_dir = os.path.expanduser("~/.config/gtk-3.0")
-        gtk3_path = os.path.join(gtk3_dir, "settings.ini")
-        try:
-            os.makedirs(gtk3_dir, exist_ok=True)
-            with open(gtk3_path, "w") as f:
-                f.write("[Settings]\n")
-                f.write(f"gtk-theme-name={gtk_theme}\n")
-        except Exception as e:
-            LogManager.logger.exception(f"Error writing {gtk3_path}: {e}")
-
-        # Send a signal to force GTK applications to reload their theme
-        try:
-            # Also write to lxsession config which is what LXDE actually uses
-            lxde_conf_dir = os.path.expanduser("~/.config/lxsession/LXDE")
-            lxde_conf_path = os.path.join(lxde_conf_dir, "desktop.conf")
-            os.makedirs(lxde_conf_dir, exist_ok=True)
-
-            # Read existing or create new
-            conf_lines = []
-            if os.path.exists(lxde_conf_path):
-                with open(lxde_conf_path, "r") as f:
-                    conf_lines = f.readlines()
-
-            # Ensure GTK section exists and update theme name
-            gtk_section_found = False
-            for i, line in enumerate(conf_lines):
-                if line.strip() == "[GTK]":
-                    gtk_section_found = True
-                elif gtk_section_found and line.startswith("sNet/ThemeName="):
-                    conf_lines[i] = f"sNet/ThemeName={gtk_theme}\\n"
-                    break
-            else:
-                if not gtk_section_found:
-                    conf_lines.append("[GTK]\\n")
-                conf_lines.append(f"sNet/ThemeName={gtk_theme}\\n")
-
-            with open(lxde_conf_path, "w") as f:
-                f.writelines(conf_lines)
-
-            # Reload window manager (Openbox) and LXPanel
-            subprocess.run(
-                [
-                    "bash",
-                    "-c",
-                    "export DISPLAY=:1; lxpanelctl restart; openbox --reconfigure",
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-        except Exception as e:
-            LogManager.logger.exception(f"Error refreshing GTK applications: {e}")
-
-    def on_run_application(self, event):
+    async def on_run_application(self, event):
         """
         Handle the 'run_application' event.
 
@@ -829,7 +494,7 @@ class Manager:
         if needs_compile:
             compile_process = subprocess.Popen(
                 [
-                    "cd /workspace/code && source /opt/ros/humble/setup.bash && colcon build && source install/setup.bash && cd ../.."
+                    "cd /workspace/code && source /opt/ros/lyrical/setup.bash && colcon build && source install/setup.bash && cd ../.."
                 ],
                 stdin=open("/dev/pts/" + console_fd, "r"),
                 stdout=open("/dev/pts/" + console_fd, "w"),
@@ -841,7 +506,9 @@ class Manager:
             )
             returncode = compile_process.wait()
             if returncode != 0:
-                raise Exception("Failed to compile")
+                # raise Exception("Failed to compile")
+                LogManager.logger.info("Failed to compile")
+                return
 
         for entrypoint in entrypoints:
             if not os.path.isfile(entrypoint):
@@ -869,7 +536,7 @@ class Manager:
                 command,
                 stdin=open("/dev/pts/" + console_fd, "r"),
                 stdout=open("/dev/pts/" + console_fd, "w"),
-                stderr=sys.stdout,
+                stderr=open("/dev/pts/" + console_fd, "w"),
                 bufsize=1024,
                 universal_newlines=True,
                 shell=shell,
@@ -886,7 +553,7 @@ class Manager:
 
         LogManager.logger.info("Run application transition finished")
 
-    def on_terminate_application(self, event):
+    async def on_terminate_application(self, event):
         """
         Handle the 'terminate_application' event.
 
@@ -901,19 +568,18 @@ class Manager:
                 stop_process_and_children(process)
             except Exception:
                 LogManager.logger.exception("No application running")
-                print(traceback.format_exc())
 
         if len(self.application_processes) > 0:
             self.pause_sim()
-            self.reset_sim()
+            await self.reset_sim()
             self.application_processes = []
 
-    def on_terminate_tools(self, event):
+    async def on_terminate_tools(self, event):
 
-        self.tools_launcher.terminate()
+        await self.tools_launcher.terminate()
         self.tools_launcher = None
 
-    def on_terminate_world(self, event):
+    async def on_terminate_world(self, event):
         """
         Handle the 'terminate_world' event.
 
@@ -924,22 +590,22 @@ class Manager:
             event: The event object associated with the termination request.
         """
         if self.scene_launcher is not None:
-            self.scene_launcher.terminate()
+            await self.scene_launcher.terminate()
             self.scene_launcher = None
             self.world_type = None
 
         for launcher in self.robot_launchers:
-            launcher.terminate()
+            await launcher.terminate()
         self.robot_launchers = []
 
-    def on_disconnect(self, event):
+    async def on_disconnect(self, event):
         """
         Handle the 'disconnect' event.
 
         This method stops all running processes,
         terminates launchers, and restarts the script.
         """
-
+        LogManager.logger.info("-------------------Disconnecting--------------------------")
         try:
             for process in self.application_processes:
                 stop_process_and_children(process)
@@ -949,34 +615,35 @@ class Manager:
 
         if self.tools_launcher:
             try:
-                self.tools_launcher.terminate()
+                await self.tools_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating tools launcher")
 
         try:
             for launcher in self.robot_launchers:
-                launcher.terminate()
+                await launcher.terminate()
             self.robot_launchers = []
         except Exception as e:
             LogManager.logger.exception("Exception terminating robot launcher")
 
         if self.scene_launcher:
             try:
-                self.scene_launcher.terminate()
+                await self.scene_launcher.terminate()
             except Exception as e:
                 LogManager.logger.exception("Exception terminating scene launcher")
 
-    def process_message(self, message):
+    async def process_message(self, message):
         if message.command == "gui":
             if self.tools_launcher is not None:
-                self.tools_launcher.pass_msg(message.data)
+                await self.tools_launcher.pass_msg(message.data)
             return
 
-        self.trigger(message.command, data=message.data or None)
-        response = {"message": f"Exercise state changed to {self.state}"}
-        self.consumer.send_message(message.response(response))
+        await self.trigger(message.command, data=message.data or None)
 
-    def on_pause(self, msg):
+        response = {"message": f"Exercise state changed to {self.state}"}
+        await self.consumer.send_message(message.response(response))
+
+    async def on_pause(self, msg):
         if len(self.application_processes) > 0:
             for process in self.application_processes:
                 proc = psutil.Process(process.pid)
@@ -993,9 +660,9 @@ class Manager:
                 "Application process was None during pause. Calling termination."
             )
             self.pause_sim()
-            self.reset_sim()
+            await self.reset_sim()
 
-    def on_resume(self, msg):
+    async def on_resume(self, msg):
         """
         Resume the application process if it exists, otherwise reset the simulation.
 
@@ -1017,7 +684,7 @@ class Manager:
             LogManager.logger.warning(
                 "Application process was None during resume. Calling termination."
             )
-            self.reset_sim()
+            await self.reset_sim()
 
     def pause_sim(self):
         try:
@@ -1033,7 +700,7 @@ class Manager:
             self.write_to_tool_terminal(f"{e}\n\n")
             raise Exception("Failed to start simulator")
 
-    def reset_sim(self):
+    async def reset_sim(self):
         """
         Reset the simulation environment and relaunch the robot if applicable.
 
@@ -1043,7 +710,7 @@ class Manager:
         """
 
         for robot_launcher in self.robot_launchers:
-            robot_launcher.terminate()
+            await robot_launcher.terminate()
 
         try:
             entities = []
@@ -1056,30 +723,30 @@ class Manager:
 
         robots_data = zip(self.robot_launchers, self.robot_configs)
         for launcher, cfg in robots_data:
-            launcher.run(cfg["entity"], cfg["start_pose"], cfg["extra_config"])
+            await launcher.run(cfg["entity"], cfg["start_pose"], cfg["extra_config"])
 
-    def start(self):
+    async def start(self):
         """
         Start the RAM.
 
         RAM must be run in main thread to be able to handle signaling other processes,
         for instance ROS launcher.
         """
+        self.consumer = await ManagerConsumer(self.host, self.port, self.process_message)
         LogManager.logger.info(
-            f"Starting RAM consumer in {self.consumer.server}:{self.consumer.port}"
+            f"Starting RAM consumer in {self.host}:{self.port}"
         )
 
-        self.consumer.start()
+        await self.consumer.start()
 
-        def signal_handler(sign, frame):
-            print("\nprogram exiting gracefully")
+        async def signal_handler(sign, frame):
+            LogManager.logger.info("Program exiting gracefully")
             self.running = False
 
             try:
-                self.consumer.stop()
+                await self.consumer.stop()
             except Exception as e:
                 LogManager.logger.exception("Exception stopping consumer")
-
             try:
                 for process in self.application_processes:
                     stop_process_and_children(process)
@@ -1089,44 +756,28 @@ class Manager:
 
             if self.tools_launcher:
                 try:
-                    self.tools_launcher.terminate()
+                    await self.tools_launcher.terminate()
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating tools launcher")
 
             try:
                 for launcher in self.robot_launchers:
-                    launcher.terminate()
+                    await launcher.terminate()
                 self.robot_launchers = []
             except Exception as e:
                 LogManager.logger.exception("Exception terminating robot launcher")
 
             if self.scene_launcher:
                 try:
-                    self.scene_launcher.terminate()
+                    await self.scene_launcher.terminate()
                 except Exception as e:
                     LogManager.logger.exception("Exception terminating scene launcher")
-
             exit()
 
         signal.signal(signal.SIGINT, signal_handler)
 
         while self.running:
-            message = None
-            try:
-                if self.queue.empty():
-                    time.sleep(0.1)
-                else:
-                    message = self.queue.get()
-                    self.process_message(message)
-            except Exception as e:
-                if message is not None:
-                    ex = ManagerConsumerMessageException(id=message.id, message=str(e))
-                else:
-                    ex = ManagerConsumerMessageException(
-                        id=str(uuid4()), message=str(e)
-                    )
-                self.consumer.send_message(ex)
-                LogManager.logger.error(e, exc_info=True)
+            await asyncio.sleep(1)
 
 
 if __name__ == "__main__":
@@ -1134,10 +785,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "host", type=str, help="Host to listen to  (0.0.0.0 or all hosts)"
+        "host", type=str, help="Host to listen to (0.0.0.0 or all hosts)"
     )
     parser.add_argument("port", type=int, help="Port to listen to")
     args = parser.parse_args()
 
-    RAM = Manager(args.host, args.port)
-    RAM.start()
+    RAM = Manager(args.host, 7165)
+    asyncio.run(RAM.start())

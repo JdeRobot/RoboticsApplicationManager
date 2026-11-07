@@ -37,8 +37,3 @@ class ThreadWithLoggedException(threading.Thread):
         finally:
             del self._target, self._args, self._kwargs
 
-
-class WebsocketServerThread(ThreadWithLoggedException):
-    """Dummy wrapper to make debug messages a bit more readable"""
-
-    pass

@@ -15,10 +15,10 @@ class LauncherStateMonitor:
         self.consumer = consumer
         self.server = FileWatchdog("/tmp/tree_state", self.update)
 
-    def update(self, data):
+    async def update(self, data):
         LogManager.logger.debug(f"Sending update to client")
         if self.consumer is not None:
-            self.consumer.send_message({"update": data}, command="update")
+            await self.consumer.send_message({"update": data}, command="update")
 
     def run(self, config_file, callback):
         self.server.start()
