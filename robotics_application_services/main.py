@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from uvicorn import run
 import argparse
 
-from .routers import ssh
+from routers import format
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(ssh.router)
+app.include_router(format.router)
 
 origins = ["*"]
 
@@ -29,12 +29,4 @@ app.add_middleware(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "host", type=str, help="Host to listen to (0.0.0.0 or all hosts)"
-    )
-    parser.add_argument("port", type=int, help="Port to listen to")
-    args = parser.parse_args()
-    project = args.project
-
     run(app, host="0.0.0.0", port=8000)
