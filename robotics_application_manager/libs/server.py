@@ -48,7 +48,6 @@ class Server:
             await self.process_msg(websocket)
         except Exception as e:
           LogManager.logger.info(f"Client disconnected: {str(e)}")
-          pass
         finally:
             LogManager.logger.info("Connection with client closed")
             with self.client_lock:
