@@ -6,7 +6,7 @@ from pydantic import BaseModel
 import black
 
 router = APIRouter(
-    prefix="/format"
+    prefix="/format",
     tags=["formatters"],
     responses={404: {"description": "Not found"}},
 )
