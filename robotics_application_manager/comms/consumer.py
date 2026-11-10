@@ -14,7 +14,6 @@ from .consumer_message import (
     ManagerConsumerMessageException,
     ManagerConsumerMessage,
 )
-from robotics_application_manager import LogManager
 from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosedOK
 import asyncio
@@ -43,7 +42,7 @@ class ManagerConsumer:
         self.server_task = None
 
         # Configurar el logger de websocket_server para salida a consola
-        self.ws_logger = logging.getLogger("websocket_server.websocket_server")
+        self.ws_logger = logging.getLogger("commsmanager.websocket")
         self.ws_logger.propagate = False
         self.ws_logger.setLevel(logging.INFO)
         self.ws_logger.handlers.clear()
@@ -68,20 +67,19 @@ class ManagerConsumer:
 
     async def manage_conection(self, websocket):
         if self.client is not None:
+          self.ws_logger.info("Client is already connected")
           await websocket.close()
           return
 
         try:
             self.client = websocket # Register client
-            LogManager.logger.info(f"client connected: {self.client}")
-
-            await self.process_msg(websocket)
-        except ConnectionClosedOK as e:
+            self.ws_logger.info(f"Client connected: {self.client}")
+            
+            await self.process_msg(self.client)
+        except Exception as e:
             pass
         finally:
-            now = datetime.now()
-            time_str = now.strftime("%H:%M:%S")
-            LogManager.logger.info(f"Client disconnected {time_str}: {self.client}")
+            self.ws_logger.info(f"Client disconnected")
             self.client = None
 
     async def process_msg(self, websocket):
@@ -92,7 +90,7 @@ class ManagerConsumer:
         except Exception as e:
             ex = ManagerConsumerMessageException(id=str(uuid4()), message=str(e))
             await self.send_message(ex)
-            LogManager.logger.error(e, exc_info=True)
+            self.ws_logger.error(e, exc_info=True)
 
     async def send_message(self, message_data, command=None):
         """

@@ -35,11 +35,9 @@ class LauncherGzsim(ILauncher):
         DRI_PATH = self.get_dri_path()
         ACCELERATION_ENABLED = self.check_device(DRI_PATH)
 
+        LogManager.logger.info(f"Gz: {config_file}")
         if config_file is None:
             config_file = "/opt/jderobot/Launchers/visualization/default.config"
-
-        # Configure browser screen width and height for gz GUI
-        gzclient_config_cmds = f"sed -i 's/<width>.*<\/width>/<width>{self.width}<\/width>/; s/<height>.*<\/height>/<height>{self.height}<\/height>/' {config_file};"
 
         if ACCELERATION_ENABLED:
             # Starts xserver, x11vnc and novnc
@@ -47,12 +45,12 @@ class LauncherGzsim(ILauncher):
                 self.display, self.internal_port, self.external_port, DRI_PATH
             )
             # Write display config and start gzclient
-            gzclient_cmd = f"export DISPLAY={self.display}; {gzclient_config_cmds} export VGL_DISPLAY={DRI_PATH}; vglrun gz sim -g -v4 --gui-config {config_file}"
+            gzclient_cmd = f"export DISPLAY={self.display}; export VGL_DISPLAY={DRI_PATH}; vglrun gz sim -g -v4 --gui-config {config_file}"
         else:
             # Starts xserver, x11vnc and novnc
             self.gz_vnc.start_vnc(self.display, self.internal_port, self.external_port)
             # Write display config and start gzclient
-            gzclient_cmd = f"export DISPLAY={self.display}; {gzclient_config_cmds} gz sim -g -v4 --gui-config {config_file}"
+            gzclient_cmd = f"export DISPLAY={self.display}; gz sim -g -v4 --gui-config {config_file}"
 
         gzclient_thread = DockerThread(gzclient_cmd)
         gzclient_thread.start()
@@ -73,7 +71,6 @@ class LauncherGzsim(ILauncher):
         return self.running
 
     async def terminate(self):
-        LogManager.logger.info(f"Terminating gz tool")
         self.gz_vnc.terminate()
         for thread in self.threads[:]:
             if thread.is_alive():
@@ -81,6 +78,7 @@ class LauncherGzsim(ILauncher):
                 thread.join()
             self.threads.remove(thread)
         self.running = False
+        LogManager.logger.info(f"Terminating gz tool")
 
     def died(self):
         pass

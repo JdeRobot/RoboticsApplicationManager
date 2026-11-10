@@ -62,8 +62,10 @@ class LauncherTools(BaseModel):
     async def run(self, consumer):
         for tool in self.tools:
             if tool == "simulator":
-                tool = simulator[self.world_type]["tool"]
-            module = tools[tool]
+                module = tools[simulator[self.world_type]["tool"]]
+            else:
+                module = tools[tool]
+
             if module["module"] is None:
                 continue
             launcher = await self.launch_module(tool, module, consumer)

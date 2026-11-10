@@ -239,6 +239,7 @@ class Manager:
         - `ros_version`: The current ROS (Robot Operating System) distribution version.
         - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
         """
+        LogManager.logger.info("-------------------Connecting--------------------------")
         await self.consumer.send_message(
             {
                 "robotics_backend_version": subprocess.check_output(
@@ -575,7 +576,6 @@ class Manager:
             self.application_processes = []
 
     async def on_terminate_tools(self, event):
-
         await self.tools_launcher.terminate()
         self.tools_launcher = None
 
