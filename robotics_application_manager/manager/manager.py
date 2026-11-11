@@ -393,7 +393,7 @@ class Manager:
         zip_ref.close()
 
         os.system(
-            '/bin/bash -c "cd /workspace/worlds; source /opt/ros/humble/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."'
+            '/bin/bash -c "cd /workspace/worlds; source /opt/ros/lyrical/setup.bash; colcon build --symlink-install; source install/setup.bash; cd ../.."'
         )
 
     async def on_prepare_tools(self, event):
