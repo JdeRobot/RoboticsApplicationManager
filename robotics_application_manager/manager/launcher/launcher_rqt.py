@@ -12,6 +12,7 @@ from robotics_application_manager.manager.docker_thread import DockerThread
 from robotics_application_manager.manager.vnc import Vnc_server
 from robotics_application_manager import LogManager
 from typing import List, Any
+import os
 import subprocess
 
 
@@ -39,7 +40,9 @@ class LauncherRqt(ILauncher):
         if config_file is None:
             config_file = "/opt/jderobot/Launchers/rqt/default.perspective"
 
-        config = f"rqt --perspective-file {config_file}"
+        # Keep the graph plugins refreshed and fitted to the browser panel
+        autorefresh = os.path.join(os.path.dirname(__file__), "rqt_autorefresh.py")
+        config = f"python3 {autorefresh} --perspective-file {config_file}"
 
         if ACCELERATION_ENABLED:
             self.vnc.start_vnc_gpu(
@@ -76,7 +79,7 @@ class LauncherRqt(ILauncher):
                 thread.terminate()
                 # rqt ignores SIGTERM so join would block forever
                 subprocess.call(
-                    "pkill -9 -f 'bin/rqt --perspective-file'",
+                    "pkill -9 -f rqt_autorefresh.py",
                     shell=True,
                     stdout=subprocess.PIPE,
                     bufsize=1024,
