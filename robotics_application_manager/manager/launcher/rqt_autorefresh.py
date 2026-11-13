@@ -10,6 +10,7 @@ Run by LauncherRqt as a script inside the Robotics Backend, not imported.
 """
 
 import sys
+import signal
 
 from python_qt_binding.QtCore import QEvent, QObject, QTimer
 from python_qt_binding.QtWidgets import QApplication, QGraphicsView, QPushButton
@@ -51,5 +52,10 @@ class AutoRefreshMain(Main):
         return app
 
 
+def sigterm_handler(_signo, _stack_frame):
+    sys.exit(0)
+
+
 if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, sigterm_handler)
     sys.exit(AutoRefreshMain().main())

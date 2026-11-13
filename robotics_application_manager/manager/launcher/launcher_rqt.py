@@ -77,14 +77,6 @@ class LauncherRqt(ILauncher):
         for thread in self.threads[:]:
             if thread.is_alive():
                 thread.terminate()
-                # rqt ignores SIGTERM so join would block forever
-                subprocess.call(
-                    "pkill -9 -f rqt_autorefresh.py",
-                    shell=True,
-                    stdout=subprocess.PIPE,
-                    bufsize=1024,
-                    universal_newlines=True,
-                )
                 thread.join()
             self.threads.remove(thread)
         self.running = False
