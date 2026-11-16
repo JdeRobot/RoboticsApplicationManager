@@ -201,7 +201,9 @@ class Manager:
         """
         LogManager.logger.info(f"State changed to {self.state}")
         if self.consumer is not None:
-            await self.consumer.send_message({"state": self.state}, command="state-changed")
+            await self.consumer.send_message(
+                {"state": self.state}, command="state-changed"
+            )
 
     async def update(self, data):
         """
@@ -239,7 +241,9 @@ class Manager:
         - `ros_version`: The current ROS (Robot Operating System) distribution version.
         - `gpu_avaliable`: Boolean indicating whether GPU acceleration is available.
         """
-        LogManager.logger.info("-------------------Connecting--------------------------")
+        LogManager.logger.info(
+            "-------------------Connecting--------------------------"
+        )
         await self.consumer.send_message(
             {
                 "robotics_backend_version": subprocess.check_output(
@@ -605,7 +609,9 @@ class Manager:
         This method stops all running processes,
         terminates launchers, and restarts the script.
         """
-        LogManager.logger.info("-------------------Disconnecting--------------------------")
+        LogManager.logger.info(
+            "-------------------Disconnecting--------------------------"
+        )
         try:
             for process in self.application_processes:
                 stop_process_and_children(process)
@@ -732,10 +738,10 @@ class Manager:
         RAM must be run in main thread to be able to handle signaling other processes,
         for instance ROS launcher.
         """
-        self.consumer = await ManagerConsumer(self.host, self.port, self.process_message)
-        LogManager.logger.info(
-            f"Starting RAM consumer in {self.host}:{self.port}"
+        self.consumer = await ManagerConsumer(
+            self.host, self.port, self.process_message
         )
+        LogManager.logger.info(f"Starting RAM consumer in {self.host}:{self.port}")
 
         await self.consumer.start()
 

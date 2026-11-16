@@ -18,7 +18,7 @@ def get_class(kls):
     parts = kls.split(".")
     module = ".".join(parts[:-1])
     m = importlib.import_module(module)
-    imp_class = getattr(m,parts[-1])
+    imp_class = getattr(m, parts[-1])
     return imp_class
 
 

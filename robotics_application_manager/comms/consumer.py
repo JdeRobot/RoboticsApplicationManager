@@ -18,6 +18,7 @@ from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosedOK
 import asyncio
 
+
 class ManagerConsumer:
     """
     Websocket server consumer for new Robotics Application Manager aka: RAM.
@@ -25,8 +26,8 @@ class ManagerConsumer:
     Supports single client connection to RAM
     TODO: Better handling of single client connections, closing and redirecting
     """
-    def __init__(self, host, port, process_callback):
 
+    def __init__(self, host, port, process_callback):
         """
         Initialize the ManagerConsumer with host, port, and manager_queue.
 
@@ -62,19 +63,26 @@ class ManagerConsumer:
 
     # A method that creates an instance of the class asynchronously
     async def create(self):
-        self.server = await serve(self.manage_conection, self.host, self.port, start_serving=False, max_size=None, logger=self.ws_logger)
+        self.server = await serve(
+            self.manage_conection,
+            self.host,
+            self.port,
+            start_serving=False,
+            max_size=None,
+            logger=self.ws_logger,
+        )
         return self
 
     async def manage_conection(self, websocket):
         if self.client is not None:
-          self.ws_logger.info("Client is already connected")
-          await websocket.close()
-          return
+            self.ws_logger.info("Client is already connected")
+            await websocket.close()
+            return
 
         try:
-            self.client = websocket # Register client
+            self.client = websocket  # Register client
             self.ws_logger.info(f"Client connected: {self.client}")
-            
+
             await self.process_msg(self.client)
         except Exception as e:
             pass
@@ -83,14 +91,14 @@ class ManagerConsumer:
             self.client = None
 
     async def process_msg(self, websocket):
-      async for raw_msg in websocket:
-        try:
-            json_msg = json.loads(raw_msg)
-            await self.process_callback(ManagerConsumerMessage(**json_msg))
-        except Exception as e:
-            ex = ManagerConsumerMessageException(id=str(uuid4()), message=str(e))
-            await self.send_message(ex)
-            self.ws_logger.error(e, exc_info=True)
+        async for raw_msg in websocket:
+            try:
+                json_msg = json.loads(raw_msg)
+                await self.process_callback(ManagerConsumerMessage(**json_msg))
+            except Exception as e:
+                ex = ManagerConsumerMessageException(id=str(uuid4()), message=str(e))
+                await self.send_message(ex)
+                self.ws_logger.error(e, exc_info=True)
 
     async def send_message(self, message_data, command=None):
         """

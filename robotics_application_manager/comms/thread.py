@@ -36,4 +36,3 @@ class ThreadWithLoggedException(threading.Thread):
             )
         finally:
             del self._target, self._args, self._kwargs
-

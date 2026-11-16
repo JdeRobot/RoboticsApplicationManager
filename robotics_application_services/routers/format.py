@@ -11,8 +11,10 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
 class FileItem(BaseModel):
     content: str
+
 
 @router.post("/black", response_model=FileItem)
 async def format(item: FileItem):
@@ -41,6 +43,7 @@ async def format(item: FileItem):
         return {"content": formatted_code}
     except Exception as e:
         raise HTTPException(status_code=404, detail="Error formating code" + str(e))
+
 
 @router.post("/clang", response_model=FileItem)
 async def clang(item: FileItem):

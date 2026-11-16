@@ -6,6 +6,7 @@ import argparse
 
 from routers import format
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # On launch

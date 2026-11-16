@@ -88,7 +88,9 @@ class LauncherRobot(BaseModel):
         launcher_class = get_class(launcher_module)
         launcher = await launcher_class.from_config(launcher_class, configuration)
 
-        await launcher.run(self.entity, self.start_pose, extra_config, process_terminated)
+        await launcher.run(
+            self.entity, self.start_pose, extra_config, process_terminated
+        )
         return launcher
 
     def launch_command(self, configuration):
