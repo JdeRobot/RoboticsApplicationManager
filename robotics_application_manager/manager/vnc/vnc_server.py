@@ -19,6 +19,32 @@ class Vnc_server:
     threads: List[Any] = []
     running: bool = False
 
+    def start(self, display, internal_port, external_port, vnc_cmd):
+        turbovnc_thread = DockerThread(vnc_cmd)
+        turbovnc_thread.start()
+        self.threads.append(turbovnc_thread)
+        wait_for_xserver(display)
+
+        certs = ""
+
+        if os.path.isfile("/etc/certs/cert.pem"):
+            certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
+
+        # Start noVNC with default port 6080 listening to VNC server on 5900
+        novnc_cmd = (
+            f"/noVNC/utils/novnc_proxy --listen {external_port} "
+            f"--vnc localhost:{internal_port} "
+            f"{certs}"
+        )
+
+        novnc_thread = DockerThread(novnc_cmd)
+        novnc_thread.start()
+        self.threads.append(novnc_thread)
+        self.running = True
+
+        self.wait_for_port("localhost", internal_port)
+        self.wait_for_port("localhost", external_port)
+
     def start_vnc(self, display, internal_port, external_port):
         """Start a VNC and noVNC server session.
 
@@ -34,37 +60,7 @@ class Vnc_server:
             f"-geometry '1920x1080' -noreset "
             f"-SecurityTypes None -rfbport {internal_port}"
         )
-        turbovnc_thread = DockerThread(turbovnc_cmd)
-        turbovnc_thread.start()
-        self.threads.append(turbovnc_thread)
-        wait_for_xserver(display)
-
-        certs = ""
-
-        if os.path.isfile("/etc/certs/cert.pem"):
-            certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
-
-        # Start noVNC with default port 6080 listening to VNC server on 5900
-        if self.get_ros_version() == "2":
-            novnc_cmd = (
-                f"/noVNC/utils/novnc_proxy --listen {external_port} "
-                f"--vnc localhost:{internal_port} "
-                f"{certs}"
-            )
-        else:
-            novnc_cmd = (
-                f"/noVNC/utils/launch.sh --listen {external_port} "
-                f"--vnc localhost:{internal_port} "
-                f"{certs}"
-            )
-
-        novnc_thread = DockerThread(novnc_cmd)
-        novnc_thread.start()
-        self.threads.append(novnc_thread)
-        self.running = True
-
-        self.wait_for_port("localhost", internal_port)
-        self.wait_for_port("localhost", external_port)
+        self.start(display, internal_port, external_port, turbovnc_cmd)
 
     def start_vnc_gpu(self, display, internal_port, external_port, dri_path):
         """Start a GPU-accelerated VNC and noVNC server session.
@@ -83,37 +79,7 @@ class Vnc_server:
             f"-geometry '1920x1080' -vgl -noreset "
             f"-SecurityTypes None -rfbport {internal_port}"
         )
-        turbovnc_thread = DockerThread(turbovnc_cmd)
-        turbovnc_thread.start()
-        self.threads.append(turbovnc_thread)
-        wait_for_xserver(display)
-
-        certs = ""
-
-        if os.path.isfile("/etc/certs/cert.pem"):
-            certs = "--cert /etc/certs/cert.pem --key /etc/certs/privkey.pem"
-
-        # Start noVNC with default port 6080 listening to VNC server on 5900
-        if self.get_ros_version() == "2":
-            novnc_cmd = (
-                f"/noVNC/utils/novnc_proxy --listen {external_port} "
-                f"--vnc localhost:{internal_port} "
-                f"{certs}"
-            )
-        else:
-            novnc_cmd = (
-                f"/noVNC/utils/launch.sh --listen {external_port} "
-                f"--vnc localhost:{internal_port} "
-                f"{certs}"
-            )
-
-        novnc_thread = DockerThread(novnc_cmd)
-        novnc_thread.start()
-        self.threads.append(novnc_thread)
-        self.running = True
-
-        self.wait_for_port("localhost", internal_port)
-        self.wait_for_port("localhost", external_port)
+        self.start(display, internal_port, external_port, turbovnc_cmd)
 
     def wait_for_port(self, host, port, timeout=120):
         """Wait for a TCP port on a host to become available within a timeout period.
@@ -154,59 +120,7 @@ class Vnc_server:
     def terminate(self):
         """Terminate all running threads and stop the VNC server."""
         for thread in self.threads[:]:
-            if thread.is_alive():
-                thread.terminate()
-                thread.join()
+            thread.terminate()
+            thread.join()
             self.threads.remove(thread)
         self.running = False
-
-    def get_ros_version(self):
-        """Get the current ROS version from the environment.
-
-        Returns:
-            str: The ROS version as a string.
-        """
-        output = subprocess.check_output(["bash", "-c", "echo $ROS_VERSION"])
-        return output.decode("utf-8").strip()
-
-    def create_desktop_icon(self):
-        """Create a desktop icon to launch a terminal application."""
-        try:
-            desktop_dir = os.path.expanduser("~/Desktop")
-            if not os.path.exists(desktop_dir):
-                os.makedirs(desktop_dir)
-            desktop_path = os.path.join(desktop_dir, "terminal_launcher.desktop")
-            with open(desktop_path, "w") as f:
-                f.write("""[Desktop Entry]
-                    Name=Open Terminal
-                    Exec=xterm
-                    Icon=utilities-terminal
-                    Type=Application
-                    Encoding=UTF-8
-                    Terminal=false
-                    Categories=None;""")
-            os.chmod(desktop_path, 0o755)
-        except Exception as err:
-            print(err)
-
-    def create_gzclient_icon(self):
-        """Create a desktop icon to launch the Gazebo client application."""
-        desktop_dir = os.path.expanduser("~/Desktop")
-        if not os.path.exists(desktop_dir):
-            os.makedirs(desktop_dir)
-        desktop_path = os.path.join(desktop_dir, "gzclient_launcher.desktop")
-
-        try:
-            with open(desktop_path, "w") as f:
-                f.write("""[Desktop Entry]
-    Name=Gazebo Client
-    Exec=gzclient
-    Icon=gazebo
-    Type=Application
-    Encoding=UTF-8
-    Terminal=false
-    Categories=None;""")
-            os.chmod(desktop_path, 0o755)
-            print("Icono de gzclient creado con éxito en el escritorio.")
-        except Exception as e:
-            print(f"Error al crear el icono de gzclient: {e}")

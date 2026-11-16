@@ -123,6 +123,13 @@ class LauncherConsole:
         self.server.close()
         await self.server.wait_closed()
         self.running = False
+        subprocess.call(
+            "pkill -9 ssh-agent",
+            shell=True,
+            stdout=subprocess.PIPE,
+            bufsize=1024,
+            universal_newlines=True,
+        )
         LogManager.logger.info(f"Terminating console")
 
     def died(self):

@@ -5,6 +5,7 @@ import subprocess
 import os
 import signal
 import sys
+import psutil
 
 
 class DockerThread(threading.Thread):
@@ -40,12 +41,13 @@ class DockerThread(threading.Thread):
               universal_newlines=True,
               executable="/bin/bash",
           )
+        self.process_group = os.getpgid(self.process.pid)
         self.process.communicate()
 
     def terminate(self):
         """Terminates the thread and the process"""
         if self.process:
             try:
-                os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+                os.killpg(self.process_group, signal.SIGTERM)
             except ProcessLookupError as error:
-                print(f"{self.process.pid}: Process already terminated {error}")
+                print(f"{self.process_group}/{self.process.pid}: Process {self.cmd} already terminated {error}")

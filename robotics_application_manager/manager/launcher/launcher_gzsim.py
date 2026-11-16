@@ -73,9 +73,8 @@ class LauncherGzsim(ILauncher):
     async def terminate(self):
         self.gz_vnc.terminate()
         for thread in self.threads[:]:
-            if thread.is_alive():
-                thread.terminate()
-                thread.join()
+            thread.terminate()
+            thread.join()
             self.threads.remove(thread)
         self.running = False
         LogManager.logger.info(f"Terminating gz tool")
